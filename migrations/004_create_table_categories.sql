@@ -8,6 +8,7 @@ DROP TABLE IF EXISTS categories;
 CREATE TABLE `categories`
 (
     `id`          VARCHAR(24)  NOT NULL,
+    `user_id`     VARCHAR(24)  NOT NULL,
     `parent_id`   VARCHAR(24)           DEFAULT NULL,
     `name`        VARCHAR(200) NOT NULL,
     `type`        VARCHAR(10)   NOT NULL,
@@ -19,4 +20,6 @@ CREATE TABLE `categories`
   DEFAULT CHARSET = UTF8MB4
     COMMENT ='Category Table';
 
-CREATE UNIQUE INDEX category_name_unique_index ON categories (name);
+CREATE INDEX categories_user_id_index ON categories (user_id);
+CREATE INDEX categories_parent_id_index ON categories (parent_id);
+CREATE UNIQUE INDEX categories_user_id_name_unique_index ON categories (user_id, name);

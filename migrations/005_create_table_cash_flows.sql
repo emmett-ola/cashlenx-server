@@ -7,6 +7,7 @@ DROP TABLE IF EXISTS cash_flows;
 CREATE TABLE `cash_flows`
 (
     `id`           VARCHAR(24)  NOT NULL,
+    `user_id`      VARCHAR(24)  NOT NULL,
     `category_id`  VARCHAR(24)  NOT NULL,
     `belongs_date` TIMESTAMP    NOT NULL,
     `flow_type`    VARCHAR(10)  NOT NULL COMMENT 'INCOME/EXPENSE',
@@ -20,6 +21,7 @@ CREATE TABLE `cash_flows`
   DEFAULT CHARSET = UTF8MB4
     COMMENT ='Cash Flow Table';
 
+CREATE INDEX cash_flows_user_id_index ON cash_flows (user_id);
 CREATE INDEX cash_flows_category_id_index ON cash_flows (category_id);
 CREATE INDEX cash_flows_belongs_date_index ON cash_flows (belongs_date);
 CREATE INDEX cash_flows_flow_type_index ON cash_flows (flow_type);
