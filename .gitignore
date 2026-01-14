@@ -1,0 +1,39 @@
+# Binaries Files
+cashlenx
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Output Files
+*.test
+*.out
+*.log
+*.xls
+*.xlsx
+
+# IDE Files
+.idea
+.vscode
+*.swp
+*.swo
+.DS_Store
+
+# Trae AI
+.trae/
+
+# Config Files
+.env
+
+# Node.js Files
+node_modules/
+package-lock.json
+package.json
+
+# Generated Docs
+docs/html/
+
+# Database Data
+mongodb/data/
+mysql/data/

@@ -1,0 +1,1097 @@
+openapi: 3.0.3
+info:
+  title: CashLenX API
+  description: Personal finance management API
+  version: 0.3.0
+  contact:
+    name: CashLenX Team
+    email: support@cashlenx.com
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+paths:
+  # Health endpoints
+  /api/open/health:
+    get:
+      summary: Health check
+      description: Check if the API is running
+      operationId: healthCheck
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+              example:
+                code: OK
+                message: ""
+                data:
+                  status: healthy
+                  service: cashlenx-api
+                  message: API is running
+                meta: {}
+                extra: {}
+                errors: []
+
+  /api/open/version:
+    get:
+      summary: Version information
+      description: Get API version and information
+      operationId: versionInfo
+      responses:
+        '200':
+          description: Version information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+
+  # Cash Flow endpoints
+  /api/cash/expense:
+    post:
+      summary: Create expense transaction
+      description: Record a new expense transaction
+      operationId: createExpense
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CashFlowRequest'
+      responses:
+        '201':
+          description: Expense transaction created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+
+  /api/cash/income:
+    post:
+      summary: Create income transaction
+      description: Record a new income transaction
+      operationId: createIncome
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CashFlowRequest'
+      responses:
+        '201':
+          description: Income transaction created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+
+  /api/cash:
+    get:
+      summary: List all transactions
+      description: Get all cash flow transactions with optional filtering and pagination
+      operationId: listAllTransactions
+      parameters:
+        - name: limit
+          in: query
+          description: Items per page
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          description: Offset for pagination
+          schema:
+            type: integer
+            default: 0
+        - name: type
+          in: query
+          description: Filter by transaction type
+          schema:
+            type: string
+            enum: [INCOME, EXPENSE]
+        - name: category_id
+          in: query
+          description: Filter by category ID
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+      responses:
+        '200':
+          description: List of transactions with pagination
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+
+  /api/cash/{id}:
+    get:
+      summary: Get transaction by ID
+      description: Retrieve a specific transaction by its ID
+      operationId: getTransactionById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+      responses:
+        '200':
+          description: Transaction details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+        '404':
+          description: Transaction not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+    put:
+      summary: Update transaction by ID
+      description: Update a specific transaction by its ID
+      operationId: updateTransactionById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CashFlowRequest'
+      responses:
+        '200':
+          description: Transaction updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+        '404':
+          description: Transaction not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+    delete:
+      summary: Delete transaction by ID
+      description: Delete a specific transaction by its ID
+      operationId: deleteTransactionById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+      responses:
+        '200':
+          description: Transaction deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+        '404':
+          description: Transaction not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+
+  /api/cash/date/{date}:
+    get:
+      summary: Get transactions by date
+      description: Retrieve transactions for a specific date (YYYYMMDD format)
+      operationId: getTransactionsByDate
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^\d{8}$'
+      responses:
+        '200':
+          description: List of transactions for the date
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+    delete:
+      summary: Delete transactions by date
+      description: Delete all transactions for a specific date
+      operationId: deleteTransactionsByDate
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^\d{8}$'
+      responses:
+        '200':
+          description: Transactions deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+
+  /api/cash/range:
+    get:
+      summary: Get transactions by date range
+      description: Retrieve transactions between two dates
+      operationId: getTransactionsByDateRange
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '^\d{8}$'
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '^\d{8}$'
+      responses:
+        '200':
+          description: List of transactions in the date range
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+
+  /api/cash/summary/daily/{date}:
+    get:
+      summary: Get daily summary
+      description: Get financial summary for a specific date
+      operationId: getDailySummary
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^\d{8}$'
+      responses:
+        '200':
+          description: Daily summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+
+  /api/cash/summary/monthly/{month}:
+    get:
+      summary: Get monthly summary
+      description: Get financial summary for a specific month (YYYYMM format)
+      operationId: getMonthlySummary
+      parameters:
+        - name: month
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^\d{6}$'
+      responses:
+        '200':
+          description: Monthly summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+
+  /api/cash/summary/yearly/{year}:
+    get:
+      summary: Get yearly summary
+      description: Get financial summary for a specific year (YYYY format)
+      operationId: getYearlySummary
+      parameters:
+        - name: year
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^\d{4}$'
+      responses:
+        '200':
+          description: Yearly summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+
+  # Category endpoints
+  /api/category:
+    post:
+      summary: Create category
+      description: Create a new transaction category
+      operationId: createCategory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+      responses:
+        '201':
+          description: Category created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+    get:
+      summary: List all categories
+      description: Get all transaction categories with optional filtering
+      operationId: listAllCategories
+      parameters:
+        - name: type
+          in: query
+          description: Filter by category type
+          schema:
+            type: string
+            enum: [income, expense]
+        - name: parent_id
+          in: query
+          description: Filter by parent category ID
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+      responses:
+        '200':
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+
+  /api/category/{id}:
+    get:
+      summary: Get category by ID
+      description: Retrieve a specific category by its ID
+      operationId: getCategoryById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+      responses:
+        '200':
+          description: Category details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+        '404':
+          description: Category not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+    put:
+      summary: Update category by ID
+      description: Update a specific category by its ID
+      operationId: updateCategoryById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+      responses:
+        '200':
+          description: Category updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+        '404':
+          description: Category not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+    delete:
+      summary: Delete category by ID
+      description: Delete a specific category by its ID
+      operationId: deleteCategoryById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+      responses:
+        '200':
+          description: Category deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+        '404':
+          description: Category not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+
+  /api/category/name/{name}:
+    get:
+      summary: Get category by name
+      description: Retrieve a category by its name
+      operationId: getCategoryByName
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Category details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+        '404':
+          description: Category not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+
+  /api/category/{parent_id}/children:
+    get:
+      summary: Get child categories
+      description: Retrieve all child categories for a parent category
+      operationId: getChildCategories
+      parameters:
+        - name: parent_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+      responses:
+        '200':
+          description: List of child categories
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+        '404':
+          description: Parent category not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+
+  # Manage endpoints
+  /api/manage/dump:
+    get:
+      summary: Download database dump
+      description: Export the entire database as a JSON dump file
+      operationId: dumpDatabase
+      responses:
+        '200':
+          description: Database dump file
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
+
+  /api/manage/restore:
+    post:
+      summary: Restore database from dump
+      description: Restore the database from a JSON dump file
+      operationId: restoreDatabase
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: Database restored successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+
+  /api/manage/export:
+    get:
+      summary: Export data to Excel
+      description: Export cash flow data to an Excel file
+      operationId: exportData
+      parameters:
+        - name: from
+          in: query
+          description: Start date for export (YYYYMMDD format, optional for all data)
+          schema:
+            type: string
+            pattern: '^\d{8}$'
+        - name: to
+          in: query
+          description: End date for export (YYYYMMDD format, optional for all data)
+          schema:
+            type: string
+            pattern: '^\d{8}$'
+      responses:
+        '200':
+          description: Excel file with exported data
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+
+  /api/manage/import:
+    post:
+      summary: Import data from Excel
+      description: Import cash flow data from an Excel file
+      operationId: importData
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Excel file containing cash flow data
+              required:
+                - file
+      responses:
+        '200':
+          description: Data imported successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+
+  # User management endpoints
+  /api/user:
+    post:
+      summary: Create user
+      description: Create a new user (admin only)
+      operationId: createUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequest'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+        '409':
+          description: Username already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+    get:
+      summary: List all users
+      description: Get all users with pagination (admin only)
+      operationId: listAllUsers
+      parameters:
+        - name: limit
+          in: query
+          description: Items per page
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          description: Offset for pagination
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: List of users with pagination
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+
+  /api/user/{id}:
+    get:
+      summary: Get user by ID
+      description: Retrieve a specific user by their ID (admin only)
+      operationId: getUserById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+    put:
+      summary: Update user by ID
+      description: Update a specific user by their ID (admin only)
+      operationId: updateUserById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdateRequest'
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+    delete:
+      summary: Delete user by ID
+      description: Delete a specific user by their ID (admin only)
+      operationId: deleteUserById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+      responses:
+        '200':
+          description: User deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+
+  # Authentication endpoints
+  /api/open/auth/login:
+    post:
+      summary: User login
+      description: Authenticate a user and return a JWT token (public endpoint, no auth required)
+      operationId: login
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+
+  /api/open/auth/register:
+    post:
+      summary: User registration
+      description: Register a new user account (public endpoint, no auth required)
+      operationId: register
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegistrationRequest'
+      responses:
+        '201':
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+        '409':
+          description: Username already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+
+components:
+  schemas:
+    # Response wrapper schema
+    ResponseWrapper:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Response code for machine consumption
+        message:
+          type: string
+          description: Human-readable message
+        data:
+          description: The actual data payload
+          nullable: true
+          oneOf:
+            - type: object
+            - type: array
+              items: {}
+            - type: string
+            - type: number
+            - type: boolean
+        meta:
+          $ref: '#/components/schemas/MetaInfo'
+        extra:
+          type: object
+          description: Additional payload for non-standard fields
+          additionalProperties: true
+        errors:
+          type: array
+          description: Structured error list (empty for success)
+          items:
+            $ref: '#/components/schemas/ErrorItem'
+      required:
+        - code
+        - data
+        - message
+        - meta
+        - extra
+        - errors
+
+    ErrorItem:
+      type: object
+      properties:
+        field:
+          type: string
+          description: The specific field that caused the error (optional)
+        message:
+          type: string
+          description: Human-readable error message
+      required:
+        - message
+
+    MetaInfo:
+      type: object
+      properties:
+        total_count:
+          type: integer
+          description: Total number of items (for pagination)
+        limit:
+          type: integer
+          description: Items per page
+        offset:
+          type: integer
+          description: Offset for pagination
+        request_id:
+          type: string
+          description: Unique request identifier
+
+    # Cash Flow schemas
+    CashFlowRequest:
+      type: object
+      properties:
+        belongs_date:
+          type: string
+          description: "Transaction date (supported formats: YYYYMMDD, YYYY-MM-DD, YYYY/MM/DD)"
+          pattern: ^(\d{8}|\d{4}[-/]\d{2}[-/]\d{2})$
+        category_name:
+          type: string
+          description: Category name for the transaction
+        amount:
+          type: number
+          format: double
+          description: Transaction amount
+        description:
+          type: string
+          description: Transaction description
+      required:
+        - belongs_date
+        - category_name
+        - amount
+
+    CashFlowResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: '^[0-9a-fA-F]{24}$'
+          description: Transaction ID
+        category_id:
+          type: string
+          pattern: '^[0-9a-fA-F]{24}$'
+          description: Category ID
+        belongs_date:
+          type: string
+          format: date-time
+          description: Transaction date
+        flow_type:
+          type: string
+          description: Flow type (INCOME or EXPENSE)
+          enum: [INCOME, EXPENSE]
+        amount:
+          type: number
+          format: double
+          description: Transaction amount
+        description:
+          type: string
+          description: Transaction description
+        remark:
+          type: string
+          description: Additional remark
+        create_time:
+          type: string
+          format: date-time
+          description: Creation time
+        modify_time:
+          type: string
+          format: date-time
+          description: Modification time
+
+    # Category schemas
+    CategoryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Category name
+        parent_id:
+          type: string
+          pattern: '^[0-9a-fA-F]{24}$'
+          description: Parent category ID (optional)
+        type:
+          type: string
+          description: Category type
+          enum: [income, expense]
+        remark:
+          type: string
+          description: Category remark (optional)
+      required:
+        - name
+        - type
+
+    CategoryResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: '^[0-9a-fA-F]{24}$'
+          description: Category ID
+        user_id:
+          type: string
+          pattern: '^[0-9a-fA-F]{24}$'
+          description: Owner user ID
+        name:
+          type: string
+          description: Category name
+        parent_id:
+          type: string
+          pattern: '^[0-9a-fA-F]{24}$'
+          description: Parent category ID (optional)
+        type:
+          type: string
+          description: Category type
+          enum: [income, expense]
+        remark:
+          type: string
+          description: Category remark
+        create_time:
+          type: string
+          format: date-time
+          description: Creation time
+        modify_time:
+          type: string
+          format: date-time
+          description: Modification time
+
+    # User schemas
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: '^[0-9a-fA-F]{24}$'
+          description: User ID
+        username:
+          type: string
+          description: Username
+        is_active:
+          type: boolean
+          description: Whether the user is active
+        role:
+          type: string
+          description: User role
+          enum: [user, admin]
+        created_at:
+          type: string
+          format: date-time
+          description: Creation time
+        updated_at:
+          type: string
+          format: date-time
+          description: Modification time
+
+    UserCreateRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          description: Username
+          minLength: 3
+          maxLength: 50
+        password:
+          type: string
+          description: Password
+          minLength: 6
+          maxLength: 100
+        role:
+          type: string
+          description: "User role (optional, default: user)"
+          enum: [user, admin]
+      required:
+        - username
+        - password
+
+    UserUpdateRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          description: Username
+          minLength: 3
+          maxLength: 50
+        password:
+          type: string
+          description: New password (optional)
+          minLength: 6
+          maxLength: 100
+        is_active:
+          type: boolean
+          description: Whether the user is active
+        role:
+          type: string
+          description: User role
+          enum: [user, admin]
+
+    UserLoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          description: Username
+        password:
+          type: string
+          description: Password
+      required:
+        - username
+        - password
+
+    UserRegistrationRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          description: Username
+          minLength: 3
+          maxLength: 50
+        password:
+          type: string
+          description: Password
+          minLength: 6
+          maxLength: 100
+      required:
+        - username
+        - password
+
+    UserLoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: JWT token for authentication
+        user:
+          $ref: '#/components/schemas/UserResponse'

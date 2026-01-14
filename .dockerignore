@@ -1,0 +1,21 @@
+# Version control
+.git
+.gitignore
+
+# Database data directories (local bind mounts)
+mongodb/data
+mysql/data
+
+# Logs
+logs/
+
+# Docker configuration
+docker-compose.yml
+compose.yml
+.env
+.dockerignore
+
+# Build artifacts
+cashlenx-server
+*.exe
+*.test

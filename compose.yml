@@ -1,0 +1,100 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:${MONGO_VERSION:-7.0}
+    container_name: ${MONGO_CONTAINER_NAME:-cashlenx-mongodb}
+    restart: unless-stopped
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-cashlenx}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-cashlenx123}
+      MONGO_INITDB_DATABASE: ${DB_NAME:-cashlenx}
+    volumes:
+      - ${MONGO_DATA_PATH:-./mongodb/data}:/data/db
+      - ./docker/mongodb/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    networks:
+      - cashlenx-network
+    healthcheck:
+      test: echo 'db.runCommand(\"ping\").ok' | mongosh localhost:27017/${DB_NAME:-cashlenx} --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - mongodb
+
+  # MySQL Database (Alternative)
+  mysql:
+    image: mysql:${MYSQL_VERSION:-8.0}
+    container_name: ${MYSQL_CONTAINER_NAME:-cashlenx-mysql}
+    restart: unless-stopped
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-cashlenx123}
+      MYSQL_DATABASE: ${DB_NAME:-cashlenx}
+      MYSQL_USER: ${MYSQL_USER:-cashlenx}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-cashlenx123}
+    volumes:
+      - ${MYSQL_DATA_PATH:-./mysql/data}:/var/lib/mysql
+      - ./docker/mysql/init-mysql.sql:/docker-entrypoint-initdb.d/init-mysql.sql:ro
+    networks:
+      - cashlenx-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-cashlenx123}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - mysql
+
+  # Backend API
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ${BACKEND_CONTAINER_NAME:-cashlenx-server}
+    restart: unless-stopped
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    environment:
+      DB_TYPE: ${DB_TYPE:-mongodb}
+      MONGO_DB_URI: ${DOCKER_MONGO_DB_URI:-mongodb://${MONGO_ROOT_USERNAME:-cashlenx}:${MONGO_ROOT_PASSWORD:-cashlenx123}@mongodb:27017/${DB_NAME:-cashlenx}?authSource=admin&retryWrites=false}
+      MYSQL_DB_URI: ${DOCKER_MYSQL_DB_URI:-${MYSQL_USER:-cashlenx}:${MYSQL_PASSWORD:-cashlenx123}@tcp(mysql:3306)}
+      DB_NAME: ${DB_NAME:-cashlenx}
+      LOG_FOLDER: ${LOG_FOLDER:-/app/logs}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      SERVER_PORT: 8080
+      SERVER_HOST: ${SERVER_HOST:-0.0.0.0}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:8080}
+      TIMEZONE: ${TIMEZONE:-UTC}
+    volumes:
+      - ./logs/docker:/app/logs
+    depends_on:
+      mongodb:
+        condition: service_healthy
+        required: false
+      mysql:
+        condition: service_healthy
+        required: false
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/open/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - cashlenx-network
+    profiles:
+      - backend
+
+networks:
+  cashlenx-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+  mysql_data:
+  server_logs:

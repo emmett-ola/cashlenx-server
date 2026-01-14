@@ -1,0 +1,39 @@
+package category_service
+
+import (
+	"errors"
+
+	"github.com/macar-x/cashlenx-server/mapper/category_mapper"
+	"github.com/macar-x/cashlenx-server/model"
+	"github.com/macar-x/cashlenx-server/util"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
+
+// QueryAllForUser queries all categories for a user with optional filtering and pagination
+func QueryAllForUser(userId string, categoryType string, limit int, offset int) ([]model.CategoryEntity, int64, error) {
+	// Validate and convert userId
+	userObjectId := util.Convert2ObjectId(userId)
+	if userObjectId == primitive.NilObjectID {
+		return nil, 0, errors.New("invalid user ID")
+	}
+
+	// Get total count for this user
+	totalCount := category_mapper.INSTANCE.CountAllCategoriesByUser(userObjectId)
+
+	// Get paginated results for this user
+	var categories []model.CategoryEntity
+
+	if categoryType != "" {
+		// Filter by type if provided
+		categoriesByType, err := category_mapper.INSTANCE.GetCategoriesByUserAndType(userObjectId, categoryType, limit, offset)
+		if err != nil {
+			return nil, 0, err
+		}
+		categories = categoriesByType
+	} else {
+		// Get all categories for user
+		categories = category_mapper.INSTANCE.GetAllCategoriesByUser(userObjectId, limit, offset)
+	}
+
+	return categories, totalCount, nil
+}
