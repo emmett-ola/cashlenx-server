@@ -9,13 +9,16 @@ import (
 // AuthService defines the interface for authentication services
 type AuthService interface {
 	// Authenticate validates user credentials and returns a token and user info
-	Authenticate(username, password string) (string, model.UserEntity, error)
+	Authenticate(username, password string) (string, string, model.UserEntity, error)
 
 	// ValidateToken validates a JWT token and returns the claims if valid
 	ValidateToken(tokenString string) (*Claims, error)
 
 	// GenerateToken generates a new JWT token for a user
 	GenerateToken(userID, username, role string) (string, error)
+
+	// RefreshToken generates a new access token using a refresh token
+	RefreshToken(refreshToken string) (string, string, model.UserEntity, error)
 
 	// GetUserFromToken extracts user information from a token
 	GetUserFromToken(tokenString string) (model.UserEntity, error)

@@ -15,9 +15,11 @@ var (
 )
 
 var (
-	CashFlowTableName = "cash_flows"
-	CategoryTableName = "categories"
-	UserTableName     = "users"
+	CashFlowTableName       = "cash_flows"
+	CategoryTableName       = "categories"
+	UserTableName           = "users"
+	PasswordResetCollectionName = "password_reset_tokens"
+	RefreshTokenCollectionName  = "refresh_tokens"
 )
 
 func initMongoDbConnection() {

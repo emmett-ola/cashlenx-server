@@ -10,6 +10,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/macar-x/cashlenx-server/errors"
 	"github.com/macar-x/cashlenx-server/model"
+	"github.com/macar-x/cashlenx-server/service/refresh_token_service"
 	"github.com/macar-x/cashlenx-server/service/user_service"
 	"github.com/macar-x/cashlenx-server/util"
 	"golang.org/x/crypto/bcrypt"
@@ -30,26 +31,32 @@ type jwtClaims struct {
 }
 
 // Authenticate validates user credentials and returns a token and user info
-func (s *LocalAuthService) Authenticate(username, password string) (string, model.UserEntity, error) {
+func (s *LocalAuthService) Authenticate(username, password string) (string, string, model.UserEntity, error) {
 	// Get user by username
 	user := user_service.GetUserByUsername(username)
 	if user.Id.IsZero() {
-		return "", model.UserEntity{}, errors.NewUnauthorizedError("invalid username or password")
+		return "", "", model.UserEntity{}, errors.NewUnauthorizedError("invalid username or password")
 	}
 
 	// Verify password
 	err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
 	if err != nil {
-		return "", model.UserEntity{}, errors.NewUnauthorizedError("invalid username or password")
+		return "", "", model.UserEntity{}, errors.NewUnauthorizedError("invalid username or password")
 	}
 
 	// Generate JWT token
 	token, err := s.GenerateToken(user.Id.Hex(), user.Username, user.Role)
 	if err != nil {
-		return "", model.UserEntity{}, err
+		return "", "", model.UserEntity{}, err
 	}
 
-	return token, user, nil
+	// Generate refresh token
+	refreshToken, err := refresh_token_service.CreateRefreshToken(user.Id.Hex())
+	if err != nil {
+		return "", "", model.UserEntity{}, err
+	}
+
+	return token, refreshToken, user, nil
 }
 
 // ValidateToken validates a JWT token and returns the claims if valid
@@ -122,6 +129,41 @@ func (s *LocalAuthService) GenerateToken(userID, username, role string) (string,
 	}
 
 	return tokenString, nil
+}
+
+// RefreshToken generates a new access token using a refresh token
+func (s *LocalAuthService) RefreshToken(refreshToken string) (string, string, model.UserEntity, error) {
+	// Validate refresh token
+	token, err := refresh_token_service.GetRefreshTokenByToken(refreshToken)
+	if err != nil {
+		return "", "", model.UserEntity{}, err
+	}
+
+	// Get user by ID
+	user := user_service.GetUserByObjectId(token.UserId)
+	if user.Id.IsZero() {
+		return "", "", model.UserEntity{}, errors.NewUnauthorizedError("user not found")
+	}
+
+	// Revoke old refresh token
+	err = refresh_token_service.RevokeRefreshToken(refreshToken, user.Id.Hex())
+	if err != nil {
+		return "", "", model.UserEntity{}, err
+	}
+
+	// Generate new access token
+	accessToken, err := s.GenerateToken(user.Id.Hex(), user.Username, user.Role)
+	if err != nil {
+		return "", "", model.UserEntity{}, err
+	}
+
+	// Generate new refresh token
+	newRefreshToken, err := refresh_token_service.CreateRefreshToken(user.Id.Hex())
+	if err != nil {
+		return "", "", model.UserEntity{}, err
+	}
+
+	return accessToken, newRefreshToken, user, nil
 }
 
 // GetUserFromToken extracts user information from a token

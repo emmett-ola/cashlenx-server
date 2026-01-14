@@ -26,13 +26,13 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Use auth service to authenticate
-	token, user, err := auth.Service.Authenticate(loginRequest.Username, loginRequest.Password)
+	accessToken, refreshToken, user, err := auth.Service.Authenticate(loginRequest.Username, loginRequest.Password)
 	if err != nil {
 		util.ComposeJSONResponse(w, http.StatusUnauthorized, err)
 		return
 	}
 
-	// Return user info with token (without password hash)
+	// Return user info with tokens (without password hash)
 	response := map[string]interface{}{
 		"user": map[string]interface{}{
 			"id":         user.Id.Hex(),
@@ -41,7 +41,45 @@ func Login(w http.ResponseWriter, r *http.Request) {
 			"created_at": user.CreatedAt,
 			"updated_at": user.UpdatedAt,
 		},
-		"token": token,
+		"access_token":  accessToken,
+		"refresh_token": refreshToken,
+	}
+
+	util.ComposeJSONResponse(w, http.StatusOK, response)
+}
+
+// RefreshToken handles token refresh requests
+func RefreshToken(w http.ResponseWriter, r *http.Request) {
+	var refreshRequest model.RefreshTokenRequest
+	if err := util.ParseJSONRequest(r, &refreshRequest); err != nil {
+		util.ComposeJSONResponse(w, http.StatusBadRequest, errors.NewInvalidInputError("invalid request body"))
+		return
+	}
+
+	// Validate required field
+	if refreshRequest.RefreshToken == "" {
+		util.ComposeJSONResponse(w, http.StatusBadRequest, errors.NewValidationError("refresh_token is required"))
+		return
+	}
+
+	// Use auth service to refresh token
+	accessToken, newRefreshToken, user, err := auth.Service.RefreshToken(refreshRequest.RefreshToken)
+	if err != nil {
+		util.ComposeJSONResponse(w, http.StatusUnauthorized, err)
+		return
+	}
+
+	// Return user info with new tokens
+	response := map[string]interface{}{
+		"user": map[string]interface{}{
+			"id":         user.Id.Hex(),
+			"username":   user.Username,
+			"role":       user.Role,
+			"created_at": user.CreatedAt,
+			"updated_at": user.UpdatedAt,
+		},
+		"access_token":  accessToken,
+		"refresh_token": newRefreshToken,
 	}
 
 	util.ComposeJSONResponse(w, http.StatusOK, response)

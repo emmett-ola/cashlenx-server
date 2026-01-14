@@ -52,6 +52,7 @@ func registerOpenRoutes(r *mux.Router) {
 	// Authentication routes
 	r.HandleFunc("/api/open/auth/login", auth_controller.Login).Methods("POST")
 	r.HandleFunc("/api/open/auth/register", auth_controller.Register).Methods("POST")
+	r.HandleFunc("/api/open/auth/refresh", auth_controller.RefreshToken).Methods("POST")
 	
 	// Password reset routes
 	r.HandleFunc("/api/open/auth/reset-password", user_controller.RequestPasswordReset).Methods("POST")
@@ -172,13 +173,14 @@ func versionInfo(w http.ResponseWriter, r *http.Request) {
 		"description": "Personal finance management API",
 		"endpoints": map[string][]string{
 			"open": {
-				"GET /api/open/health",
-				"GET /api/open/version",
-				"POST /api/open/auth/login",
-				"POST /api/open/auth/register",
-				"POST /api/open/auth/reset-password",
-				"POST /api/open/auth/reset-password/confirm",
-			},
+			"GET /api/open/health",
+			"GET /api/open/version",
+			"POST /api/open/auth/login",
+			"POST /api/open/auth/register",
+			"POST /api/open/auth/refresh",
+			"POST /api/open/auth/reset-password",
+			"POST /api/open/auth/reset-password/confirm",
+		},
 			"admin": {
 			"POST /api/admin/user",
 			"GET /api/admin/user",
