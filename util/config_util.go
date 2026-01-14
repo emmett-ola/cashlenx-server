@@ -75,6 +75,13 @@ func initDefaultValues() {
 	}
 	configurationMap["auth.jwt.secret"] = jwtSecret
 
+	// JWT expiration time in hours
+	jwtExpirationHours := os.Getenv("JWT_EXPIRATION_HOURS")
+	if jwtExpirationHours == "" {
+		jwtExpirationHours = "24" // Default to 24 hours
+	}
+	configurationMap["auth.jwt.expiration_hours"] = jwtExpirationHours
+
 	// Registration enabled
 	registerEnabled := os.Getenv("AUTH_REGISTRATION_ENABLED")
 	if registerEnabled == "" {
@@ -94,9 +101,6 @@ func initDefaultValues() {
 		adminPassword = "admin"
 	}
 	configurationMap["admin.password"] = adminPassword
-
-	// Admin token for sensitive operations
-	configurationMap["ADMIN_TOKEN"] = os.Getenv("ADMIN_TOKEN")
 
 	// CORS origins
 	corsOrigins := os.Getenv("CORS_ORIGINS")

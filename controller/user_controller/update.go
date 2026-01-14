@@ -28,23 +28,58 @@ func Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Update user via service
-	if err := user_service.UpdateService(userId, requestBody); err != nil {
+	updatedUser, err := user_service.UpdateService(userId, requestBody)
+	if err != nil {
 		if errors.IsAlreadyExistsError(err) {
 			util.ComposeJSONResponse(w, http.StatusConflict, err)
 			return
 		}
-		if err.Error() == "user not found" {
-			util.ComposeJSONResponse(w, http.StatusNotFound, errors.NewNotFoundError(err.Error()))
+		if errors.IsNotFound(err) {
+			util.ComposeJSONResponse(w, http.StatusNotFound, err)
 			return
 		}
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, errors.NewInternalError(err.Error(), nil))
+		util.ComposeJSONResponse(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	// Get the updated user
-	updatedUser := user_service.GetUserByObjectId(userId)
-	if updatedUser.IsEmpty() {
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, errors.NewInternalError("failed to retrieve updated user", nil))
+	util.ComposeJSONResponse(w, http.StatusOK, updatedUser)
+}
+
+// SetPassword allows users to set or reset their password
+func SetPassword(w http.ResponseWriter, r *http.Request) {
+	// Extract user ID from URL path parameters
+	vars := mux.Vars(r)
+	userId := vars["id"]
+
+	if userId == "" {
+		util.ComposeJSONResponse(w, http.StatusBadRequest, errors.NewValidationError("user ID is required"))
+		return
+	}
+
+	// Parse request body to get password
+	type PasswordRequest struct {
+		Password string `json:"password"`
+	}
+
+	var requestBody PasswordRequest
+	if err := util.ParseJSONRequest(r, &requestBody); err != nil {
+		util.ComposeJSONResponse(w, http.StatusBadRequest, errors.NewInvalidInputError("invalid request body"))
+		return
+	}
+
+	if requestBody.Password == "" {
+		util.ComposeJSONResponse(w, http.StatusBadRequest, errors.NewValidationError("password is required"))
+		return
+	}
+
+	// Set password via service
+	updatedUser, err := user_service.SetPasswordService(userId, requestBody.Password)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			util.ComposeJSONResponse(w, http.StatusNotFound, err)
+			return
+		}
+		util.ComposeJSONResponse(w, http.StatusInternalServerError, err)
 		return
 	}
 

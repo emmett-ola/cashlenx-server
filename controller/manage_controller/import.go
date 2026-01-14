@@ -11,11 +11,6 @@ import (
 
 // ImportData handles the import of cash flow data from Excel files
 func ImportData(w http.ResponseWriter, r *http.Request) {
-	// Verify ADMIN_TOKEN for dangerous operation
-	if err := util.VerifyAdminTokenFromRequest(r); err != nil {
-		util.ComposeJSONResponse(w, http.StatusUnauthorized, err)
-		return
-	}
 
 	// Parse the multipart form with a 10 MB file size limit
 	err := r.ParseMultipartForm(10 << 20) // 10 MB

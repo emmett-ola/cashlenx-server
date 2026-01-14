@@ -15,6 +15,9 @@ type UserEntity struct {
 	UpdatedAt    time.Time          `bson:"updated_at" json:"updated_at"`
 	IsActive     bool               `bson:"is_active" json:"is_active"`
 	Role         string             `bson:"role" json:"role"` // Default: "user", can be "admin"
+	IsExternal   bool               `bson:"is_external" json:"is_external"` // True if user is from external auth system (Keycloak)
+	ExternalId   string             `bson:"external_id" json:"external_id"` // ID from external auth system
+	PasswordSet  bool               `bson:"password_set" json:"password_set"` // True if user has set their password
 }
 
 // IsEmpty checks if the user entity is empty
@@ -24,13 +27,16 @@ func (u UserEntity) IsEmpty() bool {
 
 // UserDTO represents a user for API requests/responses
 type UserDTO struct {
-	Id        string `json:"id,omitempty"`
-	Username  string `json:"username"`
-	Password  string `json:"password,omitempty"` // Only used for password creation/updates
-	IsActive  bool   `json:"is_active,omitempty"`
-	Role      string `json:"role,omitempty"`
-	CreatedAt string `json:"created_at,omitempty"` // ISO formatted string for API
-	UpdatedAt string `json:"updated_at,omitempty"` // ISO formatted string for API
+	Id           string `json:"id,omitempty"`
+	Username     string `json:"username"`
+	Password     string `json:"password,omitempty"` // Only used for password creation/updates
+	IsActive     bool   `json:"is_active,omitempty"`
+	Role         string `json:"role,omitempty"`
+	IsExternal   bool   `json:"is_external,omitempty"`
+	ExternalId   string `json:"external_id,omitempty"`
+	PasswordSet  bool   `json:"password_set,omitempty"`
+	CreatedAt    string `json:"created_at,omitempty"` // ISO formatted string for API
+	UpdatedAt    string `json:"updated_at,omitempty"` // ISO formatted string for API
 }
 
 // UserLoginRequest represents a login request

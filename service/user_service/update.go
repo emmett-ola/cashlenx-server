@@ -12,52 +12,85 @@ import (
 )
 
 // UpdateService updates an existing user
-func UpdateService(userId string, requestBody model.UserDTO) error {
-	// Check if user exists
-	existingUser := user_mapper.INSTANCE.GetUserByObjectId(userId)
+func UpdateService(plainId string, requestBody model.UserDTO) (model.UserEntity, error) {
+	// Get existing user
+	existingUser := user_mapper.INSTANCE.GetUserByObjectId(plainId)
 	if existingUser.Id.IsZero() {
-		return std_errors.New("user not found")
+		return model.UserEntity{}, errors.NewNotFoundError("user not found")
 	}
 
-	// Check if username is already taken by another user
-	if requestBody.Username != "" && requestBody.Username != existingUser.Username {
-		userWithSameName := user_mapper.INSTANCE.GetUserByUsername(requestBody.Username)
-		if !userWithSameName.Id.IsZero() && userWithSameName.Id.Hex() != userId {
-			return errors.NewFieldAlreadyExistsError("username", "username is already taken")
+	// Update fields if provided
+	if requestBody.Username != "" {
+		// Check if username is already taken by another user
+		checkUser := user_mapper.INSTANCE.GetUserByUsername(requestBody.Username)
+		if !checkUser.Id.IsZero() && checkUser.Id.Hex() != plainId {
+			return model.UserEntity{}, errors.NewFieldAlreadyExistsError("username", "username is already taken")
 		}
 		existingUser.Username = requestBody.Username
 	}
 
-	// Update password if provided
-	if requestBody.Password != "" {
-		// Validate password
-		err := validation.ValidatePassword(requestBody.Password)
-		if err != nil {
-			return err
-		}
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(requestBody.Password), bcrypt.DefaultCost)
-		if err != nil {
-			return std_errors.New("failed to hash password")
-		}
-		existingUser.PasswordHash = string(hashedPassword)
-	}
-
-	// Update other fields if provided
 	if requestBody.Role != "" {
 		existingUser.Role = requestBody.Role
 	}
 
-	// Update active status if provided
-	existingUser.IsActive = requestBody.IsActive
+	// Update password if provided
+	if requestBody.Password != "" {
+		err := validation.ValidatePassword(requestBody.Password)
+		if err != nil {
+			return model.UserEntity{}, err
+		}
 
-	// Update timestamp
-	existingUser.UpdatedAt = util.GetCurrentTime()
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(requestBody.Password), bcrypt.DefaultCost)
+		if err != nil {
+			return model.UserEntity{}, std_errors.New("failed to hash password")
+		}
 
-	// Update the user in the database
-	updatedUser := user_mapper.INSTANCE.UpdateUserByEntity(userId, existingUser)
-	if updatedUser.Id.IsZero() {
-		return std_errors.New("failed to update user")
+		existingUser.PasswordHash = string(hashedPassword)
+		existingUser.PasswordSet = true
 	}
 
-	return nil
+	// Update updated_at timestamp
+	existingUser.UpdatedAt = util.GetCurrentTime()
+
+	// Update user in database
+	updatedUser := user_mapper.INSTANCE.UpdateUserByEntity(plainId, existingUser)
+	if updatedUser.Id.IsZero() {
+		return model.UserEntity{}, std_errors.New("failed to update user")
+	}
+
+	return updatedUser, nil
+}
+
+// SetPasswordService allows users to set or reset their password
+func SetPasswordService(plainId string, password string) (model.UserEntity, error) {
+	// Validate password
+	err := validation.ValidatePassword(password)
+	if err != nil {
+		return model.UserEntity{}, err
+	}
+
+	// Get existing user
+	existingUser := user_mapper.INSTANCE.GetUserByObjectId(plainId)
+	if existingUser.Id.IsZero() {
+		return model.UserEntity{}, errors.NewNotFoundError("user not found")
+	}
+
+	// Hash the password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return model.UserEntity{}, std_errors.New("failed to hash password")
+	}
+
+	// Update user with new password
+	existingUser.PasswordHash = string(hashedPassword)
+	existingUser.PasswordSet = true
+	existingUser.UpdatedAt = util.GetCurrentTime()
+
+	// Update user in database
+	updatedUser := user_mapper.INSTANCE.UpdateUserByEntity(plainId, existingUser)
+	if updatedUser.Id.IsZero() {
+		return model.UserEntity{}, std_errors.New("failed to update password")
+	}
+
+	return updatedUser, nil
 }

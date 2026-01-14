@@ -10,11 +10,6 @@ import (
 
 // DumpDatabase creates a database dump and returns it as a download
 func DumpDatabase(w http.ResponseWriter, r *http.Request) {
-	// Verify ADMIN_TOKEN for dangerous operation
-	if err := util.VerifyAdminTokenFromRequest(r); err != nil {
-		util.ComposeJSONResponse(w, http.StatusUnauthorized, err)
-		return
-	}
 
 	// Create a temporary file for the dump
 	filePath := "temp_dump.json"

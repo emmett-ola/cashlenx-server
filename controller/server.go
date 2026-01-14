@@ -52,6 +52,10 @@ func registerOpenRoutes(r *mux.Router) {
 	// Authentication routes
 	r.HandleFunc("/api/open/auth/login", auth_controller.Login).Methods("POST")
 	r.HandleFunc("/api/open/auth/register", auth_controller.Register).Methods("POST")
+	
+	// Password reset routes
+	r.HandleFunc("/api/open/auth/reset-password", user_controller.RequestPasswordReset).Methods("POST")
+	r.HandleFunc("/api/open/auth/reset-password/confirm", user_controller.ConfirmPasswordReset).Methods("POST")
 }
 
 // registerAdminRoutes registers admin-only endpoints
@@ -62,6 +66,8 @@ func registerAdminRoutes(r *mux.Router) {
 	r.HandleFunc("/api/admin/user/{id}", user_controller.Get).Methods("GET")
 	r.HandleFunc("/api/admin/user/{id}", user_controller.Update).Methods("PUT")
 	r.HandleFunc("/api/admin/user/{id}", user_controller.Delete).Methods("DELETE")
+	// User password management
+	r.HandleFunc("/api/admin/user/{id}/password", user_controller.SetPassword).Methods("PUT")
 
 	// Database management - admin only
 	r.HandleFunc("/api/admin/manage/dump", manage_controller.DumpDatabase).Methods("GET")
@@ -170,18 +176,21 @@ func versionInfo(w http.ResponseWriter, r *http.Request) {
 				"GET /api/open/version",
 				"POST /api/open/auth/login",
 				"POST /api/open/auth/register",
+				"POST /api/open/auth/reset-password",
+				"POST /api/open/auth/reset-password/confirm",
 			},
 			"admin": {
-				"POST /api/admin/user",
-				"GET /api/admin/user",
-				"GET /api/admin/user/{id}",
-				"PUT /api/admin/user/{id}",
-				"DELETE /api/admin/user/{id}",
-				"GET /api/admin/manage/dump",
-				"POST /api/admin/manage/restore",
-				"GET /api/admin/manage/export",
-				"POST /api/admin/manage/import",
-			},
+			"POST /api/admin/user",
+			"GET /api/admin/user",
+			"GET /api/admin/user/{id}",
+			"PUT /api/admin/user/{id}",
+			"DELETE /api/admin/user/{id}",
+			"PUT /api/admin/user/{id}/password",
+			"GET /api/admin/manage/dump",
+			"POST /api/admin/manage/restore",
+			"GET /api/admin/manage/export",
+			"POST /api/admin/manage/import",
+		},
 			"cash_flow": {
 				"POST /api/cash/expense",
 				"POST /api/cash/income",

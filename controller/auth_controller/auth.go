@@ -3,13 +3,12 @@ package auth_controller
 import (
 	"net/http"
 
+	"github.com/macar-x/cashlenx-server/auth"
 	"github.com/macar-x/cashlenx-server/errors"
-	"github.com/macar-x/cashlenx-server/middleware"
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/service/user_service"
 	"github.com/macar-x/cashlenx-server/util"
 	"github.com/macar-x/cashlenx-server/validation"
-	"golang.org/x/crypto/bcrypt"
 )
 
 // Login handles user login requests
@@ -26,25 +25,10 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get user by username
-	user := user_service.GetUserByUsername(loginRequest.Username)
-	if user.Id.IsZero() {
-		util.ComposeJSONResponse(w, http.StatusUnauthorized, errors.NewUnauthorizedError("invalid username or password"))
-		return
-	}
-
-	// Verify password
-	err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(loginRequest.Password))
+	// Use auth service to authenticate
+	token, user, err := auth.Service.Authenticate(loginRequest.Username, loginRequest.Password)
 	if err != nil {
-		util.ComposeJSONResponse(w, http.StatusUnauthorized, errors.NewUnauthorizedError("invalid username or password"))
-		return
-	}
-
-	// Generate JWT token
-	token, err := middleware.GenerateToken(user.Id.Hex(), user.Username, user.Role)
-	if err != nil {
-		util.Logger.Errorw("Failed to generate JWT token", "error", err)
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, errors.NewInternalError("failed to generate authentication token", nil))
+		util.ComposeJSONResponse(w, http.StatusUnauthorized, err)
 		return
 	}
 
