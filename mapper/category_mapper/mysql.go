@@ -363,7 +363,7 @@ func (CategoryMySqlMapper) GetRootCategoriesByUser(userId primitive.ObjectID) ([
 	var sqlString bytes.Buffer
 	sqlString.WriteString("SELECT ID, USER_ID, PARENT_ID, NAME, TYPE, REMARK, CREATE_TIME, MODIFY_TIME FROM ")
 	sqlString.WriteString(database.CategoryTableName)
-	sqlString.WriteString(" WHERE USER_ID = ? AND (PARENT_ID = '' OR PARENT_ID IS NULL)")
+	sqlString.WriteString(" WHERE USER_ID = ? AND (PARENT_ID = '' OR PARENT_ID IS NULL OR PARENT_ID = '000000000000000000000000')")
 
 	connection := database.GetMySqlConnection()
 	defer database.CloseMySqlConnection()
@@ -387,7 +387,7 @@ func (CategoryMySqlMapper) GetRootCategoriesByUserAndType(userId primitive.Objec
 	var sqlString bytes.Buffer
 	sqlString.WriteString("SELECT ID, USER_ID, PARENT_ID, NAME, TYPE, REMARK, CREATE_TIME, MODIFY_TIME FROM ")
 	sqlString.WriteString(database.CategoryTableName)
-	sqlString.WriteString(" WHERE USER_ID = ? AND TYPE = ? AND (PARENT_ID = '' OR PARENT_ID IS NULL)")
+	sqlString.WriteString(" WHERE USER_ID = ? AND TYPE = ? AND (PARENT_ID = '' OR PARENT_ID IS NULL OR PARENT_ID = '000000000000000000000000')")
 
 	connection := database.GetMySqlConnection()
 	defer database.CloseMySqlConnection()
@@ -540,7 +540,7 @@ func (CategoryMySqlMapper) GetCategoryByNameUserTypeAndParent(categoryName strin
 		sqlString.WriteString(" AND PARENT_ID = ?")
 		rows, err = connection.Query(sqlString.String(), categoryName, userId.Hex(), categoryType, parentId.Hex())
 	} else {
-		sqlString.WriteString(" AND (PARENT_ID = '' OR PARENT_ID IS NULL)")
+		sqlString.WriteString(" AND (PARENT_ID = '' OR PARENT_ID IS NULL OR PARENT_ID = '000000000000000000000000')")
 		rows, err = connection.Query(sqlString.String(), categoryName, userId.Hex(), categoryType)
 	}
 

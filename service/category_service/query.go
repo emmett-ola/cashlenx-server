@@ -90,7 +90,8 @@ func GetChildCategoriesForUser(parentId string, userId string, categoryType stri
 	// Convert parent ID
 	parentObjectId := util.Convert2ObjectId(parentId)
 	if parentObjectId == primitive.NilObjectID {
-		return nil, errors.New("invalid parent ID")
+		// If parent ID is nil (000000000000000000000000), return root categories
+		return GetRootCategoriesForUser(userId, categoryType)
 	}
 
 	// Verify parent category belongs to user

@@ -10,7 +10,6 @@ import (
 var (
 	categoryLimit  int
 	categoryOffset int
-	listUserId     string
 	listCategoryType   string
 )
 
@@ -19,10 +18,10 @@ var listCmd = &cobra.Command{
 	Short: "list all categories",
 	Long:  `List all categories in the system with optional pagination.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if listUserId == "" {
+		if userId == "" {
 			return fmt.Errorf("user ID is required")
 		}
-		categoryEntityList, _, err := category_service.QueryAllForUser(listUserId, listCategoryType, categoryLimit, categoryOffset)
+		categoryEntityList, _, err := category_service.QueryAllForUser(userId, listCategoryType, categoryLimit, categoryOffset)
 		if err != nil {
 			return err
 		}
@@ -40,8 +39,6 @@ func init() {
 		&categoryLimit, "limit", "l", 50, "maximum number of records to return")
 	listCmd.Flags().IntVarP(
 		&categoryOffset, "offset", "o", 0, "number of records to skip")
-	listCmd.Flags().StringVarP(
-		&listUserId, "user", "u", "", "user ID (required)")
 	listCmd.Flags().StringVarP(
 		&listCategoryType, "type", "t", "", "category type filter (optional)")
 	CategoryCmd.AddCommand(listCmd)

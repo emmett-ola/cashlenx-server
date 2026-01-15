@@ -266,7 +266,10 @@ func (CategoryMongoDbMapper) CountCategoriesByUserAndType(userObjectId primitive
 func (CategoryMongoDbMapper) GetRootCategoriesByUser(userId primitive.ObjectID) ([]model.CategoryEntity, error) {
 	filter := bson.D{
 		primitive.E{Key: "user_id", Value: userId},
-		primitive.E{Key: "parent_id", Value: bson.M{"$exists": false}},
+		primitive.E{Key: "$or", Value: bson.A{
+			bson.D{{Key: "parent_id", Value: bson.M{"$exists": false}}},
+			bson.D{{Key: "parent_id", Value: primitive.NilObjectID}},
+		}},
 	}
 
 	database.OpenMongoDbConnection(database.CategoryTableName)
@@ -286,7 +289,10 @@ func (CategoryMongoDbMapper) GetRootCategoriesByUserAndType(userId primitive.Obj
 	filter := bson.D{
 		primitive.E{Key: "user_id", Value: userId},
 		primitive.E{Key: "type", Value: categoryType},
-		primitive.E{Key: "parent_id", Value: bson.M{"$exists": false}},
+		primitive.E{Key: "$or", Value: bson.A{
+			bson.D{{Key: "parent_id", Value: bson.M{"$exists": false}}},
+			bson.D{{Key: "parent_id", Value: primitive.NilObjectID}},
+		}},
 	}
 
 	database.OpenMongoDbConnection(database.CategoryTableName)
@@ -414,7 +420,10 @@ func (CategoryMongoDbMapper) GetCategoryByNameUserTypeAndParent(categoryName str
 		filter = append(filter, primitive.E{Key: "parent_id", Value: parentId})
 	} else {
 		// Explicitly check for null or non-existent parent_id for root categories
-		filter = append(filter, primitive.E{Key: "parent_id", Value: bson.M{"$exists": false}})
+		filter = append(filter, primitive.E{Key: "$or", Value: bson.A{
+			bson.D{{Key: "parent_id", Value: bson.M{"$exists": false}}},
+			bson.D{{Key: "parent_id", Value: primitive.NilObjectID}},
+		}})
 	}
 
 	database.OpenMongoDbConnection(database.CategoryTableName)

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/macar-x/cashlenx-server/service/statistic_service"
+	"github.com/macar-x/cashlenx-server/service/user_service"
 	"github.com/spf13/cobra"
 )
 
@@ -21,7 +22,11 @@ All imported records will be associated with your user account.`,
 		// TODO: Get userId from authentication/config
 		// For now, require userId as parameter
 		if importUserId == "" {
-			return fmt.Errorf("user ID is required (use --user flag)")
+			var err error
+			importUserId, err = user_service.GetDefaultAdminUserId()
+			if err != nil {
+				return err
+			}
 		}
 
 		err := statistic_service.ImportForUser(importFilePath, importUserId)
@@ -39,5 +44,4 @@ func init() {
 	importCmd.Flags().StringVarP(&importFilePath, "input", "i", "", "input path, e.g. ~/export.xlsx (required)")
 	importCmd.Flags().StringVarP(&importUserId, "user", "u", "", "user ID (required)")
 	importCmd.MarkFlagRequired("input")
-	importCmd.MarkFlagRequired("user")
 }
