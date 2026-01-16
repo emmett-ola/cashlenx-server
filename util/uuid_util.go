@@ -23,7 +23,6 @@ func Convert2ObjectId(plainId string) primitive.ObjectID {
 	plainId = strings.TrimSpace(plainId)
 	objectId, err := primitive.ObjectIDFromHex(plainId)
 	if err != nil {
-		// Logger.Warnln(err.Error())
 		return primitive.NilObjectID
 	}
 	return objectId
