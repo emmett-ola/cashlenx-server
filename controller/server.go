@@ -84,9 +84,10 @@ func registerCashRoute(r *mux.Router) {
 
 	// Read
 	r.HandleFunc("/api/cash", cash_flow_controller.ListAll).Methods("GET")
-	r.HandleFunc("/api/cash/{id}", cash_flow_controller.QueryById).Methods("GET")
-	r.HandleFunc("/api/cash/date/{date}", cash_flow_controller.QueryByDate).Methods("GET")
 	r.HandleFunc("/api/cash/range", cash_flow_controller.QueryByDateRange).Methods("GET")
+	r.HandleFunc("/api/cash/date/{date}", cash_flow_controller.QueryByDate).Methods("GET")
+	r.HandleFunc("/api/cash/date/{date}", cash_flow_controller.DeleteByDate).Methods("DELETE")
+	r.HandleFunc("/api/cash/{id}", cash_flow_controller.QueryById).Methods("GET")
 
 	// Summary endpoints
 	r.HandleFunc("/api/cash/summary/daily/{date}", cash_flow_controller.GetDailySummary).Methods("GET")
@@ -98,7 +99,6 @@ func registerCashRoute(r *mux.Router) {
 
 	// Delete
 	r.HandleFunc("/api/cash/{id}", cash_flow_controller.DeleteById).Methods("DELETE")
-	r.HandleFunc("/api/cash/date/{date}", cash_flow_controller.DeleteByDate).Methods("DELETE")
 }
 
 func registerCategoryRoute(r *mux.Router) {
@@ -106,14 +106,12 @@ func registerCategoryRoute(r *mux.Router) {
 	r.HandleFunc("/api/category", category_controller.Create).Methods("POST")
 	// Read all categories with filtering
 	r.HandleFunc("/api/category", category_controller.ListAll).Methods("GET")
-	// Read specific category
-	r.HandleFunc("/api/category/{id}", category_controller.QueryById).Methods("GET")
-	// Read by name
-	r.HandleFunc("/api/category/name/{name}", category_controller.QueryByName).Methods("GET")
 	// Read children categories - RESTful design: parent/{id}/children
+	r.HandleFunc("/api/category/name/{name}", category_controller.QueryByName).Methods("GET")
 	r.HandleFunc("/api/category/{parent_id}/children", category_controller.QueryChildren).Methods("GET")
-	// Read category tree structure
 	r.HandleFunc("/api/category/tree", category_controller.Tree).Methods("GET")
+	// Read specific category - must be after specific paths
+	r.HandleFunc("/api/category/{id}", category_controller.QueryById).Methods("GET")
 
 	// Update
 	r.HandleFunc("/api/category/{id}", category_controller.UpdateById).Methods("PUT")
