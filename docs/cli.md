@@ -871,19 +871,3 @@ which cashlenx
 # Use full path if needed
 ./cashlenx open version
 ```
-
----
-
-## See Also
-
-- [API Documentation](./api.md)
-- [Feature Parity Matrix](./feature_parity.md)
-- [Quick Start Guide](./quick_start.md)
-- [Deployment Guide](./deployment_guide.md)
-
----
-
-## Support
-
-For issues and feature requests:
-https://github.com/macar-x/cashlenx-server/issues
