@@ -121,6 +121,11 @@ func QueryByDateForUser(belongsDate string, userId string) ([]model.CashFlowEnti
 	// Validate and convert userId
 	userObjectId := util.Convert2ObjectId(userId)
 	if userObjectId == primitive.NilObjectID {
+		// Try to use the user ID string directly if it's not a valid ObjectID
+		// This is for cases where userId might not be a MongoDB ObjectID (e.g. from OIDC or other sources)
+		// But since we are using MongoDB, we should ensure it's a valid ObjectID
+		// For now, let's log a warning and return error
+		util.Logger.Warnf("Invalid user ID format: %s", userId)
 		return []model.CashFlowEntity{}, errors.New("invalid user ID")
 	}
 
@@ -143,6 +148,7 @@ func QueryByDateRangeForUser(fromDateStr, toDateStr string, userId string) ([]mo
 	// Validate and convert userId
 	userObjectId := util.Convert2ObjectId(userId)
 	if userObjectId == primitive.NilObjectID {
+		util.Logger.Warnf("Invalid user ID format: '%s'", userId)
 		return []model.CashFlowEntity{}, errors.New("invalid user ID")
 	}
 

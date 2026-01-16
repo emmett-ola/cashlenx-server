@@ -3,6 +3,7 @@ package util
 import (
 	"crypto/rand"
 	"fmt"
+	"strings"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -19,9 +20,11 @@ func GenerateUUID() string {
 }
 
 func Convert2ObjectId(plainId string) primitive.ObjectID {
+	plainId = strings.TrimSpace(plainId)
 	objectId, err := primitive.ObjectIDFromHex(plainId)
 	if err != nil {
-		Logger.Warnln(err.Error())
+		// Logger.Warnln(err.Error())
+		return primitive.NilObjectID
 	}
 	return objectId
 }
