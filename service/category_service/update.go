@@ -45,16 +45,15 @@ func UpdateByIdForUser(plainId, name, categoryType, remark string, parentId stri
 		return model.CategoryEntity{}, errors.New("category not found or access denied")
 	}
 
+	// Prevent changing category type
+	if categoryType != "" && categoryType != existingEntity.Type {
+		return model.CategoryEntity{}, errors.New("category type cannot be changed once created")
+	}
+
 	// Update fields that are provided
 	if name != "" {
 		// Check uniqueness if name is changing
 		if name != existingEntity.Name {
-			// Determine type to check against (use existing type if not provided)
-			checkType := existingEntity.Type
-			if categoryType != "" {
-				checkType = categoryType
-			}
-			
 			// Determine parent to check against (use existing parent if not provided)
 			checkParentId := existingEntity.ParentId
 			if parentId != "" {
@@ -64,32 +63,12 @@ func UpdateByIdForUser(plainId, name, categoryType, remark string, parentId stri
 				}
 			}
 
-			conflictCategory := category_mapper.INSTANCE.GetCategoryByNameUserTypeAndParent(name, userObjectId, checkType, checkParentId)
+			conflictCategory := category_mapper.INSTANCE.GetCategoryByNameUserTypeAndParent(name, userObjectId, existingEntity.Type, checkParentId)
 			if !conflictCategory.IsEmpty() {
 				return model.CategoryEntity{}, errors.New("category with this name already exists for this user and type under this parent")
 			}
 		}
 		existingEntity.Name = name
-	}
-
-	if categoryType != "" {
-		// Check uniqueness if type is changing (and name wasn't changed above, or was changed and checked)
-		if categoryType != existingEntity.Type && name == "" {
-			// Determine parent to check against (use existing parent if not provided)
-			checkParentId := existingEntity.ParentId
-			if parentId != "" {
-				parentObjectId := util.Convert2ObjectId(parentId)
-				if parentObjectId != primitive.NilObjectID {
-					checkParentId = parentObjectId
-				}
-			}
-
-			conflictCategory := category_mapper.INSTANCE.GetCategoryByNameUserTypeAndParent(existingEntity.Name, userObjectId, categoryType, checkParentId)
-			if !conflictCategory.IsEmpty() {
-				return model.CategoryEntity{}, errors.New("category with this name already exists for this user and type under this parent")
-			}
-		}
-		existingEntity.Type = categoryType
 	}
 
 	if remark != "" {
@@ -104,25 +83,11 @@ func UpdateByIdForUser(plainId, name, categoryType, remark string, parentId stri
 			if parentEntity.IsEmpty() {
 				return model.CategoryEntity{}, errors.New("parent category not found or access denied")
 			}
-			// Validate parent type matches existing or new category type
-			checkType := existingEntity.Type
-			if categoryType != "" {
-				checkType = categoryType
-			}
-			if parentEntity.Type != checkType {
+			// Validate parent type matches existing category type
+			if parentEntity.Type != existingEntity.Type {
 				return model.CategoryEntity{}, errors.New("child category type must match parent category type")
 			}
 			existingEntity.ParentId = parentObjectId
-		}
-	} else if categoryType != "" {
-		// If only changing type (without changing parent), verify against existing parent if one exists
-		if existingEntity.ParentId != primitive.NilObjectID {
-			parentEntity := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(existingEntity.ParentId.Hex(), userObjectId)
-			if !parentEntity.IsEmpty() {
-				if parentEntity.Type != categoryType {
-					return model.CategoryEntity{}, errors.New("child category type must match parent category type")
-				}
-			}
 		}
 	}
 
