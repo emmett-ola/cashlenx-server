@@ -100,8 +100,8 @@ func calculateSummary(period, date string, cashFlows []model.CashFlowEntity, use
 		} else if flow.FlowType == "expense" {
 			summary.Expense += flow.Amount
 			summary.ExpenseCount++
-			// Track expense by category (negative to distinguish from income)
-			summary.Categories[categoryName] -= flow.Amount
+			// Track expense by category (positive for display)
+			summary.Categories[categoryName] += flow.Amount
 		}
 
 		totalAmount += flow.Amount
@@ -110,9 +110,17 @@ func calculateSummary(period, date string, cashFlows []model.CashFlowEntity, use
 	// Calculate balance
 	summary.Balance = summary.Income - summary.Expense
 
+	// Format float precision to 2 decimal places
+	summary.Income = util.RoundFloat(summary.Income, 2)
+	summary.Expense = util.RoundFloat(summary.Expense, 2)
+	summary.Balance = util.RoundFloat(summary.Balance, 2)
+	for k, v := range summary.Categories {
+		summary.Categories[k] = util.RoundFloat(v, 2)
+	}
+
 	// Calculate average transaction
 	if summary.TransactionCount > 0 {
-		summary.AverageTransaction = totalAmount / float64(summary.TransactionCount)
+		summary.AverageTransaction = util.RoundFloat(totalAmount/float64(summary.TransactionCount), 2)
 	}
 
 	return summary
