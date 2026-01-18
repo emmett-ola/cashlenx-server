@@ -81,12 +81,11 @@ func GetSummary(period, date string) (*Summary, error) {
 				summary.TotalIncome += cashFlow.Amount
 			} else {
 				summary.TotalExpense += cashFlow.Amount
-			}
-
-			// Get category name for breakdown
-			category := category_mapper.INSTANCE.GetCategoryByObjectId(cashFlow.CategoryId.Hex())
-			if !category.IsEmpty() {
-				summary.CategoryBreakdown[category.Name] += cashFlow.Amount
+				// Get category name for breakdown
+				category := category_mapper.INSTANCE.GetCategoryByObjectId(cashFlow.CategoryId.Hex())
+				if !category.IsEmpty() {
+					summary.CategoryBreakdown[category.Name] += cashFlow.Amount
+				}
 			}
 		}
 
@@ -94,6 +93,14 @@ func GetSummary(period, date string) (*Summary, error) {
 	}
 
 	summary.Balance = summary.TotalIncome - summary.TotalExpense
+
+	// Format float precision to 2 decimal places
+	summary.TotalIncome = util.RoundFloat(summary.TotalIncome, 2)
+	summary.TotalExpense = util.RoundFloat(summary.TotalExpense, 2)
+	summary.Balance = util.RoundFloat(summary.Balance, 2)
+	for k, v := range summary.CategoryBreakdown {
+		summary.CategoryBreakdown[k] = util.RoundFloat(v, 2)
+	}
 
 	return summary, nil
 }
@@ -169,16 +176,23 @@ func GetSummaryForUser(period, date string, userId string) (*Summary, error) {
 			summary.TotalIncome += cashFlow.Amount
 		} else {
 			summary.TotalExpense += cashFlow.Amount
-		}
-
-		// Get category name for breakdown
-		category := category_mapper.INSTANCE.GetCategoryByObjectId(cashFlow.CategoryId.Hex())
-		if !category.IsEmpty() {
-			summary.CategoryBreakdown[category.Name] += cashFlow.Amount
+			// Get category name for breakdown
+			category := category_mapper.INSTANCE.GetCategoryByObjectId(cashFlow.CategoryId.Hex())
+			if !category.IsEmpty() {
+				summary.CategoryBreakdown[category.Name] += cashFlow.Amount
+			}
 		}
 	}
 
 	summary.Balance = summary.TotalIncome - summary.TotalExpense
+
+	// Format float precision to 2 decimal places
+	summary.TotalIncome = util.RoundFloat(summary.TotalIncome, 2)
+	summary.TotalExpense = util.RoundFloat(summary.TotalExpense, 2)
+	summary.Balance = util.RoundFloat(summary.Balance, 2)
+	for k, v := range summary.CategoryBreakdown {
+		summary.CategoryBreakdown[k] = util.RoundFloat(v, 2)
+	}
 
 	return summary, nil
 }
