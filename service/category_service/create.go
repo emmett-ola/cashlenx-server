@@ -50,8 +50,12 @@ func CreateForUser(name, categoryType, remark string, parentId string, userId st
 		Name:       name,
 		Type:       categoryType,
 		Remark:     remark,
-		CreateTime: time.Now().UTC(),
-		ModifyTime: time.Now().UTC(),
+		BaseEntity: model.BaseEntity{
+			CreateUserId: userObjectId,
+			CreateTime:   time.Now().UTC(),
+			UpdateUserId: userObjectId,
+			UpdateTime:   time.Now().UTC(),
+		},
 	}
 
 	// Handle parent category if provided

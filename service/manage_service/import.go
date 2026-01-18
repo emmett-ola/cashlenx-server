@@ -16,7 +16,7 @@ import (
 
 var (
 	sheetRowNumberLabel        = "row_num"
-	requiredRowFieldList       = []string{"BelongsDate", "FlowType", "Amount"}
+	requiredRowFieldList       = []string{"BelongsDate", "Amount"}
 	importFailedRowNumberList  []int
 	importIgnoredRowNumberList []int
 	importSucceedRowNumberList []int

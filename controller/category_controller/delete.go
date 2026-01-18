@@ -26,8 +26,11 @@ func DeleteById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check for force flag in query parameters
+	force := r.URL.Query().Get("force") == "true"
+
 	// Delete the category using user-specific service
-	deletedCategory, err := category_service.DeleteByIdForUser(id, userId)
+	deletedCategory, err := category_service.DeleteByIdForUser(id, userId, force)
 	if err != nil {
 		if err.Error() == "category not found or access denied" {
 			util.ComposeJSONResponse(w, http.StatusNotFound, errors.NewNotFoundError(err.Error()))

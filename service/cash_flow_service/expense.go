@@ -78,16 +78,24 @@ func SaveExpense(belongsDate, categoryName string, amount float64, description s
 	newCashFlowId := cash_flow_mapper.INSTANCE.InsertCashFlowByEntity(model.CashFlowEntity{
 		CategoryId:  categoryEntity.Id,
 		BelongsDate: date,
-		FlowType:    model.FlowTypeExpense,
+		// FlowType:    model.FlowTypeExpense, // Deprecated
 		Amount:      amount,
 		Description: description,
 		UserId:      userObjectId,
+		BaseEntity: model.BaseEntity{
+			CreateUserId: userObjectId,
+			UpdateUserId: userObjectId,
+		},
 	})
 	if newCashFlowId == "" {
 		return model.CashFlowEntity{}, errors.New("cash_flow create failed")
 	}
 
 	newCashFlow := cash_flow_mapper.INSTANCE.GetCashFlowByObjectId(newCashFlowId)
+	if !newCashFlow.IsEmpty() {
+		newCashFlow.CategoryName = categoryEntity.Name
+		newCashFlow.CategoryType = categoryEntity.Type
+	}
 	return newCashFlow, nil
 }
 

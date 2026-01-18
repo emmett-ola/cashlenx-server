@@ -88,7 +88,7 @@ func ConfirmPasswordReset(token string, newPassword string) error {
 
 	// Update user password
 	user.PasswordHash = string(hashedPassword)
-	user.UpdatedAt = util.GetCurrentTime()
+	user.UpdateTime = util.GetCurrentTime()
 
 	// Save updated user
 	// Note: We're using the mapper directly here since UpdateService has additional validation

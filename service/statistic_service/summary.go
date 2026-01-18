@@ -2,6 +2,7 @@ package statistic_service
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/macar-x/cashlenx-server/mapper/cash_flow_mapper"
@@ -89,21 +90,27 @@ func calculateSummary(period, date string, cashFlows []model.CashFlowEntity, use
 		// Count transaction
 		summary.TransactionCount++
 
-		// Get category name for grouping
-		categoryName := getCategoryName(flow.CategoryId, userId)
+		// Get category for grouping and type determination
+		category := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(flow.CategoryId.Hex(), userId)
+		categoryName := "Unknown"
+		categoryType := ""
+		if !category.IsEmpty() {
+			categoryName = category.Name
+			categoryType = category.Type
+		}
 
-		if flow.FlowType == "income" {
+		if strings.EqualFold(categoryType, "income") {
 			summary.Income += flow.Amount
 			summary.IncomeCount++
 			// Track income by category
 			summary.Categories[categoryName] += flow.Amount
-		} else if flow.FlowType == "expense" {
+		} else if strings.EqualFold(categoryType, "expense") {
 			summary.Expense += flow.Amount
 			summary.ExpenseCount++
 			// Track expense by category (positive for display)
 			summary.Categories[categoryName] += flow.Amount
 		}
-
+		
 		totalAmount += flow.Amount
 	}
 
@@ -126,11 +133,3 @@ func calculateSummary(period, date string, cashFlows []model.CashFlowEntity, use
 	return summary
 }
 
-// getCategoryName retrieves category name for a given category ID and user
-func getCategoryName(categoryId primitive.ObjectID, userId primitive.ObjectID) string {
-	category := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(categoryId.Hex(), userId)
-	if category.IsEmpty() {
-		return "Unknown"
-	}
-	return category.Name
-}

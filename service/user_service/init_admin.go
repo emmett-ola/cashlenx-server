@@ -50,9 +50,14 @@ func InitAdminUser() {
 		PasswordHash: string(hashedPassword),
 		IsActive:     true,
 		Role:         model.UserRoleAdmin,
-		CreatedAt:    util.GetCurrentTime(),
-		UpdatedAt:    util.GetCurrentTime(),
+		BaseEntity: model.BaseEntity{
+			CreateTime: util.GetCurrentTime(),
+			UpdateTime: util.GetCurrentTime(),
+		},
 	}
+	// Set self as creator
+	adminUser.CreateUserId = adminUser.Id
+	adminUser.UpdateUserId = adminUser.Id
 
 	// Insert the admin user into the database
 	userId := user_mapper.INSTANCE.InsertUserByEntity(adminUser)

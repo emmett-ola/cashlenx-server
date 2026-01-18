@@ -2,7 +2,6 @@ package cash_flow_service
 
 import (
 	"errors"
-	"strings"
 	"time"
 
 	"github.com/macar-x/cashlenx-server/mapper/cash_flow_mapper"
@@ -67,11 +66,6 @@ func UpdateById(plainId, belongsDate, categoryName string, amount float64, descr
 			return model.CashFlowEntity{}, errors.New("category does not exist or access denied")
 		}
 
-		// Validate category type matches cash flow type
-		if !strings.EqualFold(categoryEntity.Type, existingEntity.FlowType) {
-			return model.CashFlowEntity{}, errors.New("category type mismatch: category type must match cash flow type")
-		}
-
 		existingEntity.CategoryId = categoryEntity.Id
 	}
 
@@ -86,12 +80,25 @@ func UpdateById(plainId, belongsDate, categoryName string, amount float64, descr
 	}
 
 	// Update modify time
-	existingEntity.ModifyTime = time.Now().UTC() // Store in UTC
+	existingEntity.UpdateTime = time.Now().UTC() // Store in UTC
 
 	// Call mapper to update the record
+	// Update audit fields
+	existingEntity.UpdateTime = time.Now().UTC()
+	// existingEntity.UpdateUserId = userObjectId // Undefined here
+
 	updatedEntity := cash_flow_mapper.INSTANCE.UpdateCashFlowByEntity(plainId, existingEntity)
 	if updatedEntity.IsEmpty() {
 		return model.CashFlowEntity{}, errors.New("failed to update cash_flow")
+	}
+
+	// Populate category info
+	category := category_mapper.INSTANCE.GetCategoryByObjectId(updatedEntity.CategoryId.Hex())
+	if !category.IsEmpty() {
+		updatedEntity.CategoryName = category.Name
+		updatedEntity.CategoryType = category.Type
+	} else {
+		updatedEntity.CategoryName = "Unknown"
 	}
 
 	return updatedEntity, nil
@@ -170,13 +177,23 @@ func UpdateByIdForUser(plainId, belongsDate, categoryName string, amount float64
 	}
 
 	// Update modify time
-	existingEntity.ModifyTime = time.Now().UTC()
+	existingEntity.UpdateTime = time.Now().UTC()
+	existingEntity.UpdateUserId = userObjectId
 
 	// Call mapper to update the record
 	// Note: Using the regular UpdateCashFlowByEntity because we already verified ownership
 	updatedEntity := cash_flow_mapper.INSTANCE.UpdateCashFlowByEntity(plainId, existingEntity)
 	if updatedEntity.IsEmpty() {
 		return model.CashFlowEntity{}, errors.New("failed to update cash_flow")
+	}
+
+	// Populate category info
+	category := category_mapper.INSTANCE.GetCategoryByObjectId(updatedEntity.CategoryId.Hex())
+	if !category.IsEmpty() {
+		updatedEntity.CategoryName = category.Name
+		updatedEntity.CategoryType = category.Type
+	} else {
+		updatedEntity.CategoryName = "Unknown"
 	}
 
 	return updatedEntity, nil

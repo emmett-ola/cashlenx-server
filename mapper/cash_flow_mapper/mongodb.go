@@ -9,7 +9,6 @@ import (
 	"github.com/macar-x/cashlenx-server/util/database"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type CashFlowMongoDbMapper struct{}
@@ -172,13 +171,13 @@ func (CashFlowMongoDbMapper) GetCashFlowsByFuzzyDesc(description string) []model
 }
 
 func (CashFlowMongoDbMapper) InsertCashFlowByEntity(newEntity model.CashFlowEntity) string {
-	// Only set CreateTime and ModifyTime if they're not already set (e.g., during restoration)
+	// Only set CreateTime and UpdateTime if they're not already set (e.g., during restoration)
 	operatingTime := time.Now().UTC() // Store in UTC
 	if newEntity.CreateTime.IsZero() {
 		newEntity.CreateTime = operatingTime
 	}
-	if newEntity.ModifyTime.IsZero() {
-		newEntity.ModifyTime = operatingTime
+	if newEntity.UpdateTime.IsZero() {
+		newEntity.UpdateTime = operatingTime
 	}
 
 	database.OpenMongoDbConnection(database.CashFlowTableName)
@@ -197,12 +196,12 @@ func (CashFlowMongoDbMapper) BulkInsertCashFlows(entities []model.CashFlowEntity
 	documents := make([]interface{}, len(entities))
 
 	for i, entity := range entities {
-		// Only set CreateTime and ModifyTime if they're not already set (e.g., during restoration)
+		// Only set CreateTime and UpdateTime if they're not already set (e.g., during restoration)
 		if entity.CreateTime.IsZero() {
 			entity.CreateTime = operatingTime
 		}
-		if entity.ModifyTime.IsZero() {
-			entity.ModifyTime = operatingTime
+		if entity.UpdateTime.IsZero() {
+			entity.UpdateTime = operatingTime
 		}
 		documents[i] = convertCashFlowEntity2BsonD(entity)
 	}
@@ -246,7 +245,8 @@ func (CashFlowMongoDbMapper) UpdateCashFlowByEntity(plainId string, updatedEntit
 	// Update fields from updatedEntity while preserving ID and CreateTime
 	updatedEntity.Id = targetEntity.Id
 	updatedEntity.CreateTime = targetEntity.CreateTime
-	updatedEntity.ModifyTime = time.Now().UTC() // Store in UTC
+	updatedEntity.CreateUserId = targetEntity.CreateUserId
+	updatedEntity.UpdateTime = time.Now().UTC() // Store in UTC
 
 	rowsAffected := database.UpdateManyInMongoDB(filter, convertCashFlowEntity2BsonD(updatedEntity))
 	if rowsAffected != 1 {
@@ -276,12 +276,23 @@ func (CashFlowMongoDbMapper) DeleteCashFlowByObjectId(plainId string) model.Cash
 		util.Logger.Infoln("cash_flow is not exist")
 		return model.CashFlowEntity{}
 	}
-	rowsAffected := database.DeleteManyInMongoDB(filter)
+	
+	// Soft delete: Update is_delete to true
+	update := bson.D{
+		primitive.E{Key: "is_delete", Value: true},
+		primitive.E{Key: "delete_time", Value: time.Now()},
+	}
+
+	rowsAffected := database.UpdateManyInMongoDB(filter, update)
 	if rowsAffected != 1 {
 		// fixme: maybe we should have a rollback here.
 		util.Logger.Errorw("delete failed", "rows_affected", rowsAffected)
 		return model.CashFlowEntity{}
 	}
+	
+	targetEntity.IsDelete = true
+	now := time.Now().UTC()
+	targetEntity.DeleteTime = &now
 	return targetEntity
 }
 
@@ -299,10 +310,22 @@ func (CashFlowMongoDbMapper) DeleteCashFlowByBelongsDate(belongsDate time.Time) 
 	database.OpenMongoDbConnection(database.CashFlowTableName)
 	defer database.CloseMongoDbConnection()
 
-	rowsAffected := database.DeleteManyInMongoDB(filter)
+	// Soft delete: Update is_delete to true
+	update := bson.D{
+		primitive.E{Key: "is_delete", Value: true},
+		primitive.E{Key: "delete_time", Value: time.Now()},
+	}
+
+	rowsAffected := database.UpdateManyInMongoDB(filter, update)
 	if rowsAffected != int64(len(cashFlowList)) {
 		// fixme: maybe we should have a rollback here.
 		util.Logger.Errorw("delete failed", "rows_affected", rowsAffected)
+	}
+	
+	now := time.Now().UTC()
+	for i := range cashFlowList {
+		cashFlowList[i].IsDelete = true
+		cashFlowList[i].DeleteTime = &now
 	}
 	return cashFlowList
 }
@@ -311,37 +334,28 @@ func (CashFlowMongoDbMapper) GetAllCashFlows(limit, offset int) []model.CashFlow
 	database.OpenMongoDbConnection(database.CashFlowTableName)
 	defer database.CloseMongoDbConnection()
 
-	collection := database.GetMongoCollection(database.CashFlowTableName)
-
-	// Empty filter to get all documents, with pagination
+	// Filter out deleted records (now handled by utility)
 	filter := bson.D{}
 
-	ctx := context.TODO()
-	findOptions := options.Find()
-	if limit > 0 {
-		findOptions.SetLimit(int64(limit))
+	var targetEntityList []model.CashFlowEntity
+	queryResultList := database.GetManyInMongoDBWithPagination(filter, int64(limit), int64(offset))
+	for _, queryResult := range queryResultList {
+		targetEntityList = append(targetEntityList, convertBsonM2CashFlowEntity(queryResult))
 	}
-	if offset > 0 {
-		findOptions.SetSkip(int64(offset))
-	}
-	// Sort by belongs_date descending (newest first)
-	findOptions.SetSort(bson.D{primitive.E{Key: "belongs_date", Value: -1}})
 
-	cursor, err := collection.Find(ctx, filter, findOptions)
-	if err != nil {
-		util.Logger.Errorw("query all failed", "error", err)
-		return []model.CashFlowEntity{}
-	}
-	defer cursor.Close(ctx)
+	return targetEntityList
+}
+
+func (CashFlowMongoDbMapper) GetAllCashFlowsIncludeDeleted(limit, offset int) []model.CashFlowEntity {
+	database.OpenMongoDbConnection(database.CashFlowTableName)
+	defer database.CloseMongoDbConnection()
+
+	filter := bson.D{}
 
 	var targetEntityList []model.CashFlowEntity
-	for cursor.Next(ctx) {
-		var bsonM bson.M
-		if err := cursor.Decode(&bsonM); err != nil {
-			util.Logger.Errorw("decode failed", "error", err)
-			continue
-		}
-		targetEntityList = append(targetEntityList, convertBsonM2CashFlowEntity(bsonM))
+	queryResultList := database.GetManyInMongoDBWithPaginationIncludeDeleted(filter, int64(limit), int64(offset))
+	for _, queryResult := range queryResultList {
+		targetEntityList = append(targetEntityList, convertBsonM2CashFlowEntity(queryResult))
 	}
 
 	return targetEntityList
@@ -364,8 +378,8 @@ func (CashFlowMongoDbMapper) TruncateCashFlows() error {
 	// Empty filter to delete all documents
 	filter := bson.D{}
 
-	// Delete all documents
-	deletedCount := database.DeleteManyInMongoDB(filter)
+	// Delete all documents (including soft deleted ones)
+	deletedCount := database.DeleteManyInMongoDBIncludeDeleted(filter)
 
 	util.Logger.Infow("Cash flows truncated successfully", "deleted_count", deletedCount)
 	return nil
@@ -383,6 +397,7 @@ func (CashFlowMongoDbMapper) GetCashFlowByObjectIdAndUser(plainId string, userId
 	filter := bson.D{
 		primitive.E{Key: "_id", Value: objectId},
 		primitive.E{Key: "user_id", Value: userId},
+		primitive.E{Key: "is_delete", Value: false},
 	}
 
 	database.OpenMongoDbConnection(database.CashFlowTableName)
@@ -394,6 +409,7 @@ func (CashFlowMongoDbMapper) GetCashFlowsByBelongsDateAndUser(belongsDate time.T
 	filter := bson.D{
 		primitive.E{Key: "belongs_date", Value: belongsDate},
 		primitive.E{Key: "user_id", Value: userId},
+		primitive.E{Key: "is_delete", Value: false},
 	}
 
 	database.OpenMongoDbConnection(database.CashFlowTableName)
@@ -414,6 +430,7 @@ func (CashFlowMongoDbMapper) GetCashFlowsByDateRangeAndUser(from, to time.Time, 
 			"$lte": to,
 		}},
 		primitive.E{Key: "user_id", Value: userId},
+		primitive.E{Key: "is_delete", Value: false},
 	}
 
 	database.OpenMongoDbConnection(database.CashFlowTableName)
@@ -437,6 +454,7 @@ func (CashFlowMongoDbMapper) GetCashFlowsByCategoryIdAndUser(categoryPlainId str
 	filter := bson.D{
 		primitive.E{Key: "category_id", Value: categoryObjectId},
 		primitive.E{Key: "user_id", Value: userId},
+		primitive.E{Key: "is_delete", Value: false},
 	}
 
 	database.OpenMongoDbConnection(database.CashFlowTableName)
@@ -454,38 +472,14 @@ func (CashFlowMongoDbMapper) GetAllCashFlowsByUser(userId primitive.ObjectID, li
 	database.OpenMongoDbConnection(database.CashFlowTableName)
 	defer database.CloseMongoDbConnection()
 
-	collection := database.GetMongoCollection(database.CashFlowTableName)
-
 	filter := bson.D{
 		primitive.E{Key: "user_id", Value: userId},
 	}
 
-	ctx := context.TODO()
-	findOptions := options.Find()
-	if limit > 0 {
-		findOptions.SetLimit(int64(limit))
-	}
-	if offset > 0 {
-		findOptions.SetSkip(int64(offset))
-	}
-	// Sort by belongs_date descending (newest first)
-	findOptions.SetSort(bson.D{primitive.E{Key: "belongs_date", Value: -1}})
-
-	cursor, err := collection.Find(ctx, filter, findOptions)
-	if err != nil {
-		util.Logger.Errorw("query all by user failed", "error", err)
-		return []model.CashFlowEntity{}
-	}
-	defer cursor.Close(ctx)
-
 	var targetEntityList []model.CashFlowEntity
-	for cursor.Next(ctx) {
-		var bsonM bson.M
-		if err := cursor.Decode(&bsonM); err != nil {
-			util.Logger.Errorw("decode failed", "error", err)
-			continue
-		}
-		targetEntityList = append(targetEntityList, convertBsonM2CashFlowEntity(bsonM))
+	queryResultList := database.GetManyInMongoDBWithPagination(filter, int64(limit), int64(offset))
+	for _, queryResult := range queryResultList {
+		targetEntityList = append(targetEntityList, convertBsonM2CashFlowEntity(queryResult))
 	}
 
 	return targetEntityList
@@ -521,11 +515,23 @@ func (CashFlowMongoDbMapper) DeleteCashFlowByObjectIdAndUser(plainId string, use
 		util.Logger.Infoln("cash_flow is not exist or does not belong to user")
 		return model.CashFlowEntity{}
 	}
-	rowsAffected := database.DeleteManyInMongoDB(filter)
+	// Soft delete: Update is_delete to true
+	now := time.Now()
+	update := bson.D{
+		primitive.E{Key: "is_delete", Value: true},
+		primitive.E{Key: "delete_time", Value: now},
+		primitive.E{Key: "delete_user_id", Value: userId},
+	}
+
+	rowsAffected := database.UpdateManyInMongoDB(filter, update)
 	if rowsAffected != 1 {
 		util.Logger.Errorw("delete failed", "rows_affected", rowsAffected)
 		return model.CashFlowEntity{}
 	}
+	
+	targetEntity.IsDelete = true
+	targetEntity.DeleteTime = &now
+	targetEntity.DeleteUserId = &userId
 	return targetEntity
 }
 
@@ -544,11 +550,43 @@ func (CashFlowMongoDbMapper) DeleteCashFlowsByBelongsDateAndUser(belongsDate tim
 	database.OpenMongoDbConnection(database.CashFlowTableName)
 	defer database.CloseMongoDbConnection()
 
-	rowsAffected := database.DeleteManyInMongoDB(filter)
+	// Soft delete: Update is_delete to true
+	update := bson.D{
+		primitive.E{Key: "is_delete", Value: true},
+		primitive.E{Key: "delete_time", Value: time.Now()},
+		primitive.E{Key: "delete_user_id", Value: userId},
+	}
+
+	rowsAffected := database.UpdateManyInMongoDB(filter, update)
 	if rowsAffected != int64(len(cashFlowList)) {
 		util.Logger.Errorw("delete failed", "rows_affected", rowsAffected)
 	}
 	return cashFlowList
+}
+
+func (CashFlowMongoDbMapper) DeleteCashFlowsByCategoryIdAndUser(categoryPlainId string, userId primitive.ObjectID) int64 {
+	categoryObjectId := util.Convert2ObjectId(categoryPlainId)
+	if categoryPlainId == "" || categoryObjectId == primitive.NilObjectID {
+		util.Logger.Warnln("category's id is not acceptable")
+		return 0
+	}
+
+	filter := bson.D{
+		primitive.E{Key: "category_id", Value: categoryObjectId},
+		primitive.E{Key: "user_id", Value: userId},
+	}
+
+	database.OpenMongoDbConnection(database.CashFlowTableName)
+	defer database.CloseMongoDbConnection()
+
+	// Soft delete: Update is_delete to true
+	update := bson.D{
+		primitive.E{Key: "is_delete", Value: true},
+		primitive.E{Key: "delete_time", Value: time.Now()},
+		primitive.E{Key: "delete_user_id", Value: userId},
+	}
+
+	return database.UpdateManyInMongoDB(filter, update)
 }
 
 // Helper functions
@@ -564,12 +602,17 @@ func convertCashFlowEntity2BsonD(entity model.CashFlowEntity) bson.D {
 		primitive.E{Key: "user_id", Value: entity.UserId},
 		primitive.E{Key: "category_id", Value: entity.CategoryId},
 		primitive.E{Key: "belongs_date", Value: entity.BelongsDate},
-		primitive.E{Key: "flow_type", Value: entity.FlowType},
+		// primitive.E{Key: "flow_type", Value: entity.FlowType},
 		primitive.E{Key: "amount", Value: entity.Amount},
 		primitive.E{Key: "description", Value: entity.Description},
 		primitive.E{Key: "remark", Value: entity.Remark},
+		primitive.E{Key: "create_user_id", Value: entity.CreateUserId},
 		primitive.E{Key: "create_time", Value: entity.CreateTime},
-		primitive.E{Key: "modify_time", Value: entity.ModifyTime},
+		primitive.E{Key: "update_user_id", Value: entity.UpdateUserId},
+		primitive.E{Key: "update_time", Value: entity.UpdateTime},
+		primitive.E{Key: "delete_user_id", Value: entity.DeleteUserId},
+		primitive.E{Key: "delete_time", Value: entity.DeleteTime},
+		primitive.E{Key: "is_delete", Value: entity.IsDelete},
 	}
 }
 
@@ -584,5 +627,8 @@ func convertBsonM2CashFlowEntity(bsonM bson.M) model.CashFlowEntity {
 		util.Logger.Errorln(err)
 		panic(err)
 	}
+	
+	// Ensure BaseEntity fields are correctly mapped if not handled by bson tags
+	
 	return newEntity
 }

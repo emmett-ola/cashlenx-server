@@ -3,6 +3,7 @@ package cash_flow_cmd
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/service/cash_flow_service"
@@ -47,9 +48,9 @@ Displays all transactions between from-date and to-date (inclusive).`,
 		var totalIncome, totalExpense float64
 		for index, cashFlowEntity := range cashFlowEntityList {
 			fmt.Println("cash_flow", index, ":", cashFlowEntity.ToString())
-			if cashFlowEntity.FlowType == model.FlowTypeIncome {
+			if strings.EqualFold(cashFlowEntity.CategoryType, model.FlowTypeIncome) {
 				totalIncome += cashFlowEntity.Amount
-			} else {
+			} else if strings.EqualFold(cashFlowEntity.CategoryType, model.FlowTypeExpense) {
 				totalExpense += cashFlowEntity.Amount
 			}
 		}

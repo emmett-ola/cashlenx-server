@@ -24,6 +24,7 @@ type CashFlowMapper interface {
 	BulkInsertCashFlows(entities []model.CashFlowEntity) ([]string, error)
 	UpdateCashFlowByEntity(plainId string, updatedEntity model.CashFlowEntity) model.CashFlowEntity
 	GetAllCashFlows(limit, offset int) []model.CashFlowEntity
+	GetAllCashFlowsIncludeDeleted(limit, offset int) []model.CashFlowEntity
 	CountAllCashFlows() int64
 	DeleteCashFlowByObjectId(plainId string) model.CashFlowEntity
 	DeleteCashFlowByBelongsDate(belongsDate time.Time) []model.CashFlowEntity
@@ -38,6 +39,7 @@ type CashFlowMapper interface {
 	CountAllCashFlowsByUser(userId primitive.ObjectID) int64
 	DeleteCashFlowByObjectIdAndUser(plainId string, userId primitive.ObjectID) model.CashFlowEntity
 	DeleteCashFlowsByBelongsDateAndUser(belongsDate time.Time, userId primitive.ObjectID) []model.CashFlowEntity
+	DeleteCashFlowsByCategoryIdAndUser(categoryPlainId string, userId primitive.ObjectID) int64
 }
 
 func init() {

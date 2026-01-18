@@ -23,6 +23,9 @@ type UserMapper interface {
 	
 	// GetAllUsers retrieves all users with pagination
 	GetAllUsers(limit, offset int) []model.UserEntity
+
+	// GetAllUsersIncludeDeleted retrieves all users including deleted ones with pagination
+	GetAllUsersIncludeDeleted(limit, offset int) []model.UserEntity
 	
 	// GetUsersByRole retrieves all users with a specific role
 	GetUsersByRole(role string) []model.UserEntity

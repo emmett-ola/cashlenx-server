@@ -15,7 +15,7 @@ import (
 
 var (
 	defaultSheetName = "report"
-	defaultRowTitle  = []string{"Id", "CategoryId", "CategoryName", "BelongsDate", "FlowType", "Amount", "Description"}
+	defaultRowTitle  = []string{"Id", "CategoryId", "CategoryName", "BelongsDate", "CategoryType", "Amount", "Description"}
 )
 
 func ExportService(fromDateInString, toDateInString, filePath string) error {
@@ -133,13 +133,15 @@ func exportData(file *excelize.File, fromDateInString, toDateInString string) {
 				// Get category name with fallback for missing categories
 				categoryEntity := category_mapper.INSTANCE.GetCategoryByObjectId(cashFlow.CategoryId.Hex())
 				categoryName := "Unknown"
+				categoryType := ""
 				if !categoryEntity.IsEmpty() {
 					categoryName = categoryEntity.Name
+					categoryType = categoryEntity.Type
 				}
 				writeExcelRow(file, yearMonth, "C"+cashFlowIndexInString, categoryName)
 				
 				writeExcelRow(file, yearMonth, "D"+cashFlowIndexInString, dateStr)
-				writeExcelRow(file, yearMonth, "E"+cashFlowIndexInString, cashFlow.FlowType)
+				writeExcelRow(file, yearMonth, "E"+cashFlowIndexInString, categoryType)
 				writeExcelRow(file, yearMonth, "F"+cashFlowIndexInString, cashFlow.Amount)
 				writeExcelRow(file, yearMonth, "G"+cashFlowIndexInString, cashFlow.Description)
 			}
@@ -186,13 +188,15 @@ func exportData(file *excelize.File, fromDateInString, toDateInString string) {
 			// Get category name with fallback for missing categories
 			categoryEntity := category_mapper.INSTANCE.GetCategoryByObjectId(cashFlow.CategoryId.Hex())
 			categoryName := "Unknown"
+			categoryType := ""
 			if !categoryEntity.IsEmpty() {
 				categoryName = categoryEntity.Name
+				categoryType = categoryEntity.Type
 			}
 			writeExcelRow(file, currentYearAndMonth, "C"+cashFlowIndexInString, categoryName)
 			
 			writeExcelRow(file, currentYearAndMonth, "D"+cashFlowIndexInString, queryDateCurrentInString)
-			writeExcelRow(file, currentYearAndMonth, "E"+cashFlowIndexInString, cashFlow.FlowType)
+			writeExcelRow(file, currentYearAndMonth, "E"+cashFlowIndexInString, categoryType)
 			writeExcelRow(file, currentYearAndMonth, "F"+cashFlowIndexInString, cashFlow.Amount)
 			writeExcelRow(file, currentYearAndMonth, "G"+cashFlowIndexInString, cashFlow.Description)
 		}

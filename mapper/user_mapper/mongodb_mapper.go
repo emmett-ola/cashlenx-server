@@ -40,11 +40,28 @@ func convertBsonM2UserEntity(bsonData bson.M) model.UserEntity {
 	}
 
 	// Convert time fields
-	if createdAt, ok := bsonData["created_at"].(time.Time); ok {
-		user.CreatedAt = createdAt
+	if createTime, ok := bsonData["create_time"].(time.Time); ok {
+		user.CreateTime = createTime
 	}
-	if updatedAt, ok := bsonData["updated_at"].(time.Time); ok {
-		user.UpdatedAt = updatedAt
+	if updateTime, ok := bsonData["update_time"].(time.Time); ok {
+		user.UpdateTime = updateTime
+	}
+
+	// Convert BaseEntity fields
+	if createUserId, ok := bsonData["create_user_id"].(primitive.ObjectID); ok {
+		user.CreateUserId = createUserId
+	}
+	if updateUserId, ok := bsonData["update_user_id"].(primitive.ObjectID); ok {
+		user.UpdateUserId = updateUserId
+	}
+	if deleteUserId, ok := bsonData["delete_user_id"].(primitive.ObjectID); ok {
+		user.DeleteUserId = &deleteUserId
+	}
+	if deleteTime, ok := bsonData["delete_time"].(time.Time); ok {
+		user.DeleteTime = &deleteTime
+	}
+	if isDelete, ok := bsonData["is_delete"].(bool); ok {
+		user.IsDelete = isDelete
 	}
 
 	return user
@@ -57,8 +74,13 @@ func convertUserEntity2BsonD(user model.UserEntity) bson.D {
 		primitive.E{Key: "password_hash", Value: user.PasswordHash},
 		primitive.E{Key: "is_active", Value: user.IsActive},
 		primitive.E{Key: "role", Value: user.Role},
-		primitive.E{Key: "created_at", Value: user.CreatedAt},
-		primitive.E{Key: "updated_at", Value: user.UpdatedAt},
+		primitive.E{Key: "create_user_id", Value: user.CreateUserId},
+		primitive.E{Key: "create_time", Value: user.CreateTime},
+		primitive.E{Key: "update_user_id", Value: user.UpdateUserId},
+		primitive.E{Key: "update_time", Value: user.UpdateTime},
+		primitive.E{Key: "delete_user_id", Value: user.DeleteUserId},
+		primitive.E{Key: "delete_time", Value: user.DeleteTime},
+		primitive.E{Key: "is_delete", Value: user.IsDelete},
 	}
 }
 
@@ -100,11 +122,11 @@ func (m UserMongoDbMapper) GetUserByUsername(username string) model.UserEntity {
 // InsertUserByEntity inserts a new user entity into MongoDB
 func (m UserMongoDbMapper) InsertUserByEntity(newEntity model.UserEntity) string {
 	// Set default values if not provided
-	if newEntity.CreatedAt.IsZero() {
-		newEntity.CreatedAt = time.Now()
+	if newEntity.CreateTime.IsZero() {
+		newEntity.CreateTime = time.Now()
 	}
-	if newEntity.UpdatedAt.IsZero() {
-		newEntity.UpdatedAt = time.Now()
+	if newEntity.UpdateTime.IsZero() {
+		newEntity.UpdateTime = time.Now()
 	}
 	if newEntity.IsActive == false {
 		newEntity.IsActive = true
@@ -134,7 +156,7 @@ func (m UserMongoDbMapper) UpdateUserByEntity(plainId string, updatedEntity mode
 	}
 
 	// Set the updated timestamp
-	updatedEntity.UpdatedAt = time.Now()
+	updatedEntity.UpdateTime = time.Now()
 
 	database.OpenMongoDbConnection(database.UserTableName)
 	defer database.CloseMongoDbConnection()
@@ -156,7 +178,25 @@ func (m UserMongoDbMapper) GetAllUsers(limit, offset int) []model.UserEntity {
 
 	// Get the user documents from the database
 	var users []model.UserEntity
-	queryResultList := database.GetManyInMongoDB(filter)
+	queryResultList := database.GetManyInMongoDBWithPagination(filter, int64(limit), int64(offset))
+	for _, queryResult := range queryResultList {
+		users = append(users, convertBsonM2UserEntity(queryResult))
+	}
+
+	return users
+}
+
+// GetAllUsersIncludeDeleted retrieves all users including deleted ones with pagination from MongoDB
+func (m UserMongoDbMapper) GetAllUsersIncludeDeleted(limit, offset int) []model.UserEntity {
+	// Create an empty filter to get all users
+	filter := bson.D{}
+
+	database.OpenMongoDbConnection(database.UserTableName)
+	defer database.CloseMongoDbConnection()
+
+	// Get the user documents from the database
+	var users []model.UserEntity
+	queryResultList := database.GetManyInMongoDBWithPaginationIncludeDeleted(filter, int64(limit), int64(offset))
 	for _, queryResult := range queryResultList {
 		users = append(users, convertBsonM2UserEntity(queryResult))
 	}
@@ -194,13 +234,26 @@ func (m UserMongoDbMapper) DeleteUserByObjectId(plainId string) model.UserEntity
 	filter := bson.D{
 		primitive.E{Key: "_id", Value: objectId},
 	}
+	
+	// Soft delete: Update is_delete to true
+	now := time.Now()
+	newUsername := user.Username + "_deleted_" + util.FormatDateToStringWithoutDash(now)
+	update := bson.D{
+		primitive.E{Key: "is_delete", Value: true},
+		primitive.E{Key: "delete_time", Value: now},
+		// Rename username to avoid conflict if reused
+		primitive.E{Key: "username", Value: newUsername},
+	}
 
 	database.OpenMongoDbConnection(database.UserTableName)
 	defer database.CloseMongoDbConnection()
 
-	// Delete the user document from the database
-	database.DeleteManyInMongoDB(filter)
+	// Update the user document in the database
+	database.UpdateManyInMongoDB(filter, update)
 
+	user.IsDelete = true
+	user.DeleteTime = &now
+	user.Username = newUsername
 	return user
 }
 
@@ -213,7 +266,7 @@ func (m UserMongoDbMapper) TruncateUsers() error {
 	defer database.CloseMongoDbConnection()
 
 	// Delete all user documents from the database
-	deletedCount := database.DeleteManyInMongoDB(filter)
+	deletedCount := database.DeleteManyInMongoDBIncludeDeleted(filter)
 	util.Logger.Infow("Users truncated successfully", "deleted_count", deletedCount)
 	return nil
 }

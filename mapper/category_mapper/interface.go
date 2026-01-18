@@ -15,6 +15,7 @@ type CategoryMapper interface {
 	InsertCategoryByEntity(newEntity model.CategoryEntity) string
 	UpdateCategoryByEntity(plainId string, updatedEntity model.CategoryEntity) model.CategoryEntity
 	GetAllCategories(limit, offset int) []model.CategoryEntity
+	GetAllCategoriesIncludeDeleted(limit, offset int) []model.CategoryEntity
 	CountAllCategories() int64
 	CountCategoriesByUserAndType(userId primitive.ObjectID, categoryType string) (int64, error)
 	DeleteCategoryByObjectId(plainId string) model.CategoryEntity

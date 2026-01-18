@@ -47,61 +47,91 @@ func CreateBackup(filePath string) (OperationStats, error) {
 	}
 
 	// Get all users (no pagination limit - get everything)
-	users := user_mapper.INSTANCE.GetAllUsers(0, 0)
+	users := user_mapper.INSTANCE.GetAllUsersIncludeDeleted(0, 0)
 	stats.Users.Success = len(users)
 
 	// Convert users to map format for JSON serialization
 	userMaps := make([]map[string]interface{}, len(users))
 	for i, user := range users {
-		userMaps[i] = map[string]interface{}{
+		userMap := map[string]interface{}{
 			"Id":           user.Id.Hex(),
 			"Username":     user.Username,
 			"PasswordHash": user.PasswordHash,
-			"CreatedAt":    user.CreatedAt,
-			"UpdatedAt":    user.UpdatedAt,
+			"CreatedAt":    user.CreateTime,
+			"UpdatedAt":    user.UpdateTime,
 			"IsActive":     user.IsActive,
 			"Role":         user.Role,
+			"CreateUserId": user.CreateUserId.Hex(),
+			"UpdateUserId": user.UpdateUserId.Hex(),
+			"IsDelete":     user.IsDelete,
 		}
+		if user.DeleteUserId != nil {
+			userMap["DeleteUserId"] = user.DeleteUserId.Hex()
+		}
+		if user.DeleteTime != nil {
+			userMap["DeleteTime"] = user.DeleteTime
+		}
+		userMaps[i] = userMap
 	}
 
 	// Get all categories (no pagination limit - get everything)
-	categories := category_mapper.INSTANCE.GetAllCategories(0, 0)
+	categories := category_mapper.INSTANCE.GetAllCategoriesIncludeDeleted(0, 0)
 	stats.Categories.Success = len(categories)
 
 	// Convert categories to map format for JSON serialization
 	categoryMaps := make([]map[string]interface{}, len(categories))
 	for i, cat := range categories {
-		categoryMaps[i] = map[string]interface{}{
-			"Id":         cat.Id.Hex(),
-			"UserId":     cat.UserId.Hex(),
-			"Name":       cat.Name,
-			"Type":       cat.Type,
-			"ParentId":   cat.ParentId.Hex(),
-			"Remark":     cat.Remark,
-			"CreateTime": cat.CreateTime,
-			"ModifyTime": cat.ModifyTime,
+		catMap := map[string]interface{}{
+			"Id":           cat.Id.Hex(),
+			"UserId":       cat.UserId.Hex(),
+			"Name":         cat.Name,
+			"Type":         cat.Type,
+			"ParentId":     cat.ParentId.Hex(),
+			"Remark":       cat.Remark,
+			"CreateTime":   cat.CreateTime,
+			"ModifyTime":   cat.UpdateTime,
+			"CreateUserId": cat.CreateUserId.Hex(),
+			"UpdateUserId": cat.UpdateUserId.Hex(),
+			"IsDelete":     cat.IsDelete,
 		}
+		if cat.DeleteUserId != nil {
+			catMap["DeleteUserId"] = cat.DeleteUserId.Hex()
+		}
+		if cat.DeleteTime != nil {
+			catMap["DeleteTime"] = cat.DeleteTime
+		}
+		categoryMaps[i] = catMap
 	}
 
 	// Get all cash flows (no pagination limit - get everything)
-	cashFlows := cash_flow_mapper.INSTANCE.GetAllCashFlows(0, 0)
+	cashFlows := cash_flow_mapper.INSTANCE.GetAllCashFlowsIncludeDeleted(0, 0)
 	stats.CashFlows.Success = len(cashFlows)
 
 	// Convert cash flows to map format for JSON serialization
 	cashFlowMaps := make([]map[string]interface{}, len(cashFlows))
 	for i, cf := range cashFlows {
-		cashFlowMaps[i] = map[string]interface{}{
-			"Id":          cf.Id.Hex(),
-			"UserId":      cf.UserId.Hex(),
-			"CategoryId":  cf.CategoryId.Hex(),
-			"BelongsDate": cf.BelongsDate,
-			"FlowType":    cf.FlowType,
-			"Amount":      cf.Amount,
-			"Description": cf.Description,
-			"Remark":      cf.Remark,
-			"CreateTime":  cf.CreateTime,
-			"ModifyTime":  cf.ModifyTime,
+		cfMap := map[string]interface{}{
+			"Id":           cf.Id.Hex(),
+			"UserId":       cf.UserId.Hex(),
+			"CategoryId":   cf.CategoryId.Hex(),
+			"BelongsDate":  cf.BelongsDate,
+			// "FlowType":    cf.FlowType,
+			"Amount":       cf.Amount,
+			"Description":  cf.Description,
+			"Remark":       cf.Remark,
+			"CreateTime":   cf.CreateTime,
+			"ModifyTime":   cf.UpdateTime,
+			"CreateUserId": cf.CreateUserId.Hex(),
+			"UpdateUserId": cf.UpdateUserId.Hex(),
+			"IsDelete":     cf.IsDelete,
 		}
+		if cf.DeleteUserId != nil {
+			cfMap["DeleteUserId"] = cf.DeleteUserId.Hex()
+		}
+		if cf.DeleteTime != nil {
+			cfMap["DeleteTime"] = cf.DeleteTime
+		}
+		cashFlowMaps[i] = cfMap
 	}
 
 	// Create backup structure

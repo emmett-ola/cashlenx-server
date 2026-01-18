@@ -55,3 +55,8 @@ func CloseMySqlConnection() {
 	isConnected = false
 	util.Logger.Debugln("database connection closed")
 }
+
+// Common SQL conditions
+const (
+	SqlExcludeDeleted = " AND IS_DELETE = FALSE "
+)

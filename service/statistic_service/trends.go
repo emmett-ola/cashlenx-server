@@ -2,9 +2,11 @@ package statistic_service
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/macar-x/cashlenx-server/mapper/cash_flow_mapper"
+	"github.com/macar-x/cashlenx-server/mapper/category_mapper"
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/util"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -94,9 +96,16 @@ func calculateTrends(period, dateStr string, fromDate, toDate time.Time, cashFlo
 
 		if flows, exists := flowsByDate[dateKey]; exists {
 			for _, flow := range flows {
-				if flow.FlowType == "income" {
+				// Get category type
+				category := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(flow.CategoryId.Hex(), flow.UserId)
+				categoryType := ""
+				if !category.IsEmpty() {
+					categoryType = category.Type
+				}
+
+				if strings.EqualFold(categoryType, "income") {
 					income += flow.Amount
-				} else if flow.FlowType == "expense" {
+				} else if strings.EqualFold(categoryType, "expense") {
 					expense += flow.Amount
 				}
 			}

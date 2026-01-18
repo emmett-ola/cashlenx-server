@@ -50,8 +50,10 @@ func CreateService(requestBody model.UserDTO) (string, error) {
 		IsExternal:   requestBody.IsExternal,
 		ExternalId:   requestBody.ExternalId,
 		PasswordSet:  passwordSet,
-		CreatedAt:    util.GetCurrentTime(),
-		UpdatedAt:    util.GetCurrentTime(),
+		BaseEntity: model.BaseEntity{
+			CreateTime: util.GetCurrentTime(),
+			UpdateTime: util.GetCurrentTime(),
+		},
 	}
 
 	// Insert the user into the database
@@ -81,8 +83,10 @@ func CreateExternalUser(username, externalId string) (model.UserEntity, error) {
 		IsExternal:   true,
 		ExternalId:   externalId,
 		PasswordSet:  false,
-		CreatedAt:    util.GetCurrentTime(),
-		UpdatedAt:    util.GetCurrentTime(),
+		BaseEntity: model.BaseEntity{
+			CreateTime: util.GetCurrentTime(),
+			UpdateTime: util.GetCurrentTime(),
+		},
 	}
 
 	// Insert the user into the database

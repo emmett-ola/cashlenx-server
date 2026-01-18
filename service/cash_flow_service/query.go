@@ -6,6 +6,7 @@ import (
 
 	myErrors "github.com/macar-x/cashlenx-server/errors"
 	"github.com/macar-x/cashlenx-server/mapper/cash_flow_mapper"
+	"github.com/macar-x/cashlenx-server/mapper/category_mapper"
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/util"
 	"github.com/macar-x/cashlenx-server/validation"
@@ -54,6 +55,16 @@ func QueryById(plainId string) (model.CashFlowEntity, error) {
 	if cashFlowEntity.IsEmpty() {
 		return model.CashFlowEntity{}, myErrors.NewNotFoundError("cash_flow not found")
 	}
+
+	// Populate category info
+	category := category_mapper.INSTANCE.GetCategoryByObjectId(cashFlowEntity.CategoryId.Hex())
+	if !category.IsEmpty() {
+		cashFlowEntity.CategoryName = category.Name
+		cashFlowEntity.CategoryType = category.Type
+	} else {
+		cashFlowEntity.CategoryName = "Unknown"
+	}
+
 	return cashFlowEntity, nil
 }
 
@@ -76,16 +87,55 @@ func QueryByDate(belongsDate string) ([]model.CashFlowEntity, error) {
 	endOfDay := time.Date(parsedDate.Year(), parsedDate.Month(), parsedDate.Day(), 23, 59, 59, 999999999, time.UTC)
 
 	matchedCashFlowList := cash_flow_mapper.INSTANCE.GetCashFlowsByDateRange(startOfDay, endOfDay)
+
+	// Populate category info
+	for i := range matchedCashFlowList {
+		entity := &matchedCashFlowList[i]
+		category := category_mapper.INSTANCE.GetCategoryByObjectId(entity.CategoryId.Hex())
+		if !category.IsEmpty() {
+			entity.CategoryName = category.Name
+			entity.CategoryType = category.Type
+		} else {
+			entity.CategoryName = "Unknown"
+		}
+	}
+
 	return matchedCashFlowList, nil
 }
 
 func QueryByExactDescription(exactDescription string) ([]model.CashFlowEntity, error) {
 	matchedCashFlowList := cash_flow_mapper.INSTANCE.GetCashFlowsByExactDesc(exactDescription)
+
+	// Populate category info
+	for i := range matchedCashFlowList {
+		entity := &matchedCashFlowList[i]
+		category := category_mapper.INSTANCE.GetCategoryByObjectId(entity.CategoryId.Hex())
+		if !category.IsEmpty() {
+			entity.CategoryName = category.Name
+			entity.CategoryType = category.Type
+		} else {
+			entity.CategoryName = "Unknown"
+		}
+	}
+
 	return matchedCashFlowList, nil
 }
 
 func QueryByFuzzyDescription(fuzzyDescription string) ([]model.CashFlowEntity, error) {
 	matchedCashFlowList := cash_flow_mapper.INSTANCE.GetCashFlowsByFuzzyDesc(fuzzyDescription)
+
+	// Populate category info
+	for i := range matchedCashFlowList {
+		entity := &matchedCashFlowList[i]
+		category := category_mapper.INSTANCE.GetCategoryByObjectId(entity.CategoryId.Hex())
+		if !category.IsEmpty() {
+			entity.CategoryName = category.Name
+			entity.CategoryType = category.Type
+		} else {
+			entity.CategoryName = "Unknown"
+		}
+	}
+
 	return matchedCashFlowList, nil
 }
 
@@ -108,6 +158,16 @@ func QueryByIdForUser(plainId string, userId string) (model.CashFlowEntity, erro
 	if cashFlowEntity.IsEmpty() {
 		return model.CashFlowEntity{}, errors.New("cash_flow not found or access denied")
 	}
+
+	// Populate category info
+	category := category_mapper.INSTANCE.GetCategoryByObjectId(cashFlowEntity.CategoryId.Hex())
+	if !category.IsEmpty() {
+		cashFlowEntity.CategoryName = category.Name
+		cashFlowEntity.CategoryType = category.Type
+	} else {
+		cashFlowEntity.CategoryName = "Unknown"
+	}
+
 	return cashFlowEntity, nil
 }
 
@@ -140,6 +200,19 @@ func QueryByDateForUser(belongsDate string, userId string) ([]model.CashFlowEnti
 	endOfDay := time.Date(parsedDate.Year(), parsedDate.Month(), parsedDate.Day(), 23, 59, 59, 999999999, time.UTC)
 
 	matchedCashFlowList := cash_flow_mapper.INSTANCE.GetCashFlowsByDateRangeAndUser(startOfDay, endOfDay, userObjectId)
+
+	// Populate category info
+	for i := range matchedCashFlowList {
+		entity := &matchedCashFlowList[i]
+		category := category_mapper.INSTANCE.GetCategoryByObjectId(entity.CategoryId.Hex())
+		if !category.IsEmpty() {
+			entity.CategoryName = category.Name
+			entity.CategoryType = category.Type
+		} else {
+			entity.CategoryName = "Unknown"
+		}
+	}
+
 	return matchedCashFlowList, nil
 }
 
@@ -168,5 +241,18 @@ func QueryByDateRangeForUser(fromDateStr, toDateStr string, userId string) ([]mo
 	endDate := time.Date(toDate.Year(), toDate.Month(), toDate.Day(), 23, 59, 59, 999999999, time.UTC)
 
 	matchedCashFlowList := cash_flow_mapper.INSTANCE.GetCashFlowsByDateRangeAndUser(startDate, endDate, userObjectId)
+
+	// Populate category info
+	for i := range matchedCashFlowList {
+		entity := &matchedCashFlowList[i]
+		category := category_mapper.INSTANCE.GetCategoryByObjectId(entity.CategoryId.Hex())
+		if !category.IsEmpty() {
+			entity.CategoryName = category.Name
+			entity.CategoryType = category.Type
+		} else {
+			entity.CategoryName = "Unknown"
+		}
+	}
+
 	return matchedCashFlowList, nil
 }

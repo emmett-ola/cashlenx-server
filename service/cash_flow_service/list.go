@@ -6,6 +6,7 @@ import (
 
 	myErrors "github.com/macar-x/cashlenx-server/errors"
 	"github.com/macar-x/cashlenx-server/mapper/cash_flow_mapper"
+	"github.com/macar-x/cashlenx-server/mapper/category_mapper"
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/util"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -54,10 +55,22 @@ func QueryAll(
 	var filteredResults []*model.CashFlowEntity
 	for i := range cashFlows {
 		entity := cashFlows[i]
+
+		// Populate category info
+		category := category_mapper.INSTANCE.GetCategoryByObjectId(entity.CategoryId.Hex())
+		if !category.IsEmpty() {
+			entity.CategoryName = category.Name
+			entity.CategoryType = category.Type
+		} else {
+			entity.CategoryName = "Unknown"
+			// Fallback or leave empty? If category is missing, we can't determine type easily.
+			// Maybe existing flow_type if we hadn't removed it.
+		}
+
 		match := true
 
-		// Filter by cash type
-		if cashType != "" && entity.FlowType != cashType {
+		// Filter by cash type (using CategoryType now)
+		if cashType != "" && !strings.EqualFold(entity.CategoryType, cashType) {
 			match = false
 		}
 
@@ -144,10 +157,20 @@ func QueryAllForUser(
 	var filteredResults []*model.CashFlowEntity
 	for i := range cashFlows {
 		entity := cashFlows[i]
+
+		// Populate category info
+		category := category_mapper.INSTANCE.GetCategoryByObjectId(entity.CategoryId.Hex())
+		if !category.IsEmpty() {
+			entity.CategoryName = category.Name
+			entity.CategoryType = category.Type
+		} else {
+			entity.CategoryName = "Unknown"
+		}
+
 		match := true
 
 		// Filter by cash type
-		if cashType != "" && entity.FlowType != cashType {
+		if cashType != "" && !strings.EqualFold(entity.CategoryType, cashType) {
 			match = false
 		}
 

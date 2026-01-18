@@ -3,8 +3,10 @@ package statistic_service
 import (
 	"errors"
 	"sort"
+	"strings"
 
 	"github.com/macar-x/cashlenx-server/mapper/cash_flow_mapper"
+	"github.com/macar-x/cashlenx-server/mapper/category_mapper"
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/util"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -55,9 +57,16 @@ func calculateBreakdown(period string, cashFlows []model.CashFlowEntity, userId 
 	incomeMap := make(map[string]*CategoryBreakdownItem)
 
 	for _, flow := range cashFlows {
-		categoryName := getCategoryName(flow.CategoryId, userId)
+		// Get category for grouping and type determination
+		category := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(flow.CategoryId.Hex(), userId)
+		categoryName := "Unknown"
+		categoryType := ""
+		if !category.IsEmpty() {
+			categoryName = category.Name
+			categoryType = category.Type
+		}
 
-		if flow.FlowType == "income" {
+		if strings.EqualFold(categoryType, "income") {
 			breakdown.TotalIncome += flow.Amount
 
 			if item, exists := incomeMap[categoryName]; exists {
@@ -70,7 +79,7 @@ func calculateBreakdown(period string, cashFlows []model.CashFlowEntity, userId 
 					Count:    1,
 				}
 			}
-		} else if flow.FlowType == "expense" {
+		} else if strings.EqualFold(categoryType, "expense") {
 			breakdown.TotalExpense += flow.Amount
 
 			if item, exists := expenseMap[categoryName]; exists {

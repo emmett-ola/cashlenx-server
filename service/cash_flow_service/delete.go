@@ -2,6 +2,7 @@ package cash_flow_service
 
 import (
 	"errors"
+	"github.com/macar-x/cashlenx-server/mapper/category_mapper"
 	"reflect"
 	"time"
 
@@ -90,6 +91,16 @@ func DeleteByIdForUser(plainId string, userId string) (model.CashFlowEntity, err
 	if deletedEntity.IsEmpty() {
 		return model.CashFlowEntity{}, errors.New("cash_flow delete failed")
 	}
+
+	// Populate category info for return value
+	category := category_mapper.INSTANCE.GetCategoryByObjectId(deletedEntity.CategoryId.Hex())
+	if !category.IsEmpty() {
+		deletedEntity.CategoryName = category.Name
+		deletedEntity.CategoryType = category.Type
+	} else {
+		deletedEntity.CategoryName = "Unknown"
+	}
+
 	return deletedEntity, nil
 }
 
@@ -113,5 +124,18 @@ func DeleteByDateForUser(belongsDate string, userId string) ([]model.CashFlowEnt
 	}
 
 	cashFlowList := cash_flow_mapper.INSTANCE.DeleteCashFlowsByBelongsDateAndUser(deleteDate, userObjectId)
+
+	// Populate category info for each deleted item
+	for i := range cashFlowList {
+		entity := &cashFlowList[i]
+		category := category_mapper.INSTANCE.GetCategoryByObjectId(entity.CategoryId.Hex())
+		if !category.IsEmpty() {
+			entity.CategoryName = category.Name
+			entity.CategoryType = category.Type
+		} else {
+			entity.CategoryName = "Unknown"
+		}
+	}
+
 	return cashFlowList, nil
 }

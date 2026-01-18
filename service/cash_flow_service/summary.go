@@ -86,11 +86,16 @@ func GetSummary(period, date string) (*Summary, error) {
 					isIncome = true
 				} else if strings.EqualFold(category.Type, model.FlowTypeExpense) {
 					isIncome = false
-				} else {
-					isIncome = (cashFlow.FlowType == model.FlowTypeIncome)
 				}
 			} else {
-				isIncome = (cashFlow.FlowType == model.FlowTypeIncome)
+				// Fallback if category is missing: default to expense or skip?
+				// Since we can't access FlowType anymore, we have to guess or assume expense.
+				// Let's assume expense for safety (or income? Expense is more common to track).
+				// Or log a warning.
+				// For now, let's treat it as expense to be safe, or maybe skip?
+				// If we treat as expense, it might skew expense.
+				// Let's default to Expense as false.
+				isIncome = false
 			}
 
 			if isIncome {
@@ -99,6 +104,8 @@ func GetSummary(period, date string) (*Summary, error) {
 				summary.TotalExpense += cashFlow.Amount
 				if !category.IsEmpty() {
 					summary.CategoryBreakdown[category.Name] += cashFlow.Amount
+				} else {
+					summary.CategoryBreakdown["Unknown"] += cashFlow.Amount
 				}
 			}
 		}
@@ -195,11 +202,9 @@ func GetSummaryForUser(period, date string, userId string) (*Summary, error) {
 				isIncome = true
 			} else if strings.EqualFold(category.Type, model.FlowTypeExpense) {
 				isIncome = false
-			} else {
-				isIncome = (cashFlow.FlowType == model.FlowTypeIncome)
 			}
 		} else {
-			isIncome = (cashFlow.FlowType == model.FlowTypeIncome)
+			isIncome = false
 		}
 
 		if isIncome {
@@ -208,6 +213,8 @@ func GetSummaryForUser(period, date string, userId string) (*Summary, error) {
 			summary.TotalExpense += cashFlow.Amount
 			if !category.IsEmpty() {
 				summary.CategoryBreakdown[category.Name] += cashFlow.Amount
+			} else {
+				summary.CategoryBreakdown["Unknown"] += cashFlow.Amount
 			}
 		}
 	}

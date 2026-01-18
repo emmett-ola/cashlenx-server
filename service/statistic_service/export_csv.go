@@ -60,9 +60,11 @@ func ExportToCSVForUser(fromDateInString, toDateInString, filePath, userId strin
 			// Write each cash flow to CSV
 			for _, cashFlow := range cashFlows {
 				categoryName := "Unknown"
+				categoryType := ""
 				categoryEntity := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(cashFlow.CategoryId.Hex(), userObjectId)
 				if !categoryEntity.IsEmpty() {
 					categoryName = categoryEntity.Name
+					categoryType = categoryEntity.Type
 				}
 
 				dateStr := util.FormatDateToStringWithoutDash(cashFlow.BelongsDate)
@@ -71,7 +73,7 @@ func ExportToCSVForUser(fromDateInString, toDateInString, filePath, userId strin
 					cashFlow.CategoryId.Hex(),
 					categoryName,
 					dateStr,
-					cashFlow.FlowType,
+					categoryType,
 					strconv.FormatFloat(cashFlow.Amount, 'f', 2, 64),
 					cashFlow.Description,
 					cashFlow.Remark,
@@ -94,9 +96,11 @@ func ExportToCSVForUser(fromDateInString, toDateInString, filePath, userId strin
 
 			for _, cashFlow := range cashFlowArray {
 				categoryName := "Unknown"
+				categoryType := ""
 				categoryEntity := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(cashFlow.CategoryId.Hex(), userObjectId)
 				if !categoryEntity.IsEmpty() {
 					categoryName = categoryEntity.Name
+					categoryType = categoryEntity.Type
 				}
 
 				dateStr := util.FormatDateToStringWithoutDash(queryDateCurrent)
@@ -105,7 +109,7 @@ func ExportToCSVForUser(fromDateInString, toDateInString, filePath, userId strin
 					cashFlow.CategoryId.Hex(),
 					categoryName,
 					dateStr,
-					cashFlow.FlowType,
+					categoryType,
 					strconv.FormatFloat(cashFlow.Amount, 'f', 2, 64),
 					cashFlow.Description,
 					cashFlow.Remark,

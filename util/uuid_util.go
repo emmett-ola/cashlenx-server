@@ -27,3 +27,8 @@ func Convert2ObjectId(plainId string) primitive.ObjectID {
 	}
 	return objectId
 }
+
+// GenerateObjectId generates a new ObjectID in hex string format
+func GenerateObjectId() string {
+	return primitive.NewObjectID().Hex()
+}

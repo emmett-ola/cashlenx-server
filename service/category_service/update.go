@@ -92,7 +92,8 @@ func UpdateByIdForUser(plainId, name, categoryType, remark string, parentId stri
 	}
 
 	// Update modify time
-	existingEntity.ModifyTime = time.Now().UTC()
+	existingEntity.UpdateTime = time.Now().UTC()
+	existingEntity.UpdateUserId = userObjectId
 
 	// Call mapper to update the record
 	updatedEntity := category_mapper.INSTANCE.UpdateCategoryByEntityAndUser(plainId, existingEntity, userObjectId)

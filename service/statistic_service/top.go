@@ -3,8 +3,10 @@ package statistic_service
 import (
 	"errors"
 	"sort"
+	"strings"
 
 	"github.com/macar-x/cashlenx-server/mapper/cash_flow_mapper"
+	"github.com/macar-x/cashlenx-server/mapper/category_mapper"
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/util"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -58,10 +60,18 @@ func calculateTopExpenses(period string, limit int, cashFlows []model.CashFlowEn
 	// Filter and collect only expenses
 	var expenses []TopExpense
 	for _, flow := range cashFlows {
-		if flow.FlowType == "expense" {
+		// Get category type
+		category := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(flow.CategoryId.Hex(), userId)
+		categoryName := "Unknown"
+		categoryType := ""
+		if !category.IsEmpty() {
+			categoryName = category.Name
+			categoryType = category.Type
+		}
+
+		if strings.EqualFold(categoryType, "expense") {
 			topExpenses.TotalExpense += flow.Amount
 
-			categoryName := getCategoryName(flow.CategoryId, userId)
 			dateStr := util.FormatDateToStringWithoutDash(flow.BelongsDate)
 
 			expenses = append(expenses, TopExpense{

@@ -1,28 +1,63 @@
 package model
 
 import (
-	"time"
+	"reflect"
+	"strconv"
 
+	"github.com/macar-x/cashlenx-server/util"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // UserEntity represents a user in the database
 type UserEntity struct {
-	Id           primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	Username     string             `bson:"username" json:"username"`
-	PasswordHash string             `bson:"password_hash" json:"-"` // Never expose password hash in JSON
-	CreatedAt    time.Time          `bson:"created_at" json:"created_at"`
-	UpdatedAt    time.Time          `bson:"updated_at" json:"updated_at"`
-	IsActive     bool               `bson:"is_active" json:"is_active"`
-	Role         string             `bson:"role" json:"role"` // Default: "user", can be "admin"
-	IsExternal   bool               `bson:"is_external" json:"is_external"` // True if user is from external auth system (Keycloak)
-	ExternalId   string             `bson:"external_id" json:"external_id"` // ID from external auth system
-	PasswordSet  bool               `bson:"password_set" json:"password_set"` // True if user has set their password
+	Id           primitive.ObjectID `bson:"_id,omitempty"`
+	Username     string             `json:"username" bson:"username"`
+	PasswordHash string             `json:"-" bson:"password_hash"`
+	IsActive     bool               `json:"is_active" bson:"is_active"`
+	Role         string             `json:"role" bson:"role"`
+	IsExternal   bool               `json:"is_external" bson:"is_external"`
+	ExternalId   string             `json:"external_id" bson:"external_id"`
+	PasswordSet  bool               `json:"password_set" bson:"password_set"`
+	BaseEntity   `bson:",inline"`
 }
 
-// IsEmpty checks if the user entity is empty
-func (u UserEntity) IsEmpty() bool {
-	return u.Id == primitive.NilObjectID && u.Username == ""
+func (entity UserEntity) IsEmpty() bool {
+	return reflect.DeepEqual(entity, UserEntity{})
+}
+
+func (entity UserEntity) ToString() string {
+	return "[ " +
+		"Id: " + entity.Id.Hex() +
+		", Username: " + entity.Username +
+		", Role: " + entity.Role +
+		", IsActive: " + strconv.FormatBool(entity.IsActive) +
+		", CreateTime: " + util.FormatDateToStringWithDash(entity.CreateTime) +
+		" ]"
+}
+
+func (entity UserEntity) Build(fieldMap map[string]string) UserEntity {
+	newEntity := entity
+	for key, value := range fieldMap {
+		switch key {
+		case "Id":
+			objectId, err := primitive.ObjectIDFromHex(value)
+			if err != nil {
+				util.Logger.Warnln("build user failed with err: " + err.Error())
+			}
+			newEntity.Id = objectId
+		case "Username":
+			newEntity.Username = value
+		case "Role":
+			newEntity.Role = value
+		case "IsActive":
+			boolValue, err := strconv.ParseBool(value)
+			if err != nil {
+				util.Logger.Warnln("build user failed with err: " + err.Error())
+			}
+			newEntity.IsActive = boolValue
+		}
+	}
+	return newEntity
 }
 
 // UserDTO represents a user for API requests/responses

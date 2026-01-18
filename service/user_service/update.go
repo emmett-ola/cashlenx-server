@@ -50,7 +50,7 @@ func UpdateService(plainId string, requestBody model.UserDTO) (model.UserEntity,
 	}
 
 	// Update updated_at timestamp
-	existingUser.UpdatedAt = util.GetCurrentTime()
+	existingUser.UpdateTime = util.GetCurrentTime()
 
 	// Update user in database
 	updatedUser := user_mapper.INSTANCE.UpdateUserByEntity(plainId, existingUser)
@@ -84,7 +84,7 @@ func SetPasswordService(plainId string, password string) (model.UserEntity, erro
 	// Update user with new password
 	existingUser.PasswordHash = string(hashedPassword)
 	existingUser.PasswordSet = true
-	existingUser.UpdatedAt = util.GetCurrentTime()
+	existingUser.UpdateTime = util.GetCurrentTime()
 
 	// Update user in database
 	updatedUser := user_mapper.INSTANCE.UpdateUserByEntity(plainId, existingUser)

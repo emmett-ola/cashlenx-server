@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/macar-x/cashlenx-server/mapper/cash_flow_mapper"
+	"github.com/macar-x/cashlenx-server/mapper/category_mapper"
 	"github.com/macar-x/cashlenx-server/util"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -62,7 +64,14 @@ func GetDashboardOverviewForUser(period, date, userId string) (*DashboardOvervie
 		highestExpense := 0.0
 		lowestExpense := math.MaxFloat64
 		for _, flow := range cashFlows {
-			if flow.FlowType == "expense" {
+			// Get category type
+			category := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(flow.CategoryId.Hex(), userObjectId)
+			categoryType := ""
+			if !category.IsEmpty() {
+				categoryType = category.Type
+			}
+
+			if strings.EqualFold(categoryType, "expense") {
 				if flow.Amount > highestExpense {
 					highestExpense = flow.Amount
 				}
@@ -201,9 +210,16 @@ func GetMonthlyComparisonForUser(year, userId string) (*MonthlyComparison, error
 		monthExpense := 0.0
 
 		for _, flow := range cashFlows {
-			if flow.FlowType == "income" {
+			// Get category type
+			category := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(flow.CategoryId.Hex(), userObjectId)
+			categoryType := ""
+			if !category.IsEmpty() {
+				categoryType = category.Type
+			}
+
+			if strings.EqualFold(categoryType, "income") {
 				monthIncome += flow.Amount
-			} else if flow.FlowType == "expense" {
+			} else if strings.EqualFold(categoryType, "expense") {
 				monthExpense += flow.Amount
 			}
 		}
@@ -249,7 +265,14 @@ func GetSpendingHeatmapForUser(year, userId string) (*SpendingHeatmap, error) {
 
 	// Aggregate spending by day
 	for _, flow := range cashFlows {
-		if flow.FlowType == "expense" {
+		// Get category type
+		category := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(flow.CategoryId.Hex(), userObjectId)
+		categoryType := ""
+		if !category.IsEmpty() {
+			categoryType = category.Type
+		}
+
+		if strings.EqualFold(categoryType, "expense") {
 			dateKey := util.FormatDateToStringWithDash(flow.BelongsDate)
 
 			if dp, exists := dailySpending[dateKey]; exists {

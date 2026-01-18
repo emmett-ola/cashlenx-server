@@ -136,13 +136,15 @@ func exportDataForUser(file *excelize.File, fromDateInString, toDateInString str
 				// Get category name with user context
 				categoryEntity := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(cashFlow.CategoryId.Hex(), userId)
 				categoryName := "Unknown"
+				categoryType := ""
 				if !categoryEntity.IsEmpty() {
 					categoryName = categoryEntity.Name
+					categoryType = categoryEntity.Type
 				}
 				writeExcelRow(file, yearMonth, "C"+cashFlowIndexInString, categoryName)
 
 				writeExcelRow(file, yearMonth, "D"+cashFlowIndexInString, dateStr)
-				writeExcelRow(file, yearMonth, "E"+cashFlowIndexInString, cashFlow.FlowType)
+				writeExcelRow(file, yearMonth, "E"+cashFlowIndexInString, categoryType)
 				writeExcelRow(file, yearMonth, "F"+cashFlowIndexInString, cashFlow.Amount)
 				writeExcelRow(file, yearMonth, "G"+cashFlowIndexInString, cashFlow.Description)
 			}
@@ -192,13 +194,15 @@ func exportDataForUser(file *excelize.File, fromDateInString, toDateInString str
 				// Get category name with user context
 				categoryEntity := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(cashFlow.CategoryId.Hex(), userId)
 				categoryName := "Unknown"
+				categoryType := ""
 				if !categoryEntity.IsEmpty() {
 					categoryName = categoryEntity.Name
+					categoryType = categoryEntity.Type
 				}
 				writeExcelRow(file, currentYearAndMonth, "C"+cashFlowIndexInString, categoryName)
 
 				writeExcelRow(file, currentYearAndMonth, "D"+cashFlowIndexInString, queryDateCurrentInString)
-				writeExcelRow(file, currentYearAndMonth, "E"+cashFlowIndexInString, cashFlow.FlowType)
+				writeExcelRow(file, currentYearAndMonth, "E"+cashFlowIndexInString, categoryType)
 				writeExcelRow(file, currentYearAndMonth, "F"+cashFlowIndexInString, cashFlow.Amount)
 				writeExcelRow(file, currentYearAndMonth, "G"+cashFlowIndexInString, cashFlow.Description)
 			}
