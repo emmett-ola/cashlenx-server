@@ -77,12 +77,26 @@ func GetSummary(period, date string) (*Summary, error) {
 		for _, cashFlow := range dayResults {
 			summary.TransactionCount++
 
-			if cashFlow.FlowType == model.FlowTypeIncome {
+			// Get category to determine true type
+			category := category_mapper.INSTANCE.GetCategoryByObjectId(cashFlow.CategoryId.Hex())
+
+			isIncome := false
+			if !category.IsEmpty() {
+				if strings.EqualFold(category.Type, model.FlowTypeIncome) {
+					isIncome = true
+				} else if strings.EqualFold(category.Type, model.FlowTypeExpense) {
+					isIncome = false
+				} else {
+					isIncome = (cashFlow.FlowType == model.FlowTypeIncome)
+				}
+			} else {
+				isIncome = (cashFlow.FlowType == model.FlowTypeIncome)
+			}
+
+			if isIncome {
 				summary.TotalIncome += cashFlow.Amount
 			} else {
 				summary.TotalExpense += cashFlow.Amount
-				// Get category name for breakdown
-				category := category_mapper.INSTANCE.GetCategoryByObjectId(cashFlow.CategoryId.Hex())
 				if !category.IsEmpty() {
 					summary.CategoryBreakdown[category.Name] += cashFlow.Amount
 				}
@@ -172,12 +186,26 @@ func GetSummaryForUser(period, date string, userId string) (*Summary, error) {
 	for _, cashFlow := range cashFlows {
 		summary.TransactionCount++
 
-		if cashFlow.FlowType == model.FlowTypeIncome {
+		// Get category to determine true type
+		category := category_mapper.INSTANCE.GetCategoryByObjectId(cashFlow.CategoryId.Hex())
+
+		isIncome := false
+		if !category.IsEmpty() {
+			if strings.EqualFold(category.Type, model.FlowTypeIncome) {
+				isIncome = true
+			} else if strings.EqualFold(category.Type, model.FlowTypeExpense) {
+				isIncome = false
+			} else {
+				isIncome = (cashFlow.FlowType == model.FlowTypeIncome)
+			}
+		} else {
+			isIncome = (cashFlow.FlowType == model.FlowTypeIncome)
+		}
+
+		if isIncome {
 			summary.TotalIncome += cashFlow.Amount
 		} else {
 			summary.TotalExpense += cashFlow.Amount
-			// Get category name for breakdown
-			category := category_mapper.INSTANCE.GetCategoryByObjectId(cashFlow.CategoryId.Hex())
 			if !category.IsEmpty() {
 				summary.CategoryBreakdown[category.Name] += cashFlow.Amount
 			}
