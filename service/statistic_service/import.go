@@ -194,9 +194,9 @@ func handleCategoryInfoForUser(categoryId, categoryName string, userId primitive
 
 	// Create new category for this user
 	plainId := category_mapper.INSTANCE.InsertCategoryByEntity(model.CategoryEntity{
-		UserId: userId,
-		Name:   categoryName,
-		Remark: "created by import",
+		BelongsUserId: userId,
+		Name:          categoryName,
+		Remark:        "created by import",
 	})
 	util.Logger.Infow("created new category for user", "category_name", categoryName, "user_id", userId.Hex())
 	return plainId

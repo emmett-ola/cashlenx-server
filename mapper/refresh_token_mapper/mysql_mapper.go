@@ -31,13 +31,13 @@ func (m RefreshTokenMySqlMapper) CreateToken(token model.RefreshToken) string {
 		token.CreatedAt,
 	)
 	if err != nil {
-		util.Logger.Errorw("Failed to create refresh token", "error", err, "user_id", token.BelongsUserId)
+		util.Logger.Errorw("Failed to create refresh token", "error", err, "user_id", token.UserId)
 		return ""
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil || rowsAffected == 0 {
-		util.Logger.Errorw("Failed to create refresh token (no rows affected)", "error", err, "user_id", token.BelongsUserId)
+		util.Logger.Errorw("Failed to create refresh token (no rows affected)", "error", err, "user_id", token.UserId)
 		return ""
 	}
 
@@ -61,7 +61,7 @@ func (m RefreshTokenMySqlMapper) GetTokenByToken(tokenStr string) model.RefreshT
 	var revokedAt sql.NullTime
 	var revokedBy sql.NullString
 
-	err := row.Scan(&token.Id, &token.BelongsUserId, &token.Token, &token.ExpiresAt, &token.CreatedAt, &revokedAt, &revokedBy)
+	err := row.Scan(&token.Id, &token.UserId, &token.Token, &token.ExpiresAt, &token.CreatedAt, &revokedAt, &revokedBy)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			util.Logger.Debugw("Refresh token not found", "token", tokenStr)
@@ -121,7 +121,7 @@ func (m RefreshTokenMySqlMapper) RevokeToken(tokenStr string, revokedBy string) 
 // RevokeAllTokensByUserId revokes all refresh tokens for a user
 func (m RefreshTokenMySqlMapper) RevokeAllTokensByUserId(userId string) error {
 	// Create the SQL query
-	query := `UPDATE refresh_tokens SET revoked_at = ?, revoked_by = ? WHERE belongs_user_id = ? AND revoked_at IS NULL`
+	query := `UPDATE refresh_tokens SET revoked_at = ?, revoked_by = ? WHERE user_id = ? AND revoked_at IS NULL`
 
 	// Get database connection
 	connection := database.GetMySqlConnection()

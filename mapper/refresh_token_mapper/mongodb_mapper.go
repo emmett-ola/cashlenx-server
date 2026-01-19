@@ -17,7 +17,7 @@ func (m RefreshTokenMongoDbMapper) CreateToken(token model.RefreshToken) string 
 	// Insert the token into the collection
 	_, err := collection.InsertOne(nil, token)
 	if err != nil {
-		util.Logger.Errorw("Failed to create refresh token", "error", err, "user_id", token.BelongsUserId)
+		util.Logger.Errorw("Failed to create refresh token", "error", err, "user_id", token.UserId)
 		return ""
 	}
 
@@ -80,8 +80,8 @@ func (m RefreshTokenMongoDbMapper) RevokeAllTokensByUserId(userId string) error 
 
 	// Define filter and update
 	filter := map[string]interface{}{
-		"belongs_user_id": userId,
-		"revoked_at":      nil,
+		"user_id":    userId,
+		"revoked_at": nil,
 	}
 	update := map[string]interface{}{
 		"$set": map[string]interface{}{

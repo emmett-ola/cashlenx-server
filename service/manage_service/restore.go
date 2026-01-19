@@ -204,9 +204,11 @@ func RestoreBackup(filePath string) (OperationStats, error) {
 		id, _ := primitive.ObjectIDFromHex(cfMap["id"].(string))
 
 		// Parse UserId from backup data (with fallback for old backups without UserId)
-		var userId primitive.ObjectID
-		if userIdStr, ok := cfMap["user_id"].(string); ok && userIdStr != "" {
-			userId, _ = primitive.ObjectIDFromHex(userIdStr)
+		var belongsUserId primitive.ObjectID
+		if bUserIdStr, ok := cfMap["belongs_user_id"].(string); ok && bUserIdStr != "" {
+			belongsUserId, _ = primitive.ObjectIDFromHex(bUserIdStr)
+		} else if userIdStr, ok := cfMap["user_id"].(string); ok && userIdStr != "" {
+			belongsUserId, _ = primitive.ObjectIDFromHex(userIdStr)
 		}
 
 		// Parse belongs_date string to time.Time
@@ -225,15 +227,15 @@ func RestoreBackup(filePath string) (OperationStats, error) {
 			createUserId, _ = primitive.ObjectIDFromHex(cIdStr)
 		} else {
 			// Default to user ID (owner) if missing
-			createUserId = userId
+			createUserId = belongsUserId
 		}
-		
+
 		var updateUserId primitive.ObjectID
 		if uIdStr, ok := cfMap["update_user_id"].(string); ok && uIdStr != "" {
 			updateUserId, _ = primitive.ObjectIDFromHex(uIdStr)
 		} else {
 			// Default to user ID (owner) if missing
-			updateUserId = userId
+			updateUserId = belongsUserId
 		}
 		
 		var deleteUserId *primitive.ObjectID
