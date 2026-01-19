@@ -55,53 +55,53 @@ func RestoreBackup(filePath string) (OperationStats, error) {
 	// Step 1: Insert users from backup (must be first, as categories and cash flows reference users)
 	for _, userMap := range backup.Users {
 		// Parse Id from backup data
-		id, _ := primitive.ObjectIDFromHex(userMap["Id"].(string))
+		id, _ := primitive.ObjectIDFromHex(userMap["id"].(string))
 
 		// Parse timestamps
-		createdAt, _ := time.Parse(time.RFC3339, userMap["CreatedAt"].(string))
-		updatedAt, _ := time.Parse(time.RFC3339, userMap["UpdatedAt"].(string))
+		createdTime, _ := time.Parse(time.RFC3339, userMap["create_time"].(string))
+		updatedTime, _ := time.Parse(time.RFC3339, userMap["update_time"].(string))
 
 		// Parse BaseEntity fields
 		var createUserId primitive.ObjectID
-		if cIdStr, ok := userMap["CreateUserId"].(string); ok && cIdStr != "" {
+		if cIdStr, ok := userMap["create_user_id"].(string); ok && cIdStr != "" {
 			createUserId, _ = primitive.ObjectIDFromHex(cIdStr)
 		} else {
 			// Default to self ID if missing
 			createUserId = id
 		}
-		
+
 		var updateUserId primitive.ObjectID
-		if uIdStr, ok := userMap["UpdateUserId"].(string); ok && uIdStr != "" {
+		if uIdStr, ok := userMap["update_user_id"].(string); ok && uIdStr != "" {
 			updateUserId, _ = primitive.ObjectIDFromHex(uIdStr)
 		} else {
 			// Default to self ID if missing
 			updateUserId = id
 		}
-		
+
 		var deleteUserId *primitive.ObjectID
-		if dIdStr, ok := userMap["DeleteUserId"].(string); ok && dIdStr != "" {
+		if dIdStr, ok := userMap["delete_user_id"].(string); ok && dIdStr != "" {
 			dId, _ := primitive.ObjectIDFromHex(dIdStr)
 			deleteUserId = &dId
 		}
-		
+
 		var deleteTime *time.Time
-		if dTimeStr, ok := userMap["DeleteTime"].(string); ok && dTimeStr != "" {
+		if dTimeStr, ok := userMap["delete_time"].(string); ok && dTimeStr != "" {
 			dTime, _ := time.Parse(time.RFC3339, dTimeStr)
 			deleteTime = &dTime
 		}
-		
-		isDelete, _ := userMap["IsDelete"].(bool)
+
+		isDelete, _ := userMap["is_delete"].(bool)
 
 		// Create user entity from backup data, preserving all original fields
 		userEntity := model.UserEntity{
 			Id:           id,
-			Username:     userMap["Username"].(string),
-			PasswordHash: userMap["PasswordHash"].(string),
-			IsActive:     userMap["IsActive"].(bool),
-			Role:         userMap["Role"].(string),
+			Username:     userMap["username"].(string),
+			PasswordHash: userMap["password_hash"].(string),
+			IsActive:     userMap["is_active"].(bool),
+			Role:         userMap["role"].(string),
 			BaseEntity: model.BaseEntity{
-				CreateTime:   createdAt,
-				UpdateTime:   updatedAt,
+				CreateTime:   createdTime,
+				UpdateTime:   updatedTime,
 				CreateUserId: createUserId,
 				UpdateUserId: updateUserId,
 				DeleteUserId: deleteUserId,
@@ -148,7 +148,7 @@ func RestoreBackup(filePath string) (OperationStats, error) {
 			// Default to user ID (owner) if missing
 			createUserId = belongsUserId
 		}
-		
+
 		var updateUserId primitive.ObjectID
 		if uIdStr, ok := catMap["update_user_id"].(string); ok && uIdStr != "" {
 			updateUserId, _ = primitive.ObjectIDFromHex(uIdStr)
@@ -156,19 +156,19 @@ func RestoreBackup(filePath string) (OperationStats, error) {
 			// Default to user ID (owner) if missing
 			updateUserId = belongsUserId
 		}
-		
+
 		var deleteUserId *primitive.ObjectID
 		if dIdStr, ok := catMap["delete_user_id"].(string); ok && dIdStr != "" {
 			dId, _ := primitive.ObjectIDFromHex(dIdStr)
 			deleteUserId = &dId
 		}
-		
+
 		var deleteTime *time.Time
 		if dTimeStr, ok := catMap["delete_time"].(string); ok && dTimeStr != "" {
 			dTime, _ := time.Parse(time.RFC3339, dTimeStr)
 			deleteTime = &dTime
 		}
-		
+
 		isDelete, _ := catMap["is_delete"].(bool)
 
 		// Create category entity from backup data, preserving all original fields
@@ -177,8 +177,8 @@ func RestoreBackup(filePath string) (OperationStats, error) {
 			BelongsUserId: belongsUserId,
 			ParentId:      parentId,
 			Name:          catMap["name"].(string),
-			Type:     categoryType,
-			Remark:   catMap["remark"].(string),
+			Type:          categoryType,
+			Remark:        catMap["remark"].(string),
 			BaseEntity: model.BaseEntity{
 				CreateTime:   createTime,
 				UpdateTime:   updateTime,
@@ -237,19 +237,19 @@ func RestoreBackup(filePath string) (OperationStats, error) {
 			// Default to user ID (owner) if missing
 			updateUserId = belongsUserId
 		}
-		
+
 		var deleteUserId *primitive.ObjectID
 		if dIdStr, ok := cfMap["delete_user_id"].(string); ok && dIdStr != "" {
 			dId, _ := primitive.ObjectIDFromHex(dIdStr)
 			deleteUserId = &dId
 		}
-		
+
 		var deleteTime *time.Time
 		if dTimeStr, ok := cfMap["delete_time"].(string); ok && dTimeStr != "" {
 			dTime, _ := time.Parse(time.RFC3339, dTimeStr)
 			deleteTime = &dTime
 		}
-		
+
 		isDelete, _ := cfMap["is_delete"].(bool)
 
 		// Create cash flow entity from backup data, preserving all original fields
