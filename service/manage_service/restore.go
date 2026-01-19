@@ -213,9 +213,9 @@ func RestoreBackup(filePath string) (OperationStats, error) {
 		// Parse CategoryId from backup data
 		categoryId, _ := primitive.ObjectIDFromHex(cfMap["CategoryId"].(string))
 
-		// Parse CreateTime and ModifyTime
+		// Parse CreateTime and UpdateTime
 		createTime, _ := time.Parse(time.RFC3339, cfMap["CreateTime"].(string))
-		modifyTime, _ := time.Parse(time.RFC3339, cfMap["ModifyTime"].(string))
+		updateTime, _ := time.Parse(time.RFC3339, cfMap["UpdateTime"].(string))
 
 		// Parse BaseEntity fields
 		var createUserId primitive.ObjectID
@@ -260,7 +260,7 @@ func RestoreBackup(filePath string) (OperationStats, error) {
 			Remark:      cfMap["Remark"].(string),
 			BaseEntity: model.BaseEntity{
 				CreateTime:   createTime,
-				UpdateTime:   modifyTime,
+				UpdateTime:   updateTime,
 				CreateUserId: createUserId,
 				UpdateUserId: updateUserId,
 				DeleteUserId: deleteUserId,
