@@ -54,22 +54,22 @@ func CreateBackup(filePath string) (OperationStats, error) {
 	userMaps := make([]map[string]interface{}, len(users))
 	for i, user := range users {
 		userMap := map[string]interface{}{
-			"Id":           user.Id.Hex(),
-			"Username":     user.Username,
-			"PasswordHash": user.PasswordHash,
-			"CreateTime":   user.CreateTime,
-			"UpdateTime":   user.UpdateTime,
-			"IsActive":     user.IsActive,
-			"Role":         user.Role,
-			"CreateUserId": user.CreateUserId.Hex(),
-			"UpdateUserId": user.UpdateUserId.Hex(),
-			"IsDelete":     user.IsDelete,
+			"id":             user.Id.Hex(),
+			"username":       user.Username,
+			"password_hash":  user.PasswordHash,
+			"create_time":    user.CreateTime,
+			"update_time":    user.UpdateTime,
+			"is_active":      user.IsActive,
+			"role":           user.Role,
+			"create_user_id": user.CreateUserId.Hex(),
+			"update_user_id": user.UpdateUserId.Hex(),
+			"is_delete":      user.IsDelete,
 		}
 		if user.DeleteUserId != nil {
-			userMap["DeleteUserId"] = user.DeleteUserId.Hex()
+			userMap["delete_user_id"] = user.DeleteUserId.Hex()
 		}
 		if user.DeleteTime != nil {
-			userMap["DeleteTime"] = user.DeleteTime
+			userMap["delete_time"] = user.DeleteTime
 		}
 		userMaps[i] = userMap
 	}
@@ -82,23 +82,23 @@ func CreateBackup(filePath string) (OperationStats, error) {
 	categoryMaps := make([]map[string]interface{}, len(categories))
 	for i, cat := range categories {
 		catMap := map[string]interface{}{
-			"Id":           cat.Id.Hex(),
-			"UserId":       cat.UserId.Hex(),
-			"Name":         cat.Name,
-			"Type":         cat.Type,
-			"ParentId":     cat.ParentId.Hex(),
-			"Remark":       cat.Remark,
-			"CreateTime":   cat.CreateTime,
-			"ModifyTime":   cat.UpdateTime,
-			"CreateUserId": cat.CreateUserId.Hex(),
-			"UpdateUserId": cat.UpdateUserId.Hex(),
-			"IsDelete":     cat.IsDelete,
+			"id":              cat.Id.Hex(),
+			"belongs_user_id": cat.BelongsUserId.Hex(),
+			"name":            cat.Name,
+			"type":            cat.Type,
+			"parent_id":      cat.ParentId.Hex(),
+			"remark":         cat.Remark,
+			"create_time":    cat.CreateTime,
+			"update_time":    cat.UpdateTime,
+			"create_user_id": cat.CreateUserId.Hex(),
+			"update_user_id": cat.UpdateUserId.Hex(),
+			"is_delete":      cat.IsDelete,
 		}
 		if cat.DeleteUserId != nil {
-			catMap["DeleteUserId"] = cat.DeleteUserId.Hex()
+			catMap["delete_user_id"] = cat.DeleteUserId.Hex()
 		}
 		if cat.DeleteTime != nil {
-			catMap["DeleteTime"] = cat.DeleteTime
+			catMap["delete_time"] = cat.DeleteTime
 		}
 		categoryMaps[i] = catMap
 	}
@@ -111,25 +111,25 @@ func CreateBackup(filePath string) (OperationStats, error) {
 	cashFlowMaps := make([]map[string]interface{}, len(cashFlows))
 	for i, cf := range cashFlows {
 		cfMap := map[string]interface{}{
-			"Id":           cf.Id.Hex(),
-			"UserId":       cf.UserId.Hex(),
-			"CategoryId":   cf.CategoryId.Hex(),
-			"BelongsDate":  cf.BelongsDate,
-			// "FlowType":    cf.FlowType,
-			"Amount":       cf.Amount,
-			"Description":  cf.Description,
-			"Remark":       cf.Remark,
-			"CreateTime":   cf.CreateTime,
-			"UpdateTime":   cf.UpdateTime,
-			"CreateUserId": cf.CreateUserId.Hex(),
-			"UpdateUserId": cf.UpdateUserId.Hex(),
-			"IsDelete":     cf.IsDelete,
+			"id":              cf.Id.Hex(),
+			"belongs_user_id": cf.BelongsUserId.Hex(),
+			"category_id":     cf.CategoryId.Hex(),
+			"belongs_date":    cf.BelongsDate,
+			// "flow_type":      cf.FlowType,
+			"amount":         cf.Amount,
+			"description":    cf.Description,
+			"remark":         cf.Remark,
+			"create_time":    cf.CreateTime,
+			"update_time":    cf.UpdateTime,
+			"create_user_id": cf.CreateUserId.Hex(),
+			"update_user_id": cf.UpdateUserId.Hex(),
+			"is_delete":      cf.IsDelete,
 		}
 		if cf.DeleteUserId != nil {
-			cfMap["DeleteUserId"] = cf.DeleteUserId.Hex()
+			cfMap["delete_user_id"] = cf.DeleteUserId.Hex()
 		}
 		if cf.DeleteTime != nil {
-			cfMap["DeleteTime"] = cf.DeleteTime
+			cfMap["delete_time"] = cf.DeleteTime
 		}
 		cashFlowMaps[i] = cfMap
 	}

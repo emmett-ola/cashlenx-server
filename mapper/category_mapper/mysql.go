@@ -117,7 +117,7 @@ func (CategoryMySqlMapper) InsertCategoryByEntity(newEntity model.CategoryEntity
 	sqlString.WriteString("INSERT ")
 	sqlString.WriteString(database.CategoryTableName)
 	sqlString.WriteString(" SET ID = ?, ")
-	sqlString.WriteString(" USER_ID = ?, ") // Added USER_ID
+	sqlString.WriteString(" BELONGS_USER_ID = ?, ") // Added USER_ID
 	sqlString.WriteString(" PARENT_ID = ?, ")
 	sqlString.WriteString(" NAME = ?, ")
 	sqlString.WriteString(" TYPE = ?, ")
@@ -136,7 +136,7 @@ func (CategoryMySqlMapper) InsertCategoryByEntity(newEntity model.CategoryEntity
 		util.Logger.Errorw("insert failed", "error", err)
 	}
 
-	result, err := statement.Exec(newPlainId, newEntity.UserId.Hex(), newEntity.ParentId.Hex(), newEntity.Name,
+	result, err := statement.Exec(newPlainId, newEntity.BelongsUserId.Hex(), newEntity.ParentId.Hex(), newEntity.Name,
 		newEntity.Type, newEntity.Remark, newEntity.CreateUserId.Hex(), newEntity.CreateTime, newEntity.UpdateUserId.Hex(), newEntity.UpdateTime)
 	if err != nil {
 		util.Logger.Errorw("insert failed", "error", err)
@@ -351,9 +351,9 @@ func (CategoryMySqlMapper) CountAllCategories() int64 {
 
 func (CategoryMySqlMapper) GetCategoriesByUserAndType(userId primitive.ObjectID, categoryType string, limit, offset int) ([]model.CategoryEntity, error) {
 	var sqlString bytes.Buffer
-	sqlString.WriteString("SELECT ID, USER_ID, PARENT_ID, NAME, TYPE, REMARK, CREATE_USER_ID, CREATE_TIME, UPDATE_USER_ID, UPDATE_TIME FROM ")
+	sqlString.WriteString("SELECT ID, BELONGS_USER_ID, PARENT_ID, NAME, TYPE, REMARK, CREATE_USER_ID, CREATE_TIME, UPDATE_USER_ID, UPDATE_TIME FROM ")
 	sqlString.WriteString(database.CategoryTableName)
-	sqlString.WriteString(" WHERE USER_ID = ? AND TYPE = ? AND IS_DELETE = FALSE ORDER BY NAME ASC")
+	sqlString.WriteString(" WHERE BELONGS_USER_ID = ? AND TYPE = ? AND IS_DELETE = FALSE ORDER BY NAME ASC")
 
 	if limit > 0 {
 		sqlString.WriteString(" LIMIT ? OFFSET ?")
@@ -389,7 +389,7 @@ func (CategoryMySqlMapper) CountCategoriesByUserAndType(userId primitive.ObjectI
 	var sqlString bytes.Buffer
 	sqlString.WriteString("SELECT COUNT(1) FROM ")
 	sqlString.WriteString(database.CategoryTableName)
-	sqlString.WriteString(" WHERE USER_ID = ? AND TYPE = ? AND IS_DELETE = FALSE")
+	sqlString.WriteString(" WHERE BELONGS_USER_ID = ? AND TYPE = ? AND IS_DELETE = FALSE")
 
 	connection := database.GetMySqlConnection()
 	defer database.CloseMySqlConnection()
@@ -413,9 +413,9 @@ func (CategoryMySqlMapper) CountCategoriesByUserAndType(userId primitive.ObjectI
 
 func (CategoryMySqlMapper) GetRootCategoriesByUser(userId primitive.ObjectID) ([]model.CategoryEntity, error) {
 	var sqlString bytes.Buffer
-	sqlString.WriteString("SELECT ID, USER_ID, PARENT_ID, NAME, TYPE, REMARK, CREATE_TIME, MODIFY_TIME FROM ")
+	sqlString.WriteString("SELECT ID, BELONGS_USER_ID, PARENT_ID, NAME, TYPE, REMARK, CREATE_TIME, MODIFY_TIME FROM ")
 	sqlString.WriteString(database.CategoryTableName)
-	sqlString.WriteString(" WHERE USER_ID = ? AND (PARENT_ID = '' OR PARENT_ID IS NULL OR PARENT_ID = '000000000000000000000000') AND IS_DELETE = FALSE")
+	sqlString.WriteString(" WHERE BELONGS_USER_ID = ? AND (PARENT_ID = '' OR PARENT_ID IS NULL OR PARENT_ID = '000000000000000000000000') AND IS_DELETE = FALSE")
 
 	connection := database.GetMySqlConnection()
 	defer database.CloseMySqlConnection()
@@ -437,9 +437,9 @@ func (CategoryMySqlMapper) GetRootCategoriesByUser(userId primitive.ObjectID) ([
 
 func (CategoryMySqlMapper) GetRootCategoriesByUserAndType(userId primitive.ObjectID, categoryType string) ([]model.CategoryEntity, error) {
 	var sqlString bytes.Buffer
-	sqlString.WriteString("SELECT ID, USER_ID, PARENT_ID, NAME, TYPE, REMARK, CREATE_TIME, MODIFY_TIME FROM ")
+	sqlString.WriteString("SELECT ID, BELONGS_USER_ID, PARENT_ID, NAME, TYPE, REMARK, CREATE_TIME, MODIFY_TIME FROM ")
 	sqlString.WriteString(database.CategoryTableName)
-	sqlString.WriteString(" WHERE USER_ID = ? AND TYPE = ? AND (PARENT_ID = '' OR PARENT_ID IS NULL OR PARENT_ID = '000000000000000000000000') AND IS_DELETE = FALSE")
+	sqlString.WriteString(" WHERE BELONGS_USER_ID = ? AND TYPE = ? AND (PARENT_ID = '' OR PARENT_ID IS NULL OR PARENT_ID = '000000000000000000000000') AND IS_DELETE = FALSE")
 
 	connection := database.GetMySqlConnection()
 	defer database.CloseMySqlConnection()
@@ -461,9 +461,9 @@ func (CategoryMySqlMapper) GetRootCategoriesByUserAndType(userId primitive.Objec
 
 func (CategoryMySqlMapper) GetCategoriesByParentIdAndUser(parentId primitive.ObjectID, userId primitive.ObjectID) ([]model.CategoryEntity, error) {
 	var sqlString bytes.Buffer
-	sqlString.WriteString("SELECT ID, USER_ID, PARENT_ID, NAME, TYPE, REMARK, CREATE_TIME, MODIFY_TIME FROM ")
+	sqlString.WriteString("SELECT ID, BELONGS_USER_ID, PARENT_ID, NAME, TYPE, REMARK, CREATE_TIME, MODIFY_TIME FROM ")
 	sqlString.WriteString(database.CategoryTableName)
-	sqlString.WriteString(" WHERE PARENT_ID = ? AND USER_ID = ? AND IS_DELETE = FALSE")
+	sqlString.WriteString(" WHERE PARENT_ID = ? AND BELONGS_USER_ID = ? AND IS_DELETE = FALSE")
 
 	connection := database.GetMySqlConnection()
 	defer database.CloseMySqlConnection()
@@ -485,9 +485,9 @@ func (CategoryMySqlMapper) GetCategoriesByParentIdAndUser(parentId primitive.Obj
 
 func (CategoryMySqlMapper) GetCategoriesByParentIdUserAndType(parentId primitive.ObjectID, userId primitive.ObjectID, categoryType string) ([]model.CategoryEntity, error) {
 	var sqlString bytes.Buffer
-	sqlString.WriteString("SELECT ID, USER_ID, PARENT_ID, NAME, TYPE, REMARK, CREATE_TIME, MODIFY_TIME FROM ")
+	sqlString.WriteString("SELECT ID, BELONGS_USER_ID, PARENT_ID, NAME, TYPE, REMARK, CREATE_TIME, MODIFY_TIME FROM ")
 	sqlString.WriteString(database.CategoryTableName)
-	sqlString.WriteString(" WHERE PARENT_ID = ? AND USER_ID = ? AND TYPE = ? AND IS_DELETE = FALSE")
+	sqlString.WriteString(" WHERE PARENT_ID = ? AND BELONGS_USER_ID = ? AND TYPE = ? AND IS_DELETE = FALSE")
 
 	connection := database.GetMySqlConnection()
 	defer database.CloseMySqlConnection()
@@ -509,9 +509,9 @@ func (CategoryMySqlMapper) GetCategoriesByParentIdUserAndType(parentId primitive
 
 func (CategoryMySqlMapper) GetCategoryByObjectIdAndUser(plainId string, userId primitive.ObjectID) model.CategoryEntity {
 	var sqlString bytes.Buffer
-	sqlString.WriteString("SELECT ID, USER_ID, PARENT_ID, NAME, TYPE, REMARK, CREATE_TIME, MODIFY_TIME FROM ")
+	sqlString.WriteString("SELECT ID, BELONGS_USER_ID, PARENT_ID, NAME, TYPE, REMARK, CREATE_TIME, MODIFY_TIME FROM ")
 	sqlString.WriteString(database.CategoryTableName)
-	sqlString.WriteString(" WHERE ID = ? AND USER_ID = ? AND IS_DELETE = FALSE")
+	sqlString.WriteString(" WHERE ID = ? AND BELONGS_USER_ID = ? AND IS_DELETE = FALSE")
 
 	connection := database.GetMySqlConnection()
 	defer database.CloseMySqlConnection()
@@ -532,9 +532,9 @@ func (CategoryMySqlMapper) GetCategoryByObjectIdAndUser(plainId string, userId p
 
 func (CategoryMySqlMapper) GetCategoryByNameAndUser(categoryName string, userId primitive.ObjectID) model.CategoryEntity {
 	var sqlString bytes.Buffer
-	sqlString.WriteString("SELECT ID, USER_ID, PARENT_ID, NAME, TYPE, REMARK, CREATE_TIME, MODIFY_TIME FROM ")
+	sqlString.WriteString("SELECT ID, BELONGS_USER_ID, PARENT_ID, NAME, TYPE, REMARK, CREATE_TIME, MODIFY_TIME FROM ")
 	sqlString.WriteString(database.CategoryTableName)
-	sqlString.WriteString(" WHERE NAME = ? AND USER_ID = ? AND IS_DELETE = FALSE")
+	sqlString.WriteString(" WHERE NAME = ? AND BELONGS_USER_ID = ? AND IS_DELETE = FALSE")
 
 	connection := database.GetMySqlConnection()
 	defer database.CloseMySqlConnection()
@@ -555,9 +555,9 @@ func (CategoryMySqlMapper) GetCategoryByNameAndUser(categoryName string, userId 
 
 func (CategoryMySqlMapper) GetCategoryByNameUserAndType(categoryName string, userId primitive.ObjectID, categoryType string) model.CategoryEntity {
 	var sqlString bytes.Buffer
-	sqlString.WriteString("SELECT ID, USER_ID, PARENT_ID, NAME, TYPE, REMARK, CREATE_TIME, MODIFY_TIME FROM ")
+	sqlString.WriteString("SELECT ID, BELONGS_USER_ID, PARENT_ID, NAME, TYPE, REMARK, CREATE_TIME, MODIFY_TIME FROM ")
 	sqlString.WriteString(database.CategoryTableName)
-	sqlString.WriteString(" WHERE NAME = ? AND USER_ID = ? AND TYPE = ? AND IS_DELETE = FALSE")
+	sqlString.WriteString(" WHERE NAME = ? AND BELONGS_USER_ID = ? AND TYPE = ? AND IS_DELETE = FALSE")
 
 	connection := database.GetMySqlConnection()
 	defer database.CloseMySqlConnection()
@@ -578,9 +578,9 @@ func (CategoryMySqlMapper) GetCategoryByNameUserAndType(categoryName string, use
 
 func (CategoryMySqlMapper) GetCategoryByNameUserTypeAndParent(categoryName string, userId primitive.ObjectID, categoryType string, parentId primitive.ObjectID) model.CategoryEntity {
 	var sqlString bytes.Buffer
-	sqlString.WriteString("SELECT ID, USER_ID, PARENT_ID, NAME, TYPE, REMARK, CREATE_TIME, MODIFY_TIME FROM ")
+	sqlString.WriteString("SELECT ID, BELONGS_USER_ID, PARENT_ID, NAME, TYPE, REMARK, CREATE_TIME, MODIFY_TIME FROM ")
 	sqlString.WriteString(database.CategoryTableName)
-	sqlString.WriteString(" WHERE NAME = ? AND USER_ID = ? AND TYPE = ? AND IS_DELETE = FALSE")
+	sqlString.WriteString(" WHERE NAME = ? AND BELONGS_USER_ID = ? AND TYPE = ? AND IS_DELETE = FALSE")
 
 	var rows *sql.Rows
 	var err error
@@ -627,7 +627,7 @@ func (CategoryMySqlMapper) DeleteCategoryByObjectIdAndUser(plainId string, userI
 	sqlString.WriteString("UPDATE ")
 	sqlString.WriteString(database.CategoryTableName)
 	sqlString.WriteString(" SET IS_DELETE = TRUE, DELETE_TIME = NOW(), DELETE_USER_ID = ? ")
-	sqlString.WriteString(" WHERE ID = ? AND USER_ID = ?")
+	sqlString.WriteString(" WHERE ID = ? AND BELONGS_USER_ID = ?")
 
 	connection := database.GetMySqlConnection()
 	defer database.CloseMySqlConnection()
@@ -669,7 +669,7 @@ func (CategoryMySqlMapper) UpdateCategoryByEntityAndUser(plainId string, updated
 
 	// Update fields from updatedEntity while preserving ID, UserId, and CreateTime
 	updatedEntity.Id = targetEntity.Id
-	updatedEntity.UserId = userId
+	updatedEntity.BelongsUserId = userId
 	updatedEntity.CreateTime = targetEntity.CreateTime
 	updatedEntity.UpdateTime = time.Now().UTC()
 
@@ -682,7 +682,7 @@ func (CategoryMySqlMapper) UpdateCategoryByEntityAndUser(plainId string, updated
 	sqlString.WriteString(" REMARK = ?, ")
 	sqlString.WriteString(" UPDATE_USER_ID = ?, ")
 	sqlString.WriteString(" UPDATE_TIME = ? ")
-	sqlString.WriteString(" WHERE ID = ? AND USER_ID = ? AND IS_DELETE = FALSE")
+	sqlString.WriteString(" WHERE ID = ? AND BELONGS_USER_ID = ? AND IS_DELETE = FALSE")
 
 	connection := database.GetMySqlConnection()
 	defer database.CloseMySqlConnection()
@@ -825,12 +825,12 @@ func convertRow2CategoryEntityWithUser(rows *sql.Rows) model.CategoryEntity {
 	}
 
 	return model.CategoryEntity{
-		Id:           util.Convert2ObjectId(id),
-		UserId:       util.Convert2ObjectId(userId),
-		ParentId:     util.Convert2ObjectId(parentId),
-		Name:         name,
-		Type:         categoryType,
-		Remark:       remark,
+		Id:            util.Convert2ObjectId(id),
+		BelongsUserId: util.Convert2ObjectId(userId),
+		ParentId:      util.Convert2ObjectId(parentId),
+		Name:          name,
+		Type:          categoryType,
+		Remark:        remark,
 		BaseEntity: model.BaseEntity{
 			CreateUserId: util.Convert2ObjectId(createUserId),
 			CreateTime:   createTime,

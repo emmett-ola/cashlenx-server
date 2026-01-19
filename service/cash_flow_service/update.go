@@ -61,7 +61,7 @@ func UpdateById(plainId, belongsDate, categoryName string, amount float64, descr
 	}
 
 	if categoryName != "" {
-		categoryEntity := category_mapper.INSTANCE.GetCategoryByNameAndUser(categoryName, existingEntity.UserId)
+		categoryEntity := category_mapper.INSTANCE.GetCategoryByNameAndUser(categoryName, existingEntity.BelongsUserId)
 		if categoryEntity.IsEmpty() {
 			return model.CashFlowEntity{}, errors.New("category does not exist or access denied")
 		}

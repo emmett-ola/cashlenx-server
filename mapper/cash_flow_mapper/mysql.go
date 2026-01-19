@@ -217,7 +217,7 @@ func (CashFlowMySqlMapper) InsertCashFlowByEntity(newEntity model.CashFlowEntity
 	sqlString.WriteString("INSERT ")
 	sqlString.WriteString(database.CashFlowTableName)
 	sqlString.WriteString(" SET ID = ?, ")
-	sqlString.WriteString(" USER_ID = ?, ") // Added USER_ID
+	sqlString.WriteString(" BELONGS_USER_ID = ?, ") // Added USER_ID
 	sqlString.WriteString(" CATEGORY_ID = ?, ")
 	sqlString.WriteString(" BELONGS_DATE = ?, ")
 	// sqlString.WriteString(" FLOW_TYPE = ?, ")
@@ -238,7 +238,7 @@ func (CashFlowMySqlMapper) InsertCashFlowByEntity(newEntity model.CashFlowEntity
 		util.Logger.Errorw("insert failed", "error", err)
 	}
 
-	result, err := statement.Exec(newPlainId, newEntity.UserId.Hex(), newEntity.CategoryId.Hex(), newEntity.BelongsDate,
+	result, err := statement.Exec(newPlainId, newEntity.BelongsUserId.Hex(), newEntity.CategoryId.Hex(), newEntity.BelongsDate,
 		newEntity.Amount, newEntity.Description, newEntity.Remark, newEntity.CreateUserId.Hex(), newEntity.CreateTime, newEntity.UpdateUserId.Hex(), newEntity.UpdateTime)
 	if err != nil {
 		util.Logger.Errorw("insert failed", "error", err)
@@ -260,7 +260,7 @@ func (CashFlowMySqlMapper) BulkInsertCashFlows(entities []model.CashFlowEntity) 
 	var sqlString bytes.Buffer
 	sqlString.WriteString("INSERT INTO ")
 	sqlString.WriteString(database.CashFlowTableName)
-	sqlString.WriteString(" (ID, USER_ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION, REMARK, CREATE_USER_ID, CREATE_TIME, UPDATE_USER_ID, UPDATE_TIME, IS_DELETE) VALUES ")
+	sqlString.WriteString(" (ID, BELONGS_USER_ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION, REMARK, CREATE_USER_ID, CREATE_TIME, UPDATE_USER_ID, UPDATE_TIME, IS_DELETE) VALUES ")
 
 	ids := make([]string, len(entities))
 	values := make([]interface{}, 0, len(entities)*12)
@@ -286,7 +286,7 @@ func (CashFlowMySqlMapper) BulkInsertCashFlows(entities []model.CashFlowEntity) 
 			updateTime = time.Now().UTC()
 		}
 
-		values = append(values, entityId, entity.UserId.Hex(), entity.CategoryId.Hex(), entity.BelongsDate,
+		values = append(values, entityId, entity.BelongsUserId.Hex(), entity.CategoryId.Hex(), entity.BelongsDate,
 			entity.Amount, entity.Description, entity.Remark, entity.CreateUserId.Hex(), createTime, entity.UpdateUserId.Hex(), updateTime, false)
 	}
 
@@ -322,7 +322,7 @@ func (CashFlowMySqlMapper) UpdateCashFlowByEntity(plainId string, updatedEntity 
 	}
 
 	updatedEntity.Id = targetEntity.Id
-	updatedEntity.UserId = targetEntity.UserId
+	updatedEntity.BelongsUserId = targetEntity.BelongsUserId
 	updatedEntity.CreateTime = targetEntity.CreateTime
 	updatedEntity.CreateUserId = targetEntity.CreateUserId
 	updatedEntity.UpdateTime = time.Now().UTC()
@@ -558,9 +558,9 @@ func (CashFlowMySqlMapper) TruncateCashFlows() error {
 
 func (CashFlowMySqlMapper) GetCashFlowByObjectIdAndUser(plainId string, userId primitive.ObjectID) model.CashFlowEntity {
 	var sqlString bytes.Buffer
-	sqlString.WriteString("SELECT ID, USER_ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION, REMARK, CREATE_USER_ID, CREATE_TIME, UPDATE_USER_ID, UPDATE_TIME FROM ")
+	sqlString.WriteString("SELECT ID, BELONGS_USER_ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION, REMARK, CREATE_USER_ID, CREATE_TIME, UPDATE_USER_ID, UPDATE_TIME FROM ")
 	sqlString.WriteString(database.CashFlowTableName)
-	sqlString.WriteString(" WHERE ID = ? AND USER_ID = ? ")
+	sqlString.WriteString(" WHERE ID = ? AND BELONGS_USER_ID = ? ")
 	sqlString.WriteString(database.SqlExcludeDeleted)
 
 	connection := database.GetMySqlConnection()
@@ -582,9 +582,9 @@ func (CashFlowMySqlMapper) GetCashFlowByObjectIdAndUser(plainId string, userId p
 
 func (CashFlowMySqlMapper) GetCashFlowsByBelongsDateAndUser(belongsDate time.Time, userId primitive.ObjectID) []model.CashFlowEntity {
 	var sqlString bytes.Buffer
-	sqlString.WriteString("SELECT ID, USER_ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION FROM ")
+	sqlString.WriteString("SELECT ID, BELONGS_USER_ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION FROM ")
 	sqlString.WriteString(database.CashFlowTableName)
-	sqlString.WriteString(" WHERE BELONGS_DATE = ? AND USER_ID = ? ")
+	sqlString.WriteString(" WHERE BELONGS_DATE = ? AND BELONGS_USER_ID = ? ")
 	sqlString.WriteString(database.SqlExcludeDeleted)
 
 	connection := database.GetMySqlConnection()
@@ -605,9 +605,9 @@ func (CashFlowMySqlMapper) GetCashFlowsByBelongsDateAndUser(belongsDate time.Tim
 
 func (CashFlowMySqlMapper) GetCashFlowsByDateRangeAndUser(from, to time.Time, userId primitive.ObjectID) []model.CashFlowEntity {
 	var sqlString bytes.Buffer
-	sqlString.WriteString("SELECT ID, USER_ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION FROM ")
+	sqlString.WriteString("SELECT ID, BELONGS_USER_ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION FROM ")
 	sqlString.WriteString(database.CashFlowTableName)
-	sqlString.WriteString(" WHERE BELONGS_DATE BETWEEN ? AND ? AND USER_ID = ? AND IS_DELETE = FALSE ")
+	sqlString.WriteString(" WHERE BELONGS_DATE BETWEEN ? AND ? AND BELONGS_USER_ID = ? AND IS_DELETE = FALSE ")
 
 	connection := database.GetMySqlConnection()
 	defer database.CloseMySqlConnection()
@@ -630,9 +630,9 @@ func (CashFlowMySqlMapper) GetCashFlowsByDateRangeAndUser(from, to time.Time, us
 
 func (CashFlowMySqlMapper) GetCashFlowsByCategoryIdAndUser(categoryPlainId string, userId primitive.ObjectID) []model.CashFlowEntity {
 	var sqlString bytes.Buffer
-	sqlString.WriteString("SELECT ID, USER_ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION FROM ")
+	sqlString.WriteString("SELECT ID, BELONGS_USER_ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION FROM ")
 	sqlString.WriteString(database.CashFlowTableName)
-	sqlString.WriteString(" WHERE CATEGORY_ID = ? AND USER_ID = ? AND IS_DELETE = FALSE ")
+	sqlString.WriteString(" WHERE CATEGORY_ID = ? AND BELONGS_USER_ID = ? AND IS_DELETE = FALSE ")
 
 	connection := database.GetMySqlConnection()
 	defer database.CloseMySqlConnection()
@@ -652,9 +652,9 @@ func (CashFlowMySqlMapper) GetCashFlowsByCategoryIdAndUser(categoryPlainId strin
 
 func (CashFlowMySqlMapper) GetAllCashFlowsByUser(userId primitive.ObjectID, limit, offset int) []model.CashFlowEntity {
 	var sqlString bytes.Buffer
-	sqlString.WriteString("SELECT ID, USER_ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION FROM ")
+	sqlString.WriteString("SELECT ID, BELONGS_USER_ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION FROM ")
 	sqlString.WriteString(database.CashFlowTableName)
-	sqlString.WriteString(" WHERE USER_ID = ? AND IS_DELETE = FALSE ")
+	sqlString.WriteString(" WHERE BELONGS_USER_ID = ? AND IS_DELETE = FALSE ")
 	sqlString.WriteString(" ORDER BY BELONGS_DATE DESC ")
 
 	if limit > 0 {
@@ -689,7 +689,7 @@ func (CashFlowMySqlMapper) CountAllCashFlowsByUser(userId primitive.ObjectID) in
 	var sqlString bytes.Buffer
 	sqlString.WriteString("SELECT COUNT(1) FROM ")
 	sqlString.WriteString(database.CashFlowTableName)
-	sqlString.WriteString(" WHERE USER_ID = ? AND IS_DELETE = FALSE ")
+	sqlString.WriteString(" WHERE BELONGS_USER_ID = ? AND IS_DELETE = FALSE ")
 
 	connection := database.GetMySqlConnection()
 	defer database.CloseMySqlConnection()
@@ -720,7 +720,7 @@ func (CashFlowMySqlMapper) DeleteCashFlowByObjectIdAndUser(plainId string, userI
 	sqlString.WriteString("UPDATE ")
 	sqlString.WriteString(database.CashFlowTableName)
 	sqlString.WriteString(" SET IS_DELETE = TRUE, DELETE_TIME = NOW(), DELETE_USER_ID = ? ")
-	sqlString.WriteString(" WHERE ID = ? AND USER_ID = ? ")
+	sqlString.WriteString(" WHERE ID = ? AND BELONGS_USER_ID = ? ")
 	sqlString.WriteString(database.SqlExcludeDeleted)
 
 	connection := database.GetMySqlConnection()
@@ -864,13 +864,13 @@ func convertRow2CashFlowEntityWithUser(rows *sql.Rows) model.CashFlowEntity {
 	}
 
 	return model.CashFlowEntity{
-		Id:          util.Convert2ObjectId(id),
-		UserId:      util.Convert2ObjectId(userId),
-		CategoryId:  util.Convert2ObjectId(categoryId),
-		BelongsDate: util.FormatDateFromStringWithDash(belongsDate),
-		Amount:      amount,
-		Description: description,
-		Remark:      remark,
+		Id:            util.Convert2ObjectId(id),
+		BelongsUserId: util.Convert2ObjectId(userId),
+		CategoryId:    util.Convert2ObjectId(categoryId),
+		BelongsDate:   util.FormatDateFromStringWithDash(belongsDate),
+		Amount:        amount,
+		Description:   description,
+		Remark:        remark,
 		BaseEntity: model.BaseEntity{
 			CreateUserId: util.Convert2ObjectId(createUserId),
 			CreateTime:   createTime,

@@ -10,13 +10,13 @@ import (
 )
 
 type CategoryEntity struct {
-	Id         primitive.ObjectID `bson:"_id,omitempty"`
-	UserId     primitive.ObjectID `json:"user_id" bson:"user_id"`
-	ParentId   primitive.ObjectID `json:"parent_id" bson:"parent_id"`
-	Name       string             `json:"name" bson:"name"`
-	Type       string             `json:"type" bson:"type"`
-	Remark     string             `json:"remark" bson:"remark"`
-	BaseEntity `bson:",inline"`
+	Id            primitive.ObjectID `bson:"_id,omitempty"`
+	BelongsUserId primitive.ObjectID `json:"belongs_user_id" bson:"belongs_user_id"`
+	ParentId      primitive.ObjectID `json:"parent_id" bson:"parent_id"`
+	Name          string             `json:"name" bson:"name"`
+	Type          string             `json:"type" bson:"type"`
+	Remark        string             `json:"remark" bson:"remark"`
+	BaseEntity    `bson:",inline"`
 }
 
 func (entity CategoryEntity) IsEmpty() bool {

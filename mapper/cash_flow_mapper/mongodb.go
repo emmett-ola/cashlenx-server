@@ -396,7 +396,7 @@ func (CashFlowMongoDbMapper) GetCashFlowByObjectIdAndUser(plainId string, userId
 
 	filter := bson.D{
 		primitive.E{Key: "_id", Value: objectId},
-		primitive.E{Key: "user_id", Value: userId},
+		primitive.E{Key: "belongs_user_id", Value: userId},
 		primitive.E{Key: "is_delete", Value: false},
 	}
 
@@ -408,7 +408,7 @@ func (CashFlowMongoDbMapper) GetCashFlowByObjectIdAndUser(plainId string, userId
 func (CashFlowMongoDbMapper) GetCashFlowsByBelongsDateAndUser(belongsDate time.Time, userId primitive.ObjectID) []model.CashFlowEntity {
 	filter := bson.D{
 		primitive.E{Key: "belongs_date", Value: belongsDate},
-		primitive.E{Key: "user_id", Value: userId},
+		primitive.E{Key: "belongs_user_id", Value: userId},
 		primitive.E{Key: "is_delete", Value: false},
 	}
 
@@ -429,7 +429,7 @@ func (CashFlowMongoDbMapper) GetCashFlowsByDateRangeAndUser(from, to time.Time, 
 			"$gte": from,
 			"$lte": to,
 		}},
-		primitive.E{Key: "user_id", Value: userId},
+		primitive.E{Key: "belongs_user_id", Value: userId},
 		primitive.E{Key: "is_delete", Value: false},
 	}
 
@@ -453,7 +453,7 @@ func (CashFlowMongoDbMapper) GetCashFlowsByCategoryIdAndUser(categoryPlainId str
 
 	filter := bson.D{
 		primitive.E{Key: "category_id", Value: categoryObjectId},
-		primitive.E{Key: "user_id", Value: userId},
+		primitive.E{Key: "belongs_user_id", Value: userId},
 		primitive.E{Key: "is_delete", Value: false},
 	}
 
@@ -473,7 +473,7 @@ func (CashFlowMongoDbMapper) GetAllCashFlowsByUser(userId primitive.ObjectID, li
 	defer database.CloseMongoDbConnection()
 
 	filter := bson.D{
-		primitive.E{Key: "user_id", Value: userId},
+		primitive.E{Key: "belongs_user_id", Value: userId},
 	}
 
 	var targetEntityList []model.CashFlowEntity
@@ -487,7 +487,7 @@ func (CashFlowMongoDbMapper) GetAllCashFlowsByUser(userId primitive.ObjectID, li
 
 func (CashFlowMongoDbMapper) CountAllCashFlowsByUser(userId primitive.ObjectID) int64 {
 	filter := bson.D{
-		primitive.E{Key: "user_id", Value: userId},
+		primitive.E{Key: "belongs_user_id", Value: userId},
 	}
 
 	database.OpenMongoDbConnection(database.CashFlowTableName)
@@ -505,7 +505,7 @@ func (CashFlowMongoDbMapper) DeleteCashFlowByObjectIdAndUser(plainId string, use
 
 	filter := bson.D{
 		primitive.E{Key: "_id", Value: objectId},
-		primitive.E{Key: "user_id", Value: userId},
+		primitive.E{Key: "belongs_user_id", Value: userId},
 	}
 
 	database.OpenMongoDbConnection(database.CashFlowTableName)
@@ -599,7 +599,7 @@ func convertCashFlowEntity2BsonD(entity model.CashFlowEntity) bson.D {
 
 	return bson.D{
 		primitive.E{Key: "_id", Value: entity.Id},
-		primitive.E{Key: "user_id", Value: entity.UserId},
+		primitive.E{Key: "belongs_user_id", Value: entity.BelongsUserId},
 		primitive.E{Key: "category_id", Value: entity.CategoryId},
 		primitive.E{Key: "belongs_date", Value: entity.BelongsDate},
 		// primitive.E{Key: "flow_type", Value: entity.FlowType},

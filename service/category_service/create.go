@@ -46,10 +46,10 @@ func CreateForUser(name, categoryType, remark string, parentId string, userId st
 
 	// Create new category entity
 	newEntity := model.CategoryEntity{
-		UserId:     userObjectId,
-		Name:       name,
-		Type:       categoryType,
-		Remark:     remark,
+		BelongsUserId: userObjectId,
+		Name:          name,
+		Type:          categoryType,
+		Remark:        remark,
 		BaseEntity: model.BaseEntity{
 			CreateUserId: userObjectId,
 			CreateTime:   time.Now().UTC(),

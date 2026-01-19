@@ -209,7 +209,7 @@ func saveIntoDBForUser(cashFlowMapByColumnList []map[string]string, userId primi
 		cashFlowEntity := model.CashFlowEntity{}.Build(cashFlowMapByColumn)
 
 		// Set the userId for this cash flow
-		cashFlowEntity.UserId = userId
+		cashFlowEntity.BelongsUserId = userId
 
 		if cashFlowEntity.Id != primitive.NilObjectID {
 			// Check if cash flow already exists for this user

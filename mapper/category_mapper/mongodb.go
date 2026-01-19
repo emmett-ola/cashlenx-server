@@ -57,7 +57,7 @@ func (CategoryMongoDbMapper) GetCategoryByName(categoryName string) model.Catego
 
 func (CategoryMongoDbMapper) GetCategoriesByUserAndType(userObjectId primitive.ObjectID, categoryType string, page, pageSize int) ([]model.CategoryEntity, error) {
 	filter := bson.D{
-		primitive.E{Key: "user_id", Value: userObjectId},
+		primitive.E{Key: "belongs_user_id", Value: userObjectId},
 		primitive.E{Key: "type", Value: categoryType},
 	}
 
@@ -245,7 +245,7 @@ func (CategoryMongoDbMapper) CountAllCategories() int64 {
 // CountCategoriesByUserAndType counts categories filtered by user ID and type
 func (CategoryMongoDbMapper) CountCategoriesByUserAndType(userObjectId primitive.ObjectID, categoryType string) (int64, error) {
 	filter := bson.D{
-		primitive.E{Key: "user_id", Value: userObjectId},
+		primitive.E{Key: "belongs_user_id", Value: userObjectId},
 		primitive.E{Key: "type", Value: categoryType},
 	}
 
@@ -262,7 +262,7 @@ func (CategoryMongoDbMapper) CountCategoriesByUserAndType(userObjectId primitive
 
 func (CategoryMongoDbMapper) GetRootCategoriesByUser(userId primitive.ObjectID) ([]model.CategoryEntity, error) {
 	filter := bson.D{
-		primitive.E{Key: "user_id", Value: userId},
+		primitive.E{Key: "belongs_user_id", Value: userId},
 		primitive.E{Key: "$or", Value: bson.A{
 			bson.D{{Key: "parent_id", Value: bson.M{"$exists": false}}},
 			bson.D{{Key: "parent_id", Value: primitive.NilObjectID}},
@@ -284,7 +284,7 @@ func (CategoryMongoDbMapper) GetRootCategoriesByUser(userId primitive.ObjectID) 
 
 func (CategoryMongoDbMapper) GetRootCategoriesByUserAndType(userId primitive.ObjectID, categoryType string) ([]model.CategoryEntity, error) {
 	filter := bson.D{
-		primitive.E{Key: "user_id", Value: userId},
+		primitive.E{Key: "belongs_user_id", Value: userId},
 		primitive.E{Key: "type", Value: categoryType},
 		primitive.E{Key: "$or", Value: bson.A{
 			bson.D{{Key: "parent_id", Value: bson.M{"$exists": false}}},
@@ -308,7 +308,7 @@ func (CategoryMongoDbMapper) GetRootCategoriesByUserAndType(userId primitive.Obj
 func (CategoryMongoDbMapper) GetCategoriesByParentIdAndUser(parentId primitive.ObjectID, userId primitive.ObjectID) ([]model.CategoryEntity, error) {
 	filter := bson.D{
 		primitive.E{Key: "parent_id", Value: parentId},
-		primitive.E{Key: "user_id", Value: userId},
+		primitive.E{Key: "belongs_user_id", Value: userId},
 	}
 
 	database.OpenMongoDbConnection(database.CategoryTableName)
@@ -327,7 +327,7 @@ func (CategoryMongoDbMapper) GetCategoriesByParentIdAndUser(parentId primitive.O
 func (CategoryMongoDbMapper) GetCategoriesByParentIdUserAndType(parentId primitive.ObjectID, userId primitive.ObjectID, categoryType string) ([]model.CategoryEntity, error) {
 	filter := bson.D{
 		primitive.E{Key: "parent_id", Value: parentId},
-		primitive.E{Key: "user_id", Value: userId},
+		primitive.E{Key: "belongs_user_id", Value: userId},
 		primitive.E{Key: "type", Value: categoryType},
 	}
 
@@ -372,7 +372,7 @@ func (CategoryMongoDbMapper) GetCategoryByObjectIdAndUser(plainId string, userId
 
 	filter := bson.D{
 		primitive.E{Key: "_id", Value: objectId},
-		primitive.E{Key: "user_id", Value: userId},
+		primitive.E{Key: "belongs_user_id", Value: userId},
 		primitive.E{Key: "is_delete", Value: false},
 	}
 
@@ -385,7 +385,7 @@ func (CategoryMongoDbMapper) GetCategoryByObjectIdAndUser(plainId string, userId
 func (CategoryMongoDbMapper) GetCategoryByNameAndUser(categoryName string, userId primitive.ObjectID) model.CategoryEntity {
 	filter := bson.D{
 		primitive.E{Key: "name", Value: categoryName},
-		primitive.E{Key: "user_id", Value: userId},
+		primitive.E{Key: "belongs_user_id", Value: userId},
 		primitive.E{Key: "is_delete", Value: false},
 	}
 
@@ -398,7 +398,7 @@ func (CategoryMongoDbMapper) GetCategoryByNameAndUser(categoryName string, userI
 func (CategoryMongoDbMapper) GetCategoryByNameUserAndType(categoryName string, userId primitive.ObjectID, categoryType string) model.CategoryEntity {
 	filter := bson.D{
 		primitive.E{Key: "name", Value: categoryName},
-		primitive.E{Key: "user_id", Value: userId},
+		primitive.E{Key: "belongs_user_id", Value: userId},
 		primitive.E{Key: "type", Value: categoryType},
 		primitive.E{Key: "is_delete", Value: false},
 	}
@@ -412,7 +412,7 @@ func (CategoryMongoDbMapper) GetCategoryByNameUserAndType(categoryName string, u
 func (CategoryMongoDbMapper) GetCategoryByNameUserTypeAndParent(categoryName string, userId primitive.ObjectID, categoryType string, parentId primitive.ObjectID) model.CategoryEntity {
 	filter := bson.D{
 		primitive.E{Key: "name", Value: categoryName},
-		primitive.E{Key: "user_id", Value: userId},
+		primitive.E{Key: "belongs_user_id", Value: userId},
 		primitive.E{Key: "type", Value: categoryType},
 		primitive.E{Key: "is_delete", Value: false},
 	}
@@ -442,7 +442,7 @@ func (CategoryMongoDbMapper) DeleteCategoryByObjectIdAndUser(plainId string, use
 
 	filter := bson.D{
 		primitive.E{Key: "_id", Value: objectId},
-		primitive.E{Key: "user_id", Value: userId},
+		primitive.E{Key: "belongs_user_id", Value: userId},
 		primitive.E{Key: "is_delete", Value: false},
 	}
 
@@ -495,7 +495,7 @@ func (CategoryMongoDbMapper) UpdateCategoryByEntityAndUser(plainId string, updat
 
 	filter := bson.D{
 		primitive.E{Key: "_id", Value: objectId},
-		primitive.E{Key: "user_id", Value: userId},
+		primitive.E{Key: "belongs_user_id", Value: userId},
 		primitive.E{Key: "is_delete", Value: false},
 	}
 
@@ -510,7 +510,7 @@ func (CategoryMongoDbMapper) UpdateCategoryByEntityAndUser(plainId string, updat
 
 	// Update fields from updatedEntity while preserving ID, UserId, and CreateTime
 	updatedEntity.Id = targetEntity.Id
-	updatedEntity.UserId = userId
+	updatedEntity.BelongsUserId = userId
 	updatedEntity.CreateTime = targetEntity.CreateTime
 	updatedEntity.UpdateTime = time.Now().UTC()
 
@@ -593,7 +593,7 @@ func convertCategoryEntity2BsonD(entity model.CategoryEntity) bson.D {
 		primitive.E{Key: "parent_id", Value: entity.ParentId},
 		primitive.E{Key: "name", Value: entity.Name},
 		primitive.E{Key: "type", Value: entity.Type},
-		primitive.E{Key: "user_id", Value: entity.UserId},
+		primitive.E{Key: "belongs_user_id", Value: entity.BelongsUserId},
 		primitive.E{Key: "remark", Value: entity.Remark},
 		primitive.E{Key: "create_user_id", Value: entity.CreateUserId},
 		primitive.E{Key: "create_time", Value: entity.CreateTime},

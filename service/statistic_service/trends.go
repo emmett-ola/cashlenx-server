@@ -97,7 +97,7 @@ func calculateTrends(period, dateStr string, fromDate, toDate time.Time, cashFlo
 		if flows, exists := flowsByDate[dateKey]; exists {
 			for _, flow := range flows {
 				// Get category type
-				category := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(flow.CategoryId.Hex(), flow.UserId)
+				category := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(flow.CategoryId.Hex(), flow.BelongsUserId)
 				categoryType := ""
 				if !category.IsEmpty() {
 					categoryType = category.Type

@@ -30,12 +30,12 @@ func RequestPasswordReset(emailOrUsername string) error {
 
 	// Create password reset token
 	resetToken := model.PasswordResetToken{
-		Id:        primitive.NewObjectID().Hex(),
-		UserId:    user.Id.Hex(),
-		Token:     token,
-		ExpiresAt: expirationTime,
-		CreatedAt: util.GetCurrentTime(),
-		UsedAt:    nil,
+		Id:            primitive.NewObjectID().Hex(),
+		BelongsUserId: user.Id.Hex(),
+		Token:         token,
+		ExpiresAt:     expirationTime,
+		CreatedAt:     util.GetCurrentTime(),
+		UsedAt:        nil,
 	}
 
 	// Save token to database
@@ -75,7 +75,7 @@ func ConfirmPasswordReset(token string, newPassword string) error {
 	}
 
 	// Get user
-	user := GetUserByObjectId(resetToken.UserId)
+	user := GetUserByObjectId(resetToken.BelongsUserId)
 	if user.Id.IsZero() {
 		return errors.NewNotFoundError("user not found")
 	}
