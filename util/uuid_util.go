@@ -29,6 +29,23 @@ func Convert2ObjectId(plainId string) primitive.ObjectID {
 }
 
 // GenerateObjectId generates a new ObjectID in hex string format
+// Uses Snowflake algorithm for better uniqueness guarantees
 func GenerateObjectId() string {
-	return primitive.NewObjectID().Hex()
+	id, err := GenerateSnowflakeIDString()
+	if err != nil {
+		// Fallback to MongoDB ObjectID if Snowflake fails
+		Logger.Warnw("Snowflake ID generation failed, using MongoDB ObjectID fallback", "error", err)
+		return primitive.NewObjectID().Hex()
+	}
+	return id
+}
+
+// GenerateObjectIdWithFallback generates an ID with fallback to ensure it never fails
+func GenerateObjectIdWithFallback() string {
+	id := GenerateObjectId()
+	if id == "" {
+		// Ultimate fallback
+		return primitive.NewObjectID().Hex()
+	}
+	return id
 }

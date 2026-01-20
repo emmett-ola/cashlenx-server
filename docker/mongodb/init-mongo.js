@@ -8,154 +8,41 @@ print('Starting MongoDB initialization for CashLenX...');
 db = db.getSiblingDB('cashlenx');
 
 // Create collections
+db.createCollection('users');
+db.createCollection('refresh_tokens');
+db.createCollection('password_reset_tokens');
 db.createCollection('cash_flows');
 db.createCollection('categories');
 
 print('Collections created successfully');
 
-// Insert basic default categories (auto-loaded on init)
-// Aligned with Go CategoryEntity model:
-// - _id: MongoDB ObjectId
-// - belongs_user_id: Owner user ID (system default)
-// - parent_id: for hierarchical categories (optional)
-// - name: category name
-// - type: INCOME or EXPENSE
-// - remark: additional notes
-// - create_time: creation timestamp
-// - modify_time: last modification timestamp
-// - is_delete: soft delete flag
-const categories = [
-  {
-    _id: ObjectId(),
-    belongs_user_id: ObjectId("000000000000000000000000"),
-    name: 'Salary',
-    type: 'INCOME',
-    remark: 'Income from employment',
-    create_user_id: ObjectId("000000000000000000000000"),
-    create_time: new Date(),
-    update_user_id: ObjectId("000000000000000000000000"),
-    modify_time: new Date(),
-    is_delete: false
-  },
-  {
-    _id: ObjectId(),
-    belongs_user_id: ObjectId("000000000000000000000000"),
-    name: 'Freelance',
-    type: 'INCOME',
-    remark: 'Income from freelance work',
-    create_user_id: ObjectId("000000000000000000000000"),
-    create_time: new Date(),
-    update_user_id: ObjectId("000000000000000000000000"),
-    modify_time: new Date(),
-    is_delete: false
-  },
-  {
-    _id: ObjectId(),
-    belongs_user_id: ObjectId("000000000000000000000000"),
-    name: 'Investment',
-    type: 'INCOME',
-    remark: 'Income from investments and dividends',
-    create_user_id: ObjectId("000000000000000000000000"),
-    create_time: new Date(),
-    update_user_id: ObjectId("000000000000000000000000"),
-    modify_time: new Date(),
-    is_delete: false
-  },
-  {
-    _id: ObjectId(),
-    belongs_user_id: ObjectId("000000000000000000000000"),
-    name: 'Other Income',
-    type: 'INCOME',
-    remark: 'Other income sources',
-    create_user_id: ObjectId("000000000000000000000000"),
-    create_time: new Date(),
-    update_user_id: ObjectId("000000000000000000000000"),
-    modify_time: new Date(),
-    is_delete: false
-  },
-  {
-    _id: ObjectId(),
-    belongs_user_id: ObjectId("000000000000000000000000"),
-    name: 'Food & Dining',
-    type: 'EXPENSE',
-    remark: 'Restaurants, groceries, food delivery',
-    create_user_id: ObjectId("000000000000000000000000"),
-    create_time: new Date(),
-    update_user_id: ObjectId("000000000000000000000000"),
-    modify_time: new Date(),
-    is_delete: false
-  },
-  {
-    _id: ObjectId(),
-    belongs_user_id: ObjectId("000000000000000000000000"),
-    name: 'Transportation',
-    type: 'EXPENSE',
-    remark: 'Gas, public transport, car maintenance',
-    create_user_id: ObjectId("000000000000000000000000"),
-    create_time: new Date(),
-    update_user_id: ObjectId("000000000000000000000000"),
-    modify_time: new Date(),
-    is_delete: false
-  },
-  {
-    _id: ObjectId(),
-    belongs_user_id: ObjectId("000000000000000000000000"),
-    name: 'Shopping',
-    type: 'EXPENSE',
-    remark: 'Retail purchases, online shopping',
-    create_user_id: ObjectId("000000000000000000000000"),
-    create_time: new Date(),
-    update_user_id: ObjectId("000000000000000000000000"),
-    modify_time: new Date(),
-    is_delete: false
-  },
-  {
-    _id: ObjectId(),
-    belongs_user_id: ObjectId("000000000000000000000000"),
-    name: 'Entertainment',
-    type: 'EXPENSE',
-    remark: 'Movies, games, hobbies',
-    create_user_id: ObjectId("000000000000000000000000"),
-    create_time: new Date(),
-    update_user_id: ObjectId("000000000000000000000000"),
-    modify_time: new Date(),
-    is_delete: false
-  },
-  {
-    _id: ObjectId(),
-    belongs_user_id: ObjectId("000000000000000000000000"),
-    name: 'Healthcare',
-    type: 'EXPENSE',
-    remark: 'Medical expenses, pharmacy, fitness',
-    create_user_id: ObjectId("000000000000000000000000"),
-    create_time: new Date(),
-    update_user_id: ObjectId("000000000000000000000000"),
-    modify_time: new Date(),
-    is_delete: false
-  },
-  {
-    _id: ObjectId(),
-    belongs_user_id: ObjectId("000000000000000000000000"),
-    name: 'Utilities',
-    type: 'EXPENSE',
-    remark: 'Electricity, water, internet, phone',
-    create_user_id: ObjectId("000000000000000000000000"),
-    create_time: new Date(),
-    update_user_id: ObjectId("000000000000000000000000"),
-    modify_time: new Date(),
-    is_delete: false
-  }
-];
-
-db.categories.insertMany(categories);
-print(`Inserted ${categories.length} default categories`);
+// Note: Default categories are automatically created for each user when they register
+// See config/default_categories.json for the list of default categories
 
 // Create indexes for better query performance
+// Users indexes
+db.users.createIndex({ username: 1 }, { unique: true });
+db.users.createIndex({ role: 1 });
+db.users.createIndex({ is_delete: 1 });
+
+// Refresh tokens indexes
+db.refresh_tokens.createIndex({ token: 1 }, { unique: true });
+db.refresh_tokens.createIndex({ user_id: 1 });
+db.refresh_tokens.createIndex({ expires_at: 1 });
+
+// Password reset tokens indexes
+db.password_reset_tokens.createIndex({ token: 1 }, { unique: true });
+db.password_reset_tokens.createIndex({ user_id: 1 });
+db.password_reset_tokens.createIndex({ expires_at: 1 });
+
+// Cash flows indexes
 db.cash_flows.createIndex({ belongs_date: -1 });
 db.cash_flows.createIndex({ category_id: 1 });
 db.cash_flows.createIndex({ flow_type: 1 });
 db.cash_flows.createIndex({ belongs_date: -1, flow_type: 1 });
 db.cash_flows.createIndex({ belongs_user_id: 1 });
+
+// Categories indexes
 db.categories.createIndex({ belongs_user_id: 1 });
 db.categories.createIndex({ belongs_user_id: 1, name: 1 }, { unique: true });
 
@@ -163,9 +50,15 @@ print('Indexes created successfully');
 
 // Print initialization summary
 print('\n=== CashLenX MongoDB Initialized ===');
+print(`Users: ${db.users.countDocuments()}`);
+print(`Refresh Tokens: ${db.refresh_tokens.countDocuments()}`);
+print(`Password Reset Tokens: ${db.password_reset_tokens.countDocuments()}`);
 print(`Categories: ${db.categories.countDocuments()}`);
 print(`Cash Flows: ${db.cash_flows.countDocuments()}`);
+print('');
 print('Schema only - no demo data loaded');
+print('Admin user will be auto-created on first server start');
+print('Default categories will be auto-created for each new user');
 print('Load demo data via: cashlenx manage import -i demo-data.xlsx');
 print('=====================================\n');
 

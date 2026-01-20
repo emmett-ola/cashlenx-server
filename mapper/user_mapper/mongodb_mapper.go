@@ -39,6 +39,20 @@ func convertBsonM2UserEntity(bsonData bson.M) model.UserEntity {
 		user.IsActive = isActive
 	}
 
+	// Convert profile fields
+	if nickname, ok := bsonData["nickname"].(string); ok {
+		user.Nickname = nickname
+	}
+	if avatarUrl, ok := bsonData["avatar_url"].(string); ok {
+		user.AvatarUrl = avatarUrl
+	}
+	if emailAddress, ok := bsonData["email_address"].(string); ok {
+		user.EmailAddress = emailAddress
+	}
+	if gender, ok := bsonData["gender"].(string); ok {
+		user.Gender = gender
+	}
+
 	// Convert time fields
 	if createTime, ok := bsonData["create_time"].(time.Time); ok {
 		user.CreateTime = createTime
@@ -74,6 +88,10 @@ func convertUserEntity2BsonD(user model.UserEntity) bson.D {
 		primitive.E{Key: "password_hash", Value: user.PasswordHash},
 		primitive.E{Key: "is_active", Value: user.IsActive},
 		primitive.E{Key: "role", Value: user.Role},
+		primitive.E{Key: "nickname", Value: user.Nickname},
+		primitive.E{Key: "avatar_url", Value: user.AvatarUrl},
+		primitive.E{Key: "email_address", Value: user.EmailAddress},
+		primitive.E{Key: "gender", Value: user.Gender},
 		primitive.E{Key: "create_user_id", Value: user.CreateUserId},
 		primitive.E{Key: "create_time", Value: user.CreateTime},
 		primitive.E{Key: "update_user_id", Value: user.UpdateUserId},

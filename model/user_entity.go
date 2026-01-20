@@ -15,9 +15,10 @@ type UserEntity struct {
 	PasswordHash string             `json:"-" bson:"password_hash"`
 	IsActive     bool               `json:"is_active" bson:"is_active"`
 	Role         string             `json:"role" bson:"role"`
-	IsExternal   bool               `json:"is_external" bson:"is_external"`
-	ExternalId   string             `json:"external_id" bson:"external_id"`
-	PasswordSet  bool               `json:"password_set" bson:"password_set"`
+	Nickname     string             `json:"nickname,omitempty" bson:"nickname,omitempty"`
+	AvatarUrl    string             `json:"avatar_url,omitempty" bson:"avatar_url,omitempty"`
+	EmailAddress string             `json:"email_address,omitempty" bson:"email_address,omitempty"`
+	Gender       string             `json:"gender,omitempty" bson:"gender,omitempty"`
 	BaseEntity   `bson:",inline"`
 }
 
@@ -67,9 +68,10 @@ type UserDTO struct {
 	Password     string `json:"password,omitempty"` // Only used for password creation/updates
 	IsActive     bool   `json:"is_active,omitempty"`
 	Role         string `json:"role,omitempty"`
-	IsExternal   bool   `json:"is_external,omitempty"`
-	ExternalId   string `json:"external_id,omitempty"`
-	PasswordSet  bool   `json:"password_set,omitempty"`
+	Nickname     string `json:"nickname,omitempty"`
+	AvatarUrl    string `json:"avatar_url,omitempty"`
+	EmailAddress string `json:"email_address,omitempty"`
+	Gender       string `json:"gender,omitempty"`
 	CreatedAt    string `json:"created_at,omitempty"` // ISO formatted string for API
 	UpdatedAt    string `json:"updated_at,omitempty"` // ISO formatted string for API
 }

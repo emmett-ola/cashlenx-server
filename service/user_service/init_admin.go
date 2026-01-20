@@ -3,6 +3,7 @@ package user_service
 import (
 	"github.com/macar-x/cashlenx-server/mapper/user_mapper"
 	"github.com/macar-x/cashlenx-server/model"
+	"github.com/macar-x/cashlenx-server/service/category_service"
 	"github.com/macar-x/cashlenx-server/util"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
@@ -67,4 +68,12 @@ func InitAdminUser() {
 	}
 
 	util.Logger.Infof("Admin user %s created successfully", adminUsername)
+
+	// Initialize default categories for the admin user
+	if err := category_service.InitializeDefaultCategoriesForUser(userId); err != nil {
+		util.Logger.Warnw("Failed to initialize default categories for admin user",
+			"userId", userId,
+			"error", err)
+		// Don't fail admin user creation if category initialization fails
+	}
 }

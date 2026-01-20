@@ -23,6 +23,14 @@ func StartServer(port int32) {
 	tz := util.GetTimezone()
 	fmt.Printf("Loaded timezone: %v\n", tz)
 
+	// Initialize Snowflake ID generator
+	workerID := util.GetConfigInt("snowflake.worker_id", 0)
+	if err := util.InitSnowflakeGenerator(workerID); err != nil {
+		util.Logger.Warnf("Failed to initialize Snowflake generator with worker ID %d: %v, using default", workerID, err)
+	} else {
+		fmt.Printf("Snowflake ID generator initialized with worker ID: %d\n", workerID)
+	}
+
 	// Initialize admin user if needed
 	user_service.InitAdminUser()
 
@@ -31,6 +39,7 @@ func StartServer(port int32) {
 	// Register routes with new structure
 	registerOpenRoutes(r)       // Public endpoints (no auth)
 	registerAdminRoutes(r)      // Admin-only endpoints
+	registerUserRoutes(r)       // User-specific profile endpoints
 	registerCashRoute(r)        // User-specific cash flow endpoints
 	registerCategoryRoute(r)    // User-specific category endpoints
 	registerStatisticRoute(r)   // User-specific statistic endpoints
@@ -75,6 +84,12 @@ func registerAdminRoutes(r *mux.Router) {
 	r.HandleFunc("/api/admin/manage/restore", manage_controller.RestoreDatabase).Methods("POST")
 	r.HandleFunc("/api/admin/manage/export", manage_controller.ExportData).Methods("GET")
 	r.HandleFunc("/api/admin/manage/import", manage_controller.ImportData).Methods("POST")
+}
+
+// registerUserRoutes registers user-specific endpoints (authenticated users can access their own profiles)
+func registerUserRoutes(r *mux.Router) {
+	// User profile management
+	r.HandleFunc("/api/user/profile", user_controller.UpdateProfile).Methods("PUT")
 }
 
 func registerCashRoute(r *mux.Router) {
@@ -190,6 +205,9 @@ func versionInfo(w http.ResponseWriter, r *http.Request) {
 			"POST /api/admin/manage/restore",
 			"GET /api/admin/manage/export",
 			"POST /api/admin/manage/import",
+		},
+			"user": {
+			"PUT /api/user/profile",
 		},
 			"cash_flow": {
 				"POST /api/cash/expense",

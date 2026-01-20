@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -114,6 +115,20 @@ func initDefaultValues() {
 	configurationMap["server.port"] = os.Getenv("SERVER_PORT")
 	configurationMap["server.host"] = os.Getenv("SERVER_HOST")
 	configurationMap["timezone"] = os.Getenv("TIMEZONE")
+
+	// Snowflake ID generator worker ID
+	snowflakeWorkerID := os.Getenv("SNOWFLAKE_WORKER_ID")
+	if snowflakeWorkerID == "" {
+		snowflakeWorkerID = "0" // Default to worker ID 0
+	}
+	configurationMap["snowflake.worker_id"] = snowflakeWorkerID
+
+	// Default categories path
+	defaultCategoriesPath := os.Getenv("DEFAULT_CATEGORIES_PATH")
+	if defaultCategoriesPath == "" {
+		defaultCategoriesPath = "config/default_categories.json"
+	}
+	configurationMap["default_categories.path"] = defaultCategoriesPath
 }
 
 func GetConfigByKey(configKey string) string {
@@ -123,6 +138,22 @@ func GetConfigByKey(configKey string) string {
 	} else {
 		return ""
 	}
+}
+
+func GetConfigInt(configKey string, defaultValue int64) int64 {
+	configValue := GetConfigByKey(configKey)
+	if configValue == "" {
+		return defaultValue
+	}
+
+	// Parse string to int64
+	var result int64
+	_, err := fmt.Sscanf(configValue, "%d", &result)
+	if err != nil {
+		Logger.Warnw("Failed to parse config value as int, using default", "key", configKey, "value", configValue, "default", defaultValue)
+		return defaultValue
+	}
+	return result
 }
 
 func SetConfigByKey(configKey, configValue string) {

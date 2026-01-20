@@ -192,14 +192,22 @@ func handleCategoryInfoForUser(categoryId, categoryName string, userId primitive
 	}
 	util.Logger.Warnw("category not existed for user", "category_name", categoryName, "user_id", userId.Hex())
 
+	// Pre-generate ID before insertion
+	newId := primitive.NewObjectID()
+
 	// Create new category for this user
-	plainId := category_mapper.INSTANCE.InsertCategoryByEntity(model.CategoryEntity{
+	insertedId := category_mapper.INSTANCE.InsertCategoryByEntity(model.CategoryEntity{
+		Id:            newId,
 		BelongsUserId: userId,
 		Name:          categoryName,
 		Remark:        "created by import",
 	})
+	if insertedId == "" {
+		util.Logger.Errorw("Failed to create category for user", "category_name", categoryName, "user_id", userId.Hex())
+		return ""
+	}
 	util.Logger.Infow("created new category for user", "category_name", categoryName, "user_id", userId.Hex())
-	return plainId
+	return newId.Hex()
 }
 
 // saveIntoDBForUser saves cash flows with user association
@@ -224,9 +232,15 @@ func saveIntoDBForUser(cashFlowMapByColumnList []map[string]string, userId primi
 					util.ToInteger(cashFlowMapByColumn[sheetRowNumberLabel]))
 				continue
 			}
+		} else {
+			// Pre-generate ID if not already set
+			cashFlowEntity.Id = primitive.NewObjectID()
 		}
-		newPlainId := cash_flow_mapper.INSTANCE.InsertCashFlowByEntity(cashFlowEntity)
-		cashFlowEntity.Id = util.Convert2ObjectId(newPlainId)
+		insertedId := cash_flow_mapper.INSTANCE.InsertCashFlowByEntity(cashFlowEntity)
+		if insertedId == "" {
+			util.Logger.Errorw("Failed to insert cash flow for user", "row", cashFlowMapByColumn[sheetRowNumberLabel], "user_id", userId.Hex())
+			continue
+		}
 		util.Logger.Debugw("cash_flow inserted for user",
 			"cash_flow", cashFlowEntity.ToString(),
 			"user_id", userId.Hex())

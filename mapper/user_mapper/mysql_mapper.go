@@ -19,7 +19,7 @@ type UserMySqlMapper struct{}
 func (m UserMySqlMapper) GetUserByObjectId(plainId string) model.UserEntity {
 	// Create the SQL query
 	var sqlString bytes.Buffer
-	sqlString.WriteString("SELECT id, username, password_hash, is_active, role, create_user_id, create_time, update_user_id, update_time FROM ")
+	sqlString.WriteString("SELECT id, username, password_hash, is_active, role, nickname, avatar_url, email_address, gender, create_user_id, create_time, update_user_id, update_time FROM ")
 	sqlString.WriteString(database.UserTableName)
 	sqlString.WriteString(" WHERE id = ? ")
 	sqlString.WriteString(database.SqlExcludeDeleted)
@@ -35,8 +35,9 @@ func (m UserMySqlMapper) GetUserByObjectId(plainId string) model.UserEntity {
 	var user model.UserEntity
 	var createTime, updateTime time.Time
 	var id, createUserId, updateUserId string
+	var nickname, avatarUrl, emailAddress, gender sql.NullString
 
-	err := row.Scan(&id, &user.Username, &user.PasswordHash, &user.IsActive, &user.Role, &createUserId, &createTime, &updateUserId, &updateTime)
+	err := row.Scan(&id, &user.Username, &user.PasswordHash, &user.IsActive, &user.Role, &nickname, &avatarUrl, &emailAddress, &gender, &createUserId, &createTime, &updateUserId, &updateTime)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			util.Logger.Debugw("User not found", "userId", plainId)
@@ -60,13 +61,27 @@ func (m UserMySqlMapper) GetUserByObjectId(plainId string) model.UserEntity {
 	user.UpdateUserId = util.Convert2ObjectId(updateUserId)
 	user.UpdateTime = updateTime
 
+	// Set profile fields if not null
+	if nickname.Valid {
+		user.Nickname = nickname.String
+	}
+	if avatarUrl.Valid {
+		user.AvatarUrl = avatarUrl.String
+	}
+	if emailAddress.Valid {
+		user.EmailAddress = emailAddress.String
+	}
+	if gender.Valid {
+		user.Gender = gender.String
+	}
+
 	return user
 }
 
 // GetUserByUsername retrieves a user by their username from MySQL
 func (m UserMySqlMapper) GetUserByUsername(username string) model.UserEntity {
 	// Create the SQL query
-	query := `SELECT id, username, password_hash, is_active, role, create_user_id, create_time, update_user_id, update_time FROM ` + database.UserTableName + ` WHERE username = ? AND is_delete = FALSE`
+	query := `SELECT id, username, password_hash, is_active, role, nickname, avatar_url, email_address, gender, create_user_id, create_time, update_user_id, update_time FROM ` + database.UserTableName + ` WHERE username = ? AND is_delete = FALSE`
 
 	// Get database connection
 	connection := database.GetMySqlConnection()
@@ -79,8 +94,9 @@ func (m UserMySqlMapper) GetUserByUsername(username string) model.UserEntity {
 	var user model.UserEntity
 	var createTime, updateTime time.Time
 	var id, createUserId, updateUserId string
+	var nickname, avatarUrl, emailAddress, gender sql.NullString
 
-	err := row.Scan(&id, &user.Username, &user.PasswordHash, &user.IsActive, &user.Role, &createUserId, &createTime, &updateUserId, &updateTime)
+	err := row.Scan(&id, &user.Username, &user.PasswordHash, &user.IsActive, &user.Role, &nickname, &avatarUrl, &emailAddress, &gender, &createUserId, &createTime, &updateUserId, &updateTime)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			util.Logger.Debugw("User not found", "username", username)
@@ -103,6 +119,20 @@ func (m UserMySqlMapper) GetUserByUsername(username string) model.UserEntity {
 	user.CreateTime = createTime
 	user.UpdateUserId = util.Convert2ObjectId(updateUserId)
 	user.UpdateTime = updateTime
+
+	// Set profile fields if not null
+	if nickname.Valid {
+		user.Nickname = nickname.String
+	}
+	if avatarUrl.Valid {
+		user.AvatarUrl = avatarUrl.String
+	}
+	if emailAddress.Valid {
+		user.EmailAddress = emailAddress.String
+	}
+	if gender.Valid {
+		user.Gender = gender.String
+	}
 
 	return user
 }
@@ -129,7 +159,7 @@ func (m UserMySqlMapper) InsertUserByEntity(newEntity model.UserEntity) string {
 	}
 
 	// Create the SQL query
-	query := `INSERT INTO ` + database.UserTableName + ` (id, username, password_hash, is_active, role, create_user_id, create_time, update_user_id, update_time, is_delete) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	query := `INSERT INTO ` + database.UserTableName + ` (id, username, password_hash, is_active, role, nickname, avatar_url, email_address, gender, create_user_id, create_time, update_user_id, update_time, is_delete) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	// Get database connection
 	connection := database.GetMySqlConnection()
@@ -143,6 +173,10 @@ func (m UserMySqlMapper) InsertUserByEntity(newEntity model.UserEntity) string {
 		newEntity.PasswordHash,
 		newEntity.IsActive,
 		newEntity.Role,
+		newEntity.Nickname,
+		newEntity.AvatarUrl,
+		newEntity.EmailAddress,
+		newEntity.Gender,
 		newEntity.CreateUserId.Hex(),
 		newEntity.CreateTime,
 		newEntity.UpdateUserId.Hex(),
@@ -171,7 +205,7 @@ func (m UserMySqlMapper) UpdateUserByEntity(plainId string, updatedEntity model.
 	updatedEntity.UpdateTime = time.Now()
 
 	// Create the SQL query
-	query := `UPDATE ` + database.UserTableName + ` SET username = ?, password_hash = ?, is_active = ?, role = ?, update_user_id = ?, update_time = ? WHERE id = ? AND is_delete = FALSE`
+	query := `UPDATE ` + database.UserTableName + ` SET username = ?, password_hash = ?, is_active = ?, role = ?, nickname = ?, avatar_url = ?, email_address = ?, gender = ?, update_user_id = ?, update_time = ? WHERE id = ? AND is_delete = FALSE`
 
 	// Get database connection
 	connection := database.GetMySqlConnection()
@@ -184,6 +218,10 @@ func (m UserMySqlMapper) UpdateUserByEntity(plainId string, updatedEntity model.
 		updatedEntity.PasswordHash,
 		updatedEntity.IsActive,
 		updatedEntity.Role,
+		updatedEntity.Nickname,
+		updatedEntity.AvatarUrl,
+		updatedEntity.EmailAddress,
+		updatedEntity.Gender,
 		updatedEntity.UpdateUserId.Hex(),
 		updatedEntity.UpdateTime,
 		plainId,
@@ -208,7 +246,7 @@ func (m UserMySqlMapper) UpdateUserByEntity(plainId string, updatedEntity model.
 func (m UserMySqlMapper) GetAllUsers(limit, offset int) []model.UserEntity {
 	// Create the SQL query with pagination
 	var sqlString bytes.Buffer
-	sqlString.WriteString("SELECT id, username, password_hash, is_active, role, create_user_id, create_time, update_user_id, update_time FROM ")
+	sqlString.WriteString("SELECT id, username, password_hash, is_active, role, nickname, avatar_url, email_address, gender, create_user_id, create_time, update_user_id, update_time FROM ")
 	sqlString.WriteString(database.UserTableName)
 	sqlString.WriteString(" WHERE TRUE ")
 	sqlString.WriteString(database.SqlExcludeDeleted)
@@ -233,8 +271,9 @@ func (m UserMySqlMapper) GetAllUsers(limit, offset int) []model.UserEntity {
 		var user model.UserEntity
 		var createTime, updateTime time.Time
 		var id, createUserId, updateUserId string
+		var nickname, avatarUrl, emailAddress, gender sql.NullString
 
-		err := rows.Scan(&id, &user.Username, &user.PasswordHash, &user.IsActive, &user.Role, &createUserId, &createTime, &updateUserId, &updateTime)
+		err := rows.Scan(&id, &user.Username, &user.PasswordHash, &user.IsActive, &user.Role, &nickname, &avatarUrl, &emailAddress, &gender, &createUserId, &createTime, &updateUserId, &updateTime)
 		if err != nil {
 			util.Logger.Errorw("Failed to scan user", "error", err)
 			continue
@@ -254,6 +293,20 @@ func (m UserMySqlMapper) GetAllUsers(limit, offset int) []model.UserEntity {
 		user.UpdateUserId = util.Convert2ObjectId(updateUserId)
 		user.UpdateTime = updateTime
 
+		// Set profile fields if not null
+		if nickname.Valid {
+			user.Nickname = nickname.String
+		}
+		if avatarUrl.Valid {
+			user.AvatarUrl = avatarUrl.String
+		}
+		if emailAddress.Valid {
+			user.EmailAddress = emailAddress.String
+		}
+		if gender.Valid {
+			user.Gender = gender.String
+		}
+
 		// Add the user to the slice
 		users = append(users, user)
 	}
@@ -265,7 +318,7 @@ func (m UserMySqlMapper) GetAllUsers(limit, offset int) []model.UserEntity {
 func (m UserMySqlMapper) GetAllUsersIncludeDeleted(limit, offset int) []model.UserEntity {
 	// Create the SQL query with pagination
 	var sqlString bytes.Buffer
-	sqlString.WriteString("SELECT id, username, password_hash, is_active, role, create_user_id, create_time, update_user_id, update_time FROM ")
+	sqlString.WriteString("SELECT id, username, password_hash, is_active, role, nickname, avatar_url, email_address, gender, create_user_id, create_time, update_user_id, update_time FROM ")
 	sqlString.WriteString(database.UserTableName)
 	// No SqlExcludeDeleted
 	sqlString.WriteString(" LIMIT ? OFFSET ?")
@@ -289,8 +342,9 @@ func (m UserMySqlMapper) GetAllUsersIncludeDeleted(limit, offset int) []model.Us
 		var user model.UserEntity
 		var createTime, updateTime time.Time
 		var id, createUserId, updateUserId string
+		var nickname, avatarUrl, emailAddress, gender sql.NullString
 
-		err := rows.Scan(&id, &user.Username, &user.PasswordHash, &user.IsActive, &user.Role, &createUserId, &createTime, &updateUserId, &updateTime)
+		err := rows.Scan(&id, &user.Username, &user.PasswordHash, &user.IsActive, &user.Role, &nickname, &avatarUrl, &emailAddress, &gender, &createUserId, &createTime, &updateUserId, &updateTime)
 		if err != nil {
 			util.Logger.Errorw("Failed to scan user", "error", err)
 			continue
@@ -309,6 +363,20 @@ func (m UserMySqlMapper) GetAllUsersIncludeDeleted(limit, offset int) []model.Us
 		user.CreateTime = createTime
 		user.UpdateUserId = util.Convert2ObjectId(updateUserId)
 		user.UpdateTime = updateTime
+
+		// Set profile fields if not null
+		if nickname.Valid {
+			user.Nickname = nickname.String
+		}
+		if avatarUrl.Valid {
+			user.AvatarUrl = avatarUrl.String
+		}
+		if emailAddress.Valid {
+			user.EmailAddress = emailAddress.String
+		}
+		if gender.Valid {
+			user.Gender = gender.String
+		}
 
 		// Add the user to the slice
 		users = append(users, user)
@@ -408,7 +476,7 @@ func (m UserMySqlMapper) TruncateUsers() error {
 // GetUsersByRole retrieves all users with a specific role from MySQL
 func (m UserMySqlMapper) GetUsersByRole(role string) []model.UserEntity {
 	// Create the SQL query
-	query := `SELECT id, username, password_hash, is_active, role, create_user_id, create_time, update_user_id, update_time FROM ` + database.UserTableName + ` WHERE role = ? AND is_delete = FALSE`
+	query := `SELECT id, username, password_hash, is_active, role, nickname, avatar_url, email_address, gender, create_user_id, create_time, update_user_id, update_time FROM ` + database.UserTableName + ` WHERE role = ? AND is_delete = FALSE`
 
 	// Get database connection
 	connection := database.GetMySqlConnection()
@@ -429,8 +497,9 @@ func (m UserMySqlMapper) GetUsersByRole(role string) []model.UserEntity {
 		var user model.UserEntity
 		var createTime, updateTime time.Time
 		var id, createUserId, updateUserId string
+		var nickname, avatarUrl, emailAddress, gender sql.NullString
 
-		err := rows.Scan(&id, &user.Username, &user.PasswordHash, &user.IsActive, &user.Role, &createUserId, &createTime, &updateUserId, &updateTime)
+		err := rows.Scan(&id, &user.Username, &user.PasswordHash, &user.IsActive, &user.Role, &nickname, &avatarUrl, &emailAddress, &gender, &createUserId, &createTime, &updateUserId, &updateTime)
 		if err != nil {
 			util.Logger.Errorw("Failed to scan user", "error", err)
 			continue
@@ -449,6 +518,20 @@ func (m UserMySqlMapper) GetUsersByRole(role string) []model.UserEntity {
 		user.CreateTime = createTime
 		user.UpdateUserId = util.Convert2ObjectId(updateUserId)
 		user.UpdateTime = updateTime
+
+		// Set profile fields if not null
+		if nickname.Valid {
+			user.Nickname = nickname.String
+		}
+		if avatarUrl.Valid {
+			user.AvatarUrl = avatarUrl.String
+		}
+		if emailAddress.Valid {
+			user.EmailAddress = emailAddress.String
+		}
+		if gender.Valid {
+			user.Gender = gender.String
+		}
 
 		// Add the user to the slice
 		users = append(users, user)

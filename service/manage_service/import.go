@@ -179,12 +179,19 @@ func handleCategoryInfo(categoryId, categoryName string) string {
 	}
 	util.Logger.Warnw("category not existed", "category_name", categoryName)
 
+	// Pre-generate ID before insertion
+	newId := primitive.NewObjectID()
+
 	// create new category for this flow
-	plainId := category_mapper.INSTANCE.InsertCategoryByEntity(model.CategoryEntity{
+	insertedId := category_mapper.INSTANCE.InsertCategoryByEntity(model.CategoryEntity{
+		Id:     newId,
 		Name:   categoryName,
 		Remark: "create by import",
 	})
-	return plainId
+	if insertedId == "" {
+		return ""
+	}
+	return newId.Hex()
 }
 
 func saveIntoDB(cashFlowMapByColumnList []map[string]string) {
@@ -201,9 +208,15 @@ func saveIntoDB(cashFlowMapByColumnList []map[string]string) {
 					util.ToInteger(cashFlowMapByColumn[sheetRowNumberLabel]))
 				continue
 			}
+		} else {
+			// Pre-generate ID if not already set
+			cashFlowEntity.Id = primitive.NewObjectID()
 		}
-		newPlainId := cash_flow_mapper.INSTANCE.InsertCashFlowByEntity(cashFlowEntity)
-		cashFlowEntity.Id = util.Convert2ObjectId(newPlainId)
+		insertedId := cash_flow_mapper.INSTANCE.InsertCashFlowByEntity(cashFlowEntity)
+		if insertedId == "" {
+			util.Logger.Errorw("Failed to insert cash flow", "row", cashFlowMapByColumn[sheetRowNumberLabel])
+			continue
+		}
 		util.Logger.Debug("cash_flow inserted: " + cashFlowEntity.ToString())
 		fmt.Println("succeed: row " + cashFlowMapByColumn[sheetRowNumberLabel] + ": cash_flow saved")
 		importSucceedRowNumberList = append(importSucceedRowNumberList,

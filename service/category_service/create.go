@@ -44,8 +44,12 @@ func CreateForUser(name, categoryType, remark string, parentId string, userId st
 		return model.CategoryEntity{}, errors.New("category with this name already exists for this user and type under this parent")
 	}
 
+	// Pre-generate ID before insertion
+	newId := primitive.NewObjectID()
+
 	// Create new category entity
 	newEntity := model.CategoryEntity{
+		Id:            newId,
 		BelongsUserId: userObjectId,
 		Name:          name,
 		Type:          categoryType,
@@ -76,12 +80,12 @@ func CreateForUser(name, categoryType, remark string, parentId string, userId st
 	}
 
 	// Insert the category
-	newId := category_mapper.INSTANCE.InsertCategoryByEntity(newEntity)
-	if newId == "" {
+	insertedId := category_mapper.INSTANCE.InsertCategoryByEntity(newEntity)
+	if insertedId == "" {
 		return model.CategoryEntity{}, errors.New("failed to create category")
 	}
 
-	// Retrieve and return the created category
-	createdEntity := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(newId, userObjectId)
+	// Retrieve and return the created category using the pre-generated ID
+	createdEntity := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(newId.Hex(), userObjectId)
 	return createdEntity, nil
 }

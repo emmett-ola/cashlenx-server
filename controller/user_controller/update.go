@@ -85,3 +85,33 @@ func SetPassword(w http.ResponseWriter, r *http.Request) {
 
 	util.ComposeJSONResponse(w, http.StatusOK, updatedUser)
 }
+
+// UpdateProfile updates user profile information (nickname, avatar_url, email_address, gender)
+// This endpoint allows users to update their own profile
+func UpdateProfile(w http.ResponseWriter, r *http.Request) {
+	// Extract user ID from JWT context (middleware sets this)
+	userId, ok := r.Context().Value("user_id").(string)
+	if !ok || userId == "" {
+		util.ComposeJSONResponse(w, http.StatusUnauthorized, errors.NewUnauthorizedError("user not authenticated"))
+		return
+	}
+
+	var requestBody model.UserDTO
+	if err := util.ParseJSONRequest(r, &requestBody); err != nil {
+		util.ComposeJSONResponse(w, http.StatusBadRequest, errors.NewInvalidInputError("invalid request body"))
+		return
+	}
+
+	// Update profile via service
+	updatedUser, err := user_service.UpdateProfileService(userId, requestBody)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			util.ComposeJSONResponse(w, http.StatusNotFound, err)
+			return
+		}
+		util.ComposeJSONResponse(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	util.ComposeJSONResponse(w, http.StatusOK, updatedUser)
+}

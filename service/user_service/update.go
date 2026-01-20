@@ -33,6 +33,20 @@ func UpdateService(plainId string, requestBody model.UserDTO) (model.UserEntity,
 		existingUser.Role = requestBody.Role
 	}
 
+	// Update profile fields if provided
+	if requestBody.Nickname != "" {
+		existingUser.Nickname = requestBody.Nickname
+	}
+	if requestBody.AvatarUrl != "" {
+		existingUser.AvatarUrl = requestBody.AvatarUrl
+	}
+	if requestBody.EmailAddress != "" {
+		existingUser.EmailAddress = requestBody.EmailAddress
+	}
+	if requestBody.Gender != "" {
+		existingUser.Gender = requestBody.Gender
+	}
+
 	// Update password if provided
 	if requestBody.Password != "" {
 		err := validation.ValidatePassword(requestBody.Password)
@@ -90,6 +104,40 @@ func SetPasswordService(plainId string, password string) (model.UserEntity, erro
 	updatedUser := user_mapper.INSTANCE.UpdateUserByEntity(plainId, existingUser)
 	if updatedUser.Id.IsZero() {
 		return model.UserEntity{}, std_errors.New("failed to update password")
+	}
+
+	return updatedUser, nil
+}
+
+// UpdateProfileService updates user profile information (nickname, avatar, email, gender)
+func UpdateProfileService(plainId string, requestBody model.UserDTO) (model.UserEntity, error) {
+	// Get existing user
+	existingUser := user_mapper.INSTANCE.GetUserByObjectId(plainId)
+	if existingUser.Id.IsZero() {
+		return model.UserEntity{}, errors.NewNotFoundError("user not found")
+	}
+
+	// Update profile fields if provided (empty string means don't update)
+	if requestBody.Nickname != "" {
+		existingUser.Nickname = requestBody.Nickname
+	}
+	if requestBody.AvatarUrl != "" {
+		existingUser.AvatarUrl = requestBody.AvatarUrl
+	}
+	if requestBody.EmailAddress != "" {
+		existingUser.EmailAddress = requestBody.EmailAddress
+	}
+	if requestBody.Gender != "" {
+		existingUser.Gender = requestBody.Gender
+	}
+
+	// Update updated_at timestamp
+	existingUser.UpdateTime = util.GetCurrentTime()
+
+	// Update user in database
+	updatedUser := user_mapper.INSTANCE.UpdateUserByEntity(plainId, existingUser)
+	if updatedUser.Id.IsZero() {
+		return model.UserEntity{}, std_errors.New("failed to update profile")
 	}
 
 	return updatedUser, nil

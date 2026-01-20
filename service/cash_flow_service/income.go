@@ -77,7 +77,11 @@ func SaveIncome(belongsDate, categoryName string, amount float64, description st
 		date = time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, time.UTC)
 	}
 
-	newCashFlowId := cash_flow_mapper.INSTANCE.InsertCashFlowByEntity(model.CashFlowEntity{
+	// Pre-generate ID before insertion
+	newId := primitive.NewObjectID()
+
+	insertedId := cash_flow_mapper.INSTANCE.InsertCashFlowByEntity(model.CashFlowEntity{
+		Id:            newId,
 		CategoryId:    categoryEntity.Id,
 		BelongsDate:   date,
 		Amount:        amount,
@@ -88,11 +92,11 @@ func SaveIncome(belongsDate, categoryName string, amount float64, description st
 			UpdateUserId: userObjectId,
 		},
 	})
-	if newCashFlowId == "" {
+	if insertedId == "" {
 		return model.CashFlowEntity{}, errors.New("cash_flow create failed")
 	}
 
-	newCashFlow := cash_flow_mapper.INSTANCE.GetCashFlowByObjectId(newCashFlowId)
+	newCashFlow := cash_flow_mapper.INSTANCE.GetCashFlowByObjectId(newId.Hex())
 	if !newCashFlow.IsEmpty() {
 		newCashFlow.CategoryName = categoryEntity.Name
 		newCashFlow.CategoryType = categoryEntity.Type
