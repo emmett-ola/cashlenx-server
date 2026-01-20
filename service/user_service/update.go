@@ -60,7 +60,6 @@ func UpdateService(plainId string, requestBody model.UserDTO) (model.UserEntity,
 		}
 
 		existingUser.PasswordHash = string(hashedPassword)
-		existingUser.PasswordSet = true
 	}
 
 	// Update updated_at timestamp
@@ -97,7 +96,6 @@ func SetPasswordService(plainId string, password string) (model.UserEntity, erro
 
 	// Update user with new password
 	existingUser.PasswordHash = string(hashedPassword)
-	existingUser.PasswordSet = true
 	existingUser.UpdateTime = util.GetCurrentTime()
 
 	// Update user in database
