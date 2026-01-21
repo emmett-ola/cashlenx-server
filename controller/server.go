@@ -83,10 +83,8 @@ func registerAdminRoutes(r *mux.Router) {
 	r.HandleFunc("/user", user_controller.Create).Methods("POST")
 	r.HandleFunc("/user", user_controller.ListAll).Methods("GET")
 	r.HandleFunc("/user/{id}", user_controller.Get).Methods("GET")
-	r.HandleFunc("/user/{id}", user_controller.Update).Methods("PUT")
 	r.HandleFunc("/user/{id}", user_controller.Delete).Methods("DELETE")
-	// User password management
-	r.HandleFunc("/user/{id}/password", user_controller.SetPassword).Methods("PUT")
+
 
 	// Database management - admin only
 	r.HandleFunc("/manage/dump", manage_controller.DumpDatabase).Methods("GET")
@@ -98,7 +96,10 @@ func registerAdminRoutes(r *mux.Router) {
 // registerUserRoutes registers user-specific endpoints (authenticated users can access their own profiles)
 func registerUserRoutes(r *mux.Router) {
 	// User profile management
+	r.HandleFunc("/api/user/profile", user_controller.GetProfile).Methods("GET")
 	r.HandleFunc("/api/user/profile", user_controller.UpdateProfile).Methods("PUT")
+	r.HandleFunc("/api/user/password", user_controller.ChangePassword).Methods("PUT")
+	r.HandleFunc("/api/user/account", user_controller.DeleteAccount).Methods("DELETE")
 }
 
 func registerCashRoute(r *mux.Router) {
@@ -207,16 +208,17 @@ func versionInfo(w http.ResponseWriter, r *http.Request) {
 				"POST /api/admin/user",
 				"GET /api/admin/user",
 				"GET /api/admin/user/{id}",
-				"PUT /api/admin/user/{id}",
 				"DELETE /api/admin/user/{id}",
-				"PUT /api/admin/user/{id}/password",
 				"GET /api/admin/manage/dump",
 				"POST /api/admin/manage/restore",
 				"GET /api/admin/manage/export",
 				"POST /api/admin/manage/import",
 			},
 			"user": {
+				"GET /api/user/profile",
 				"PUT /api/user/profile",
+				"PUT /api/user/password",
+				"DELETE /api/user/account",
 			},
 			"cash_flow": {
 				"POST /api/cash/expense",

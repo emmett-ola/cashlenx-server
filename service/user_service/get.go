@@ -21,6 +21,16 @@ func GetDefaultAdminUserId() (string, error) {
 	return user.Id.Hex(), nil
 }
 
+// GetService retrieves a user by their ID (Alias for GetUserByObjectId)
+func GetService(userId string) model.UserEntity {
+	return GetUserByObjectId(userId)
+}
+
+// GetUser retrieves a user by their ID (Alias for GetUserByObjectId)
+func GetUser(userId string) model.UserEntity {
+	return GetUserByObjectId(userId)
+}
+
 // GetUserByObjectId retrieves a user by their ID
 func GetUserByObjectId(userId string) model.UserEntity {
 	return user_mapper.INSTANCE.GetUserByObjectId(userId)

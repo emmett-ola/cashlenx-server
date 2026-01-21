@@ -118,23 +118,27 @@ func SetPasswordService(plainId string, password string) (model.UserEntity, erro
 	return updatedUser, nil
 }
 
-// UpdateProfileService updates user profile information (nickname, avatar, email, gender)
-func UpdateProfileService(plainId string, requestBody model.UserDTO) (model.UserEntity, error) {
+// UpdateProfileService updates user profile information (nickname, avatar, gender)
+// Note: Email updates are handled separately via email verification
+func UpdateProfileService(plainId string, requestBody model.UserProfileUpdateRequest) (model.UserEntity, error) {
 	// Get existing user
 	existingUser := user_mapper.INSTANCE.GetUserByObjectId(plainId)
 	if existingUser.Id.IsZero() {
 		return model.UserEntity{}, errors.NewNotFoundError("user not found")
 	}
 
-	// Update profile fields if provided (empty string means don't update)
+	// Update profile fields if provided
+	// We allow updating to empty strings if that's what user wants? 
+	// Or only if not empty? The DTO structure usually implies optional fields.
+	// Let's assume non-empty updates for now, or use pointers in struct to distinguish nil vs empty.
+	// Given the struct has string types, empty string is the zero value.
+	// But nickname/avatar/gender can be updated.
+	
 	if requestBody.Nickname != "" {
 		existingUser.Nickname = requestBody.Nickname
 	}
 	if requestBody.AvatarUrl != "" {
 		existingUser.AvatarUrl = requestBody.AvatarUrl
-	}
-	if requestBody.EmailAddress != "" {
-		existingUser.EmailAddress = requestBody.EmailAddress
 	}
 	if requestBody.Gender != "" {
 		existingUser.Gender = requestBody.Gender
@@ -142,6 +146,7 @@ func UpdateProfileService(plainId string, requestBody model.UserDTO) (model.User
 
 	// Update updated_at timestamp
 	existingUser.UpdateTime = util.GetCurrentTime()
+	existingUser.UpdateUserId = existingUser.Id
 
 	// Update user in database
 	updatedUser := user_mapper.INSTANCE.UpdateUserByEntity(plainId, existingUser)
@@ -150,4 +155,46 @@ func UpdateProfileService(plainId string, requestBody model.UserDTO) (model.User
 	}
 
 	return updatedUser, nil
+}
+
+// ChangePasswordService changes the user's password after verifying the old one
+func ChangePasswordService(plainId string, oldPassword, newPassword string) error {
+	// Validate new password format
+	if err := validation.ValidatePassword(newPassword); err != nil {
+		return err
+	}
+
+	// Get existing user
+	user := user_mapper.INSTANCE.GetUserByObjectId(plainId)
+	if user.Id.IsZero() {
+		return errors.NewNotFoundError("user not found")
+	}
+
+	// Verify old password
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(oldPassword)); err != nil {
+		return errors.NewUnauthorizedError("invalid old password")
+	}
+
+	// Hash new password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return errors.NewInternalError("failed to hash password", err)
+	}
+
+	// Update user
+	user.PasswordHash = string(hashedPassword)
+	user.UpdateTime = util.GetCurrentTime()
+	user.UpdateUserId = user.Id
+
+	updatedUser := user_mapper.INSTANCE.UpdateUserByEntity(plainId, user)
+	if updatedUser.Id.IsZero() {
+		return errors.NewInternalError("failed to update password", nil)
+	}
+
+	// Revoke all refresh tokens for security
+	if err := refresh_token_service.RevokeAllRefreshTokens(plainId); err != nil {
+		util.Logger.Warnw("Failed to revoke tokens after password change", "userId", plainId, "error", err)
+	}
+
+	return nil
 }

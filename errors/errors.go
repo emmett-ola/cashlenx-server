@@ -11,18 +11,18 @@ const (
 	ErrDatabase         ErrorCode = "DATABASE_ERROR"
 	ErrUnauthorized     ErrorCode = "UNAUTHORIZED"
 	ErrAlreadyExists    ErrorCode = "ALREADY_EXISTS"
-	ErrInternal         ErrorCode = "INTERNAL_ERROR"
-	ErrValidation       ErrorCode = "VALIDATION_ERROR"
 	ErrConnectionFailed ErrorCode = "CONNECTION_FAILED"
 	ErrForbidden        ErrorCode = "FORBIDDEN"
+	ErrInternal         ErrorCode = "INTERNAL_ERROR"
+	ErrValidation       ErrorCode = "VALIDATION_ERROR"
 )
 
-// AppError represents a standardized application error
+// AppError represents an application error with a code, message, and optional cause
 type AppError struct {
-	Code    ErrorCode
-	Message string
-	Cause   error
-	Field   string
+	Code    ErrorCode `json:"code"`
+	Message string    `json:"message"`
+	Field   string    `json:"field,omitempty"`
+	Cause   error     `json:"-"`
 }
 
 func (e *AppError) Error() string {
@@ -172,6 +172,23 @@ func IsDatabaseError(err error) bool {
 	return false
 }
 
+// IsUnauthorizedError checks if error is an UNAUTHORIZED error
+func IsUnauthorizedError(err error) bool {
+	if appErr, ok := err.(*AppError); ok {
+		return appErr.Code == ErrUnauthorized
+	}
+	return false
+}
+
+// IsForbiddenError checks if error is a FORBIDDEN error
+func IsForbiddenError(err error) bool {
+	if appErr, ok := err.(*AppError); ok {
+		return appErr.Code == ErrForbidden
+	}
+	return false
+}
+
+// IsAlreadyExistsError checks if error is an ALREADY_EXISTS error
 func IsAlreadyExistsError(err error) bool {
 	if appErr, ok := err.(*AppError); ok {
 		return appErr.Code == ErrAlreadyExists
