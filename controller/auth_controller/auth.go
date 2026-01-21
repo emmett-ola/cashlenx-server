@@ -156,34 +156,28 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get logout everywhere parameter
-	logoutEverywhere := r.URL.Query().Get("everywhere") == "true"
+	// Parse request body to check for refresh_token
+	var logoutRequest struct {
+		RefreshToken string `json:"refresh_token"`
+	}
+	err := util.ParseJSONRequest(r, &logoutRequest)
 
-	var err error
-	if logoutEverywhere {
-		// Revoke all refresh tokens for the user
-		err = refresh_token_service.RevokeAllRefreshTokens(userID)
+	var logoutErr error
+	var message string
+
+	if err == nil && logoutRequest.RefreshToken != "" {
+		// Refresh token provided - logout only from this session (local logout)
+		logoutErr = refresh_token_service.RevokeRefreshToken(logoutRequest.RefreshToken, userID)
+		message = "Successfully logged out from this device"
 	} else {
-		// Revoke only the current refresh token (requires token in request)
-		// For local logout, we need the refresh token from the request
-		var logoutRequest struct {
-			RefreshToken string `json:"refresh_token"`
-		}
-		if err := util.ParseJSONRequest(r, &logoutRequest); err != nil {
-			util.ComposeJSONResponse(w, http.StatusBadRequest, errors.NewInvalidInputError("refresh_token is required for local logout"))
-			return
-		}
-		err = refresh_token_service.RevokeRefreshToken(logoutRequest.RefreshToken, userID)
-	}
-
-	if err != nil {
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, err)
-		return
-	}
-
-	message := "Successfully logged out"
-	if logoutEverywhere {
+		// No refresh token provided - logout from all sessions (logout everywhere)
+		logoutErr = refresh_token_service.RevokeAllRefreshTokens(userID)
 		message = "Successfully logged out from all devices"
+	}
+
+	if logoutErr != nil {
+		util.ComposeJSONResponse(w, http.StatusInternalServerError, logoutErr)
+		return
 	}
 
 	util.ComposeJSONResponse(w, http.StatusOK, map[string]string{
