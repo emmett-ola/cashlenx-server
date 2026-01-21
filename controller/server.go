@@ -68,6 +68,9 @@ func registerOpenRoutes(r *mux.Router) {
 	r.HandleFunc("/api/open/auth/register", auth_controller.Register).Methods("POST")
 	r.HandleFunc("/api/open/auth/refresh", auth_controller.RefreshToken).Methods("POST")
 
+	// Protected auth routes
+	r.HandleFunc("/api/auth/logout", auth_controller.Logout).Methods("POST")
+
 	// Password reset routes
 	r.HandleFunc("/api/open/auth/reset-password", user_controller.RequestPasswordReset).Methods("POST")
 	r.HandleFunc("/api/open/auth/reset-password/confirm", user_controller.ConfirmPasswordReset).Methods("POST")

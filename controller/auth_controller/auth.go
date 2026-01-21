@@ -6,6 +6,7 @@ import (
 	"github.com/macar-x/cashlenx-server/auth"
 	"github.com/macar-x/cashlenx-server/errors"
 	"github.com/macar-x/cashlenx-server/model"
+	"github.com/macar-x/cashlenx-server/service/refresh_token_service"
 	"github.com/macar-x/cashlenx-server/service/user_service"
 	"github.com/macar-x/cashlenx-server/util"
 	"github.com/macar-x/cashlenx-server/validation"
@@ -144,4 +145,25 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	util.ComposeJSONResponse(w, http.StatusCreated, createdUser)
+}
+
+// Logout handles user logout requests by revoking all refresh tokens
+func Logout(w http.ResponseWriter, r *http.Request) {
+	// Get user ID from context (set by auth middleware)
+	userID, ok := r.Context().Value("user_id").(string)
+	if !ok || userID == "" {
+		util.ComposeJSONResponse(w, http.StatusUnauthorized, errors.NewUnauthorizedError("user not authenticated"))
+		return
+	}
+
+	// Revoke all refresh tokens for the user
+	err := refresh_token_service.RevokeAllRefreshTokens(userID)
+	if err != nil {
+		util.ComposeJSONResponse(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	util.ComposeJSONResponse(w, http.StatusOK, map[string]string{
+		"message": "Successfully logged out - all refresh tokens revoked",
+	})
 }

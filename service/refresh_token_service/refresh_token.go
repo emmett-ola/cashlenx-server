@@ -21,12 +21,12 @@ func GetRefreshTokenByToken(token string) (model.RefreshToken, error) {
 
 // CreateRefreshToken creates a new refresh token for a user
 func CreateRefreshToken(userID string) (string, error) {
-	// Get refresh token expiration seconds from configuration
-	expSecondsStr := util.GetConfigByKey("auth.refresh_token.expiration_seconds")
-	expSeconds := 7200 // Default to 2 hours (7200 seconds)
-	if expSecondsStr != "" {
-		if parsedSeconds, err := strconv.Atoi(expSecondsStr); err == nil {
-			expSeconds = parsedSeconds
+	// Get refresh token expiration days from configuration
+	expDaysStr := util.GetConfigByKey("auth.refresh_token.expiration_days")
+	expDays := 30 // Default to 30 days
+	if expDaysStr != "" {
+		if parsedDays, err := strconv.Atoi(expDaysStr); err == nil {
+			expDays = parsedDays
 		}
 	}
 
@@ -35,7 +35,7 @@ func CreateRefreshToken(userID string) (string, error) {
 		Id:        util.GenerateUUID(),
 		UserId:    userID,
 		Token:     util.GenerateUUID(),
-		ExpiresAt: time.Now().Add(time.Duration(expSeconds) * time.Second),
+		ExpiresAt: time.Now().AddDate(0, 0, expDays),
 		CreatedAt: time.Now(),
 	}
 

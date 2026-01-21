@@ -6,6 +6,7 @@ import (
 	"github.com/macar-x/cashlenx-server/errors"
 	"github.com/macar-x/cashlenx-server/mapper/user_mapper"
 	"github.com/macar-x/cashlenx-server/model"
+	"github.com/macar-x/cashlenx-server/service/refresh_token_service"
 	"github.com/macar-x/cashlenx-server/util"
 	"github.com/macar-x/cashlenx-server/validation"
 	"golang.org/x/crypto/bcrypt"
@@ -60,6 +61,11 @@ func UpdateService(plainId string, requestBody model.UserDTO) (model.UserEntity,
 		}
 
 		existingUser.PasswordHash = string(hashedPassword)
+
+		// Revoke all refresh tokens when password changes
+		if err := refresh_token_service.RevokeAllRefreshTokens(plainId); err != nil {
+			util.Logger.Warnw("Failed to revoke refresh tokens after password change", "userId", plainId, "error", err)
+		}
 	}
 
 	// Update updated_at timestamp
@@ -97,6 +103,11 @@ func SetPasswordService(plainId string, password string) (model.UserEntity, erro
 	// Update user with new password
 	existingUser.PasswordHash = string(hashedPassword)
 	existingUser.UpdateTime = util.GetCurrentTime()
+
+	// Revoke all refresh tokens when password changes
+	if err := refresh_token_service.RevokeAllRefreshTokens(plainId); err != nil {
+		util.Logger.Warnw("Failed to revoke refresh tokens after password change", "userId", plainId, "error", err)
+	}
 
 	// Update user in database
 	updatedUser := user_mapper.INSTANCE.UpdateUserByEntity(plainId, existingUser)

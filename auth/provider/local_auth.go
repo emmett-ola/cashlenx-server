@@ -17,7 +17,7 @@ import (
 )
 
 // LocalAuthService implements AuthService using local JWT authentication
-type LocalAuthService struct {}
+type LocalAuthService struct{}
 
 // NewLocalAuthService creates a new instance of LocalAuthService
 func NewLocalAuthService() *LocalAuthService {
@@ -95,16 +95,16 @@ func (s *LocalAuthService) GenerateToken(userID, username, role string) (string,
 		return "", errors.NewInternalError("JWT secret is not configured", nil)
 	}
 
-	// Get JWT expiration seconds from configuration
-	expSecondsStr := util.GetConfigByKey("auth.jwt.expiration_seconds")
-	expSeconds := 120 // Default to 120 seconds
-	if expSecondsStr != "" {
-		if parsedSeconds, err := strconv.Atoi(expSecondsStr); err == nil {
-			expSeconds = parsedSeconds
+	// Get JWT expiration minutes from configuration
+	expMinutesStr := util.GetConfigByKey("auth.jwt.expiration_minutes")
+	expMinutes := 30 // Default to 30 minutes
+	if expMinutesStr != "" {
+		if parsedMinutes, err := strconv.Atoi(expMinutesStr); err == nil {
+			expMinutes = parsedMinutes
 		}
 	}
 	// Set token expiration time
-	expirationTime := time.Now().Add(time.Duration(expSeconds) * time.Second)
+	expirationTime := time.Now().Add(time.Duration(expMinutes) * time.Minute)
 
 	// Create claims
 	claims := &jwtClaims{
