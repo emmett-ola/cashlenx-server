@@ -23,7 +23,7 @@ func GetRefreshTokenByToken(token string) (model.RefreshToken, error) {
 func CreateRefreshToken(userID string) (string, error) {
 	// Get refresh token expiration seconds from configuration
 	expSecondsStr := util.GetConfigByKey("auth.refresh_token.expiration_seconds")
-	expSeconds := 43200 // Default to 12 hours (43200 seconds)
+	expSeconds := 7200 // Default to 2 hours (7200 seconds)
 	if expSecondsStr != "" {
 		if parsedSeconds, err := strconv.Atoi(expSecondsStr); err == nil {
 			expSeconds = parsedSeconds
