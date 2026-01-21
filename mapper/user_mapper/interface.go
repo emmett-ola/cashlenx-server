@@ -14,6 +14,9 @@ type UserMapper interface {
 	
 	// GetUserByUsername retrieves a user by their username
 	GetUserByUsername(username string) model.UserEntity
+
+	// GetUserByEmail retrieves a user by their email address
+	GetUserByEmail(email string) model.UserEntity
 	
 	// InsertUserByEntity inserts a new user entity into the database
 	InsertUserByEntity(newEntity model.UserEntity) string

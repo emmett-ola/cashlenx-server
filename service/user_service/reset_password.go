@@ -23,27 +23,10 @@ func RequestPasswordReset(emailOrUsername string, ipAddress string) error {
 	user = GetUserByUsername(emailOrUsername)
 	if user.Id.IsZero() {
 		// Try email
-		// Note: We don't have GetUserByEmail exposed in user_service, so we might need to use mapper or check implementation
-		// For now, assuming username is unique identifier. If email search is needed, it should be added to user_service
-		// Let's stick to username based lookup for now as per current implementation or expand if needed
-		// But Wait! The user said "email_address" field exists.
-		// We should really try to find by email if username fails.
-		// Since we don't have a direct method here, let's skip implicit email lookup if not implemented,
-		// OR better, let's rely on the fact that the input might be the username.
-		// However, to strictly follow requirement "username or email_address", we should check if we can query by email.
-		// Let's check if user_mapper has GetUserByEmail. If not, we rely on username.
-		// Assuming GetUserByUsername handles uniqueness.
-		// For safety and strict adherence, if user not found by username, return success to prevent enumeration.
+		user = user_mapper.INSTANCE.GetUserByEmail(emailOrUsername)
 	}
 	
 	if user.Id.IsZero() {
-		// Try finding by email
-		// We need to implement/access a way to find by email.
-		// Checking user_mapper capabilities...
-		// Since I cannot modify user_mapper in this step easily without seeing it, 
-		// I will assume for now we only support username OR the emailOrUsername IS the username.
-		// But to be helpful, let's assume we proceed if user found.
-		
 		// If user not found, return nil (security best practice: do not reveal user existence)
 		return nil
 	}

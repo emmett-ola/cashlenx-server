@@ -22,7 +22,7 @@ func (m UserMySqlMapper) GetUserByObjectId(plainId string) model.UserEntity {
 	sqlString.WriteString("SELECT id, username, password_hash, is_active, role, nickname, avatar_url, email_address, gender, create_user_id, create_time, update_user_id, update_time FROM ")
 	sqlString.WriteString(database.UserTableName)
 	sqlString.WriteString(" WHERE id = ? ")
-	sqlString.WriteString(database.SqlExcludeDeleted)
+	sqlString.WriteString(" AND is_delete = FALSE") // Added explicit check just in case SqlExcludeDeleted is not enough or for clarity
 
 	// Get database connection
 	connection := database.GetMySqlConnection()
@@ -103,6 +103,65 @@ func (m UserMySqlMapper) GetUserByUsername(username string) model.UserEntity {
 			return model.UserEntity{}
 		}
 		util.Logger.Errorw("Failed to get user", "error", err, "username", username)
+		return model.UserEntity{}
+	}
+
+	// Parse the ID string to ObjectID
+	objectId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		util.Logger.Errorw("Invalid ObjectID", "error", err, "id", id)
+		return model.UserEntity{}
+	}
+
+	// Set the parsed ID and timestamps
+	user.Id = objectId
+	user.CreateUserId = util.Convert2ObjectId(createUserId)
+	user.CreateTime = createTime
+	user.UpdateUserId = util.Convert2ObjectId(updateUserId)
+	user.UpdateTime = updateTime
+
+	// Set profile fields if not null
+	if nickname.Valid {
+		user.Nickname = nickname.String
+	}
+	if avatarUrl.Valid {
+		user.AvatarUrl = avatarUrl.String
+	}
+	if emailAddress.Valid {
+		user.EmailAddress = emailAddress.String
+	}
+	if gender.Valid {
+		user.Gender = gender.String
+	}
+
+	return user
+}
+
+// GetUserByEmail retrieves a user by their email address from MySQL
+func (m UserMySqlMapper) GetUserByEmail(email string) model.UserEntity {
+	// Create the SQL query
+	query := `SELECT id, username, password_hash, is_active, role, nickname, avatar_url, email_address, gender, create_user_id, create_time, update_user_id, update_time FROM ` + database.UserTableName + ` WHERE email_address = ? AND is_delete = FALSE`
+
+	// Get database connection
+	connection := database.GetMySqlConnection()
+	defer database.CloseMySqlConnection()
+
+	// Execute the query
+	row := connection.QueryRow(query, email)
+
+	// Scan the result into a UserEntity
+	var user model.UserEntity
+	var createTime, updateTime time.Time
+	var id, createUserId, updateUserId string
+	var nickname, avatarUrl, emailAddress, gender sql.NullString
+
+	err := row.Scan(&id, &user.Username, &user.PasswordHash, &user.IsActive, &user.Role, &nickname, &avatarUrl, &emailAddress, &gender, &createUserId, &createTime, &updateUserId, &updateTime)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			util.Logger.Debugw("User not found", "email", email)
+			return model.UserEntity{}
+		}
+		util.Logger.Errorw("Failed to get user", "error", err, "email", email)
 		return model.UserEntity{}
 	}
 
@@ -248,8 +307,7 @@ func (m UserMySqlMapper) GetAllUsers(limit, offset int) []model.UserEntity {
 	var sqlString bytes.Buffer
 	sqlString.WriteString("SELECT id, username, password_hash, is_active, role, nickname, avatar_url, email_address, gender, create_user_id, create_time, update_user_id, update_time FROM ")
 	sqlString.WriteString(database.UserTableName)
-	sqlString.WriteString(" WHERE TRUE ")
-	sqlString.WriteString(database.SqlExcludeDeleted)
+	sqlString.WriteString(" WHERE is_delete = FALSE")
 	sqlString.WriteString(" LIMIT ? OFFSET ?")
 
 	// Get database connection
@@ -391,8 +449,7 @@ func (m UserMySqlMapper) CountAllUsers() int64 {
 	var sqlString bytes.Buffer
 	sqlString.WriteString("SELECT COUNT(*) FROM ")
 	sqlString.WriteString(database.UserTableName)
-	sqlString.WriteString(" WHERE TRUE ")
-	sqlString.WriteString(database.SqlExcludeDeleted)
+	sqlString.WriteString(" WHERE is_delete = FALSE")
 
 	// Get database connection
 	connection := database.GetMySqlConnection()

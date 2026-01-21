@@ -118,6 +118,7 @@ func (m UserMongoDbMapper) GetUserByObjectId(plainId string) model.UserEntity {
 	// Create a filter to find the user by ID
 	filter := bson.D{
 		primitive.E{Key: "_id", Value: objectId},
+		primitive.E{Key: "is_delete", Value: false},
 	}
 
 	database.OpenMongoDbConnection(database.UserTableName)
@@ -130,6 +131,20 @@ func (m UserMongoDbMapper) GetUserByUsername(username string) model.UserEntity {
 	// Create a filter to find the user by username
 	filter := bson.D{
 		primitive.E{Key: "username", Value: username},
+		primitive.E{Key: "is_delete", Value: false},
+	}
+
+	database.OpenMongoDbConnection(database.UserTableName)
+	defer database.CloseMongoDbConnection()
+	return convertBsonM2UserEntity(database.GetOneInMongoDB(filter))
+}
+
+// GetUserByEmail retrieves a user by their email address from MongoDB
+func (m UserMongoDbMapper) GetUserByEmail(email string) model.UserEntity {
+	// Create a filter to find the user by email
+	filter := bson.D{
+		primitive.E{Key: "email_address", Value: email},
+		primitive.E{Key: "is_delete", Value: false},
 	}
 
 	database.OpenMongoDbConnection(database.UserTableName)
@@ -188,8 +203,10 @@ func (m UserMongoDbMapper) UpdateUserByEntity(plainId string, updatedEntity mode
 
 // GetAllUsers retrieves all users with pagination from MongoDB
 func (m UserMongoDbMapper) GetAllUsers(limit, offset int) []model.UserEntity {
-	// Create an empty filter to get all users
-	filter := bson.D{}
+	// Create a filter to get all active users
+	filter := bson.D{
+		primitive.E{Key: "is_delete", Value: false},
+	}
 
 	database.OpenMongoDbConnection(database.UserTableName)
 	defer database.CloseMongoDbConnection()
@@ -224,8 +241,10 @@ func (m UserMongoDbMapper) GetAllUsersIncludeDeleted(limit, offset int) []model.
 
 // CountAllUsers returns the total number of users from MongoDB
 func (m UserMongoDbMapper) CountAllUsers() int64 {
-	// Create an empty filter to count all users
-	filter := bson.D{}
+	// Create a filter to count all active users
+	filter := bson.D{
+		primitive.E{Key: "is_delete", Value: false},
+	}
 
 	database.OpenMongoDbConnection(database.UserTableName)
 	defer database.CloseMongoDbConnection()
@@ -294,6 +313,7 @@ func (m UserMongoDbMapper) GetUsersByRole(role string) []model.UserEntity {
 	// Create a filter to find users by role
 	filter := bson.D{
 		primitive.E{Key: "role", Value: role},
+		primitive.E{Key: "is_delete", Value: false},
 	}
 
 	database.OpenMongoDbConnection(database.UserTableName)
