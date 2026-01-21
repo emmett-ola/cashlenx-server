@@ -95,15 +95,16 @@ func (s *LocalAuthService) GenerateToken(userID, username, role string) (string,
 		return "", errors.NewInternalError("JWT secret is not configured", nil)
 	}
 
-	// Get JWT expiration hours from configuration
-	expHoursStr := util.GetConfigByKey("auth.jwt.expiration_hours")
-	expHours, err := strconv.Atoi(expHoursStr)
-	if err != nil {
-		// Fallback to default if configuration is invalid
-		expHours = model.JWTExpirationHours
+	// Get JWT expiration seconds from configuration
+	expSecondsStr := util.GetConfigByKey("auth.jwt.expiration_seconds")
+	expSeconds := 120 // Default to 120 seconds
+	if expSecondsStr != "" {
+		if parsedSeconds, err := strconv.Atoi(expSecondsStr); err == nil {
+			expSeconds = parsedSeconds
+		}
 	}
 	// Set token expiration time
-	expirationTime := time.Now().Add(time.Duration(expHours) * time.Hour)
+	expirationTime := time.Now().Add(time.Duration(expSeconds) * time.Second)
 
 	// Create claims
 	claims := &jwtClaims{
