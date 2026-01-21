@@ -22,8 +22,10 @@ func RequestPasswordReset(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ipAddress := util.GetClientIP(r)
+
 	// Request password reset
-	err := user_service.RequestPasswordReset(requestBody.EmailOrUsername)
+	err := user_service.RequestPasswordReset(requestBody.EmailOrUsername, ipAddress)
 	if err != nil {
 		util.ComposeJSONResponse(w, http.StatusInternalServerError, err)
 		return

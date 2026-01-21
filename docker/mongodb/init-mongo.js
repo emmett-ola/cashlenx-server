@@ -9,8 +9,8 @@ db = db.getSiblingDB('cashlenx');
 
 // Create collections
 db.createCollection('users');
-db.createCollection('refresh_tokens');
-db.createCollection('password_reset_tokens');
+db.createCollection('auth_token_refresh');
+db.createCollection('auth_token_password_reset');
 db.createCollection('cash_flows');
 db.createCollection('categories');
 
@@ -25,15 +25,20 @@ db.users.createIndex({ username: 1 }, { unique: true });
 db.users.createIndex({ role: 1 });
 db.users.createIndex({ is_delete: 1 });
 
-// Refresh tokens indexes
-db.refresh_tokens.createIndex({ token: 1 }, { unique: true });
-db.refresh_tokens.createIndex({ user_id: 1 });
-db.refresh_tokens.createIndex({ expires_at: 1 });
+// Auth token refresh indexes
+db.auth_token_refresh.createIndex({ token: 1 }, { unique: true });
+db.auth_token_refresh.createIndex({ user_id: 1 });
+db.auth_token_refresh.createIndex({ expires_at: 1 });
+db.auth_token_refresh.createIndex({ is_delete: 1 });
+db.auth_token_refresh.createIndex({ create_time: 1 });
 
-// Password reset tokens indexes
-db.password_reset_tokens.createIndex({ token: 1 }, { unique: true });
-db.password_reset_tokens.createIndex({ user_id: 1 });
-db.password_reset_tokens.createIndex({ expires_at: 1 });
+// Auth token password reset indexes
+db.auth_token_password_reset.createIndex({ token: 1 }, { unique: true });
+db.auth_token_password_reset.createIndex({ user_id: 1 });
+db.auth_token_password_reset.createIndex({ expires_at: 1 });
+db.auth_token_password_reset.createIndex({ is_delete: 1 });
+db.auth_token_password_reset.createIndex({ create_time: 1 });
+db.auth_token_password_reset.createIndex({ ip_address: 1 });
 
 // Cash flows indexes
 db.cash_flows.createIndex({ belongs_date: -1 });
@@ -51,8 +56,8 @@ print('Indexes created successfully');
 // Print initialization summary
 print('\n=== CashLenX MongoDB Initialized ===');
 print(`Users: ${db.users.countDocuments()}`);
-print(`Refresh Tokens: ${db.refresh_tokens.countDocuments()}`);
-print(`Password Reset Tokens: ${db.password_reset_tokens.countDocuments()}`);
+print(`Auth Token Refresh: ${db.auth_token_refresh.countDocuments()}`);
+print(`Auth Token Password Reset: ${db.auth_token_password_reset.countDocuments()}`);
 print(`Categories: ${db.categories.countDocuments()}`);
 print(`Cash Flows: ${db.cash_flows.countDocuments()}`);
 print('');

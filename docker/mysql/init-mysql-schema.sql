@@ -32,47 +32,60 @@ CREATE TABLE `users`
 CREATE UNIQUE INDEX users_username_unique_index ON users (username);
 
 -- -------------------
--- Create table `refresh_tokens`
+-- Create table `auth_token_refresh`
 -- -------------------
-DROP TABLE IF EXISTS refresh_tokens;
-CREATE TABLE `refresh_tokens`
+DROP TABLE IF EXISTS auth_token_refresh;
+CREATE TABLE `auth_token_refresh`
 (
-    `id`              VARCHAR(24)  NOT NULL,
-    `user_id`         VARCHAR(24)  NOT NULL,
-    `token`           VARCHAR(255) NOT NULL,
-    `expires_at`      TIMESTAMP    NOT NULL,
-    `created_at`      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP(),
-    `revoked_at`      TIMESTAMP    NULL,
-    `revoked_by`      VARCHAR(24)  NULL,
+    `id`             VARCHAR(24)  NOT NULL,
+    `user_id`        VARCHAR(24)  NOT NULL,
+    `token`          VARCHAR(255) NOT NULL,
+    `expires_at`     TIMESTAMP    NOT NULL,
+    `revoked_at`     TIMESTAMP    NULL,
+    `revoked_by`     VARCHAR(24)  NULL,
+    `device_id`      VARCHAR(100) NULL,
+    `device_name`    VARCHAR(100) NULL,
+    `ip_address`     VARCHAR(45)  NULL,
+    `user_agent`     VARCHAR(255) NULL,
+    `create_user_id` VARCHAR(24)  NOT NULL,
+    `create_time`    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP(),
+    `update_user_id` VARCHAR(24)  NOT NULL,
+    `update_time`    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP() ON UPDATE CURRENT_TIMESTAMP(),
+    `delete_user_id` VARCHAR(24)           DEFAULT NULL,
+    `delete_time`    TIMESTAMP             DEFAULT NULL,
+    `is_delete`      BOOLEAN      NOT NULL DEFAULT FALSE,
     PRIMARY KEY (`id`),
-    UNIQUE INDEX refresh_tokens_token_unique_index ON refresh_tokens (token),
-    INDEX refresh_tokens_user_id_index ON refresh_tokens (user_id),
-    INDEX refresh_tokens_expires_at_index ON refresh_tokens (expires_at),
-    CONSTRAINT refresh_tokens_user_id_fk FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
-) ENGINE = InnoDB
-  DEFAULT CHARSET = UTF8MB4
-    COMMENT ='Refresh Tokens';
+    UNIQUE INDEX auth_token_refresh_token_unique_index (`token`),
+    INDEX auth_token_refresh_user_id_index (`user_id`),
+    INDEX auth_token_refresh_expires_at_index (`expires_at`),
+    CONSTRAINT auth_token_refresh_user_id_fk FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE = InnoDB DEFAULT CHARSET = UTF8MB4 COMMENT ='Refresh Tokens';
 
 -- -------------------
--- Create table `password_reset_tokens`
+-- Create table `auth_token_password_reset`
 -- -------------------
-DROP TABLE IF EXISTS password_reset_tokens;
-CREATE TABLE `password_reset_tokens`
+DROP TABLE IF EXISTS auth_token_password_reset;
+CREATE TABLE `auth_token_password_reset`
 (
-    `id`              VARCHAR(24)  NOT NULL,
-    `user_id`         VARCHAR(24)  NOT NULL,
-    `token`           VARCHAR(255) NOT NULL,
-    `expires_at`      TIMESTAMP    NOT NULL,
-    `created_at`      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP(),
-    `used_at`         TIMESTAMP    NULL,
+    `id`             VARCHAR(24)  NOT NULL,
+    `user_id`        VARCHAR(24)  NOT NULL,
+    `token`          VARCHAR(255) NOT NULL,
+    `expires_at`     TIMESTAMP    NOT NULL,
+    `used_at`        TIMESTAMP    NULL,
+    `ip_address`     VARCHAR(45)  NULL,
+    `create_user_id` VARCHAR(24)  NOT NULL,
+    `create_time`    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP(),
+    `update_user_id` VARCHAR(24)  NOT NULL,
+    `update_time`    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP() ON UPDATE CURRENT_TIMESTAMP(),
+    `delete_user_id` VARCHAR(24)           DEFAULT NULL,
+    `delete_time`    TIMESTAMP             DEFAULT NULL,
+    `is_delete`      BOOLEAN      NOT NULL DEFAULT FALSE,
     PRIMARY KEY (`id`),
-    UNIQUE INDEX password_reset_tokens_token_unique_index ON password_reset_tokens (token),
-    INDEX password_reset_tokens_user_id_index ON password_reset_tokens (user_id),
-    INDEX password_reset_tokens_expires_at_index ON password_reset_tokens (expires_at),
-    CONSTRAINT password_reset_tokens_user_id_fk FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
-) ENGINE = InnoDB
-  DEFAULT CHARSET = UTF8MB4
-    COMMENT ='Password Reset Tokens';
+    UNIQUE INDEX auth_token_password_reset_token_unique_index (`token`),
+    INDEX auth_token_password_reset_user_id_index (`user_id`),
+    INDEX auth_token_password_reset_expires_at_index (`expires_at`),
+    CONSTRAINT auth_token_password_reset_user_id_fk FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE = InnoDB DEFAULT CHARSET = UTF8MB4 COMMENT ='Password Reset Tokens';
 
 -- -------------------
 -- Create table `categories`
@@ -138,6 +151,6 @@ SELECT
     (SELECT COUNT(*) FROM users) AS users_count,
     (SELECT COUNT(*) FROM categories) AS default_categories,
     (SELECT COUNT(*) FROM cash_flows) AS initial_transactions,
-    (SELECT COUNT(*) FROM refresh_tokens) AS refresh_tokens_count,
-    (SELECT COUNT(*) FROM password_reset_tokens) AS password_reset_tokens_count,
+    (SELECT COUNT(*) FROM auth_token_refresh) AS refresh_tokens_count,
+    (SELECT COUNT(*) FROM auth_token_password_reset) AS password_reset_tokens_count,
     NOW() AS initialized_at;

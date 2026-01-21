@@ -29,6 +29,15 @@ type PasswordResetMapper interface {
 	
 	// DeleteTokensByUserId deletes all password reset tokens for a user
 	DeleteTokensByUserId(userId string) error
+
+	// InvalidateActiveTokensByUserId invalidates (soft-deletes) all active (unused, unexpired) tokens for a user
+	InvalidateActiveTokensByUserId(userId string) error
+
+	// CountTokensByUserIdAndDateRange counts tokens created by a user within a time range
+	CountTokensByUserIdAndDateRange(userId string, from, to int64) (int64, error)
+
+	// CountTokensByIPAndDateRange counts tokens created from an IP within a time range
+	CountTokensByIPAndDateRange(ipAddress string, from, to int64) (int64, error)
 }
 
 func init() {
