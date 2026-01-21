@@ -147,7 +147,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	util.ComposeJSONResponse(w, http.StatusCreated, createdUser)
 }
 
-// Logout handles user logout requests by revoking all refresh tokens
+// Logout handles user logout requests
 func Logout(w http.ResponseWriter, r *http.Request) {
 	// Get user ID from context (set by auth middleware)
 	userID, ok := r.Context().Value("user_id").(string)
@@ -156,14 +156,37 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Revoke all refresh tokens for the user
-	err := refresh_token_service.RevokeAllRefreshTokens(userID)
+	// Get logout everywhere parameter
+	logoutEverywhere := r.URL.Query().Get("everywhere") == "true"
+
+	var err error
+	if logoutEverywhere {
+		// Revoke all refresh tokens for the user
+		err = refresh_token_service.RevokeAllRefreshTokens(userID)
+	} else {
+		// Revoke only the current refresh token (requires token in request)
+		// For local logout, we need the refresh token from the request
+		var logoutRequest struct {
+			RefreshToken string `json:"refresh_token"`
+		}
+		if err := util.ParseJSONRequest(r, &logoutRequest); err != nil {
+			util.ComposeJSONResponse(w, http.StatusBadRequest, errors.NewInvalidInputError("refresh_token is required for local logout"))
+			return
+		}
+		err = refresh_token_service.RevokeRefreshToken(logoutRequest.RefreshToken, userID)
+	}
+
 	if err != nil {
 		util.ComposeJSONResponse(w, http.StatusInternalServerError, err)
 		return
 	}
 
+	message := "Successfully logged out"
+	if logoutEverywhere {
+		message = "Successfully logged out from all devices"
+	}
+
 	util.ComposeJSONResponse(w, http.StatusOK, map[string]string{
-		"message": "Successfully logged out - all refresh tokens revoked",
+		"message": message,
 	})
 }
