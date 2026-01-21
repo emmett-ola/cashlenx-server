@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson/primitive"
+
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/util"
 	"github.com/macar-x/cashlenx-server/util/database"
@@ -15,8 +17,10 @@ type RefreshTokenMySqlMapper struct{}
 // CreateToken creates a new refresh token in MySQL
 func (m RefreshTokenMySqlMapper) CreateToken(token model.RefreshToken) string {
 	// Create the SQL query
-	query := `INSERT INTO refresh_tokens (id, user_id, token, expires_at, created_at, 
-		device_id, device_name, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	query := `INSERT INTO auth_token_refresh (id, user_id, token, expires_at, 
+		device_id, device_name, ip_address, user_agent,
+		create_time, create_user_id, update_time, update_user_id, is_delete) 
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	// Get database connection
 	connection := database.GetMySqlConnection()
@@ -29,11 +33,15 @@ func (m RefreshTokenMySqlMapper) CreateToken(token model.RefreshToken) string {
 		token.UserId,
 		token.Token,
 		token.ExpiresAt,
-		token.CreatedAt,
 		token.DeviceId,
 		token.DeviceName,
 		token.IPAddress,
 		token.UserAgent,
+		token.CreateTime,
+		token.CreateUserId.Hex(),
+		token.UpdateTime,
+		token.UpdateUserId.Hex(),
+		token.IsDelete,
 	)
 	if err != nil {
 		util.Logger.Errorw("Failed to create refresh token", "error", err, "user_id", token.UserId)
@@ -52,8 +60,9 @@ func (m RefreshTokenMySqlMapper) CreateToken(token model.RefreshToken) string {
 // GetTokenByToken retrieves a refresh token by its token string from MySQL
 func (m RefreshTokenMySqlMapper) GetTokenByToken(tokenStr string) model.RefreshToken {
 	// Create the SQL query
-	query := `SELECT id, user_id, token, expires_at, created_at, revoked_at, revoked_by,
-		device_id, device_name, ip_address, user_agent FROM refresh_tokens WHERE token = ? AND (revoked_at IS NULL OR revoked_at > ?)`
+	query := `SELECT id, user_id, token, expires_at, create_time, create_user_id, revoked_at, revoked_by,
+		device_id, device_name, ip_address, user_agent, update_time, update_user_id 
+		FROM auth_token_refresh WHERE token = ? AND (revoked_at IS NULL OR revoked_at > ?)`
 
 	// Get database connection
 	connection := database.GetMySqlConnection()
@@ -67,9 +76,11 @@ func (m RefreshTokenMySqlMapper) GetTokenByToken(tokenStr string) model.RefreshT
 	var revokedAt sql.NullTime
 	var revokedBy sql.NullString
 	var deviceId, deviceName, ipAddress, userAgent sql.NullString
+	var createUserIdStr, updateUserIdStr string
+	var updateTime sql.NullTime
 
-	err := row.Scan(&token.Id, &token.UserId, &token.Token, &token.ExpiresAt, &token.CreatedAt,
-		&revokedAt, &revokedBy, &deviceId, &deviceName, &ipAddress, &userAgent)
+	err := row.Scan(&token.Id, &token.UserId, &token.Token, &token.ExpiresAt, &token.CreateTime, &createUserIdStr,
+		&revokedAt, &revokedBy, &deviceId, &deviceName, &ipAddress, &userAgent, &updateTime, &updateUserIdStr)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			util.Logger.Debugw("Refresh token not found", "token", tokenStr)
@@ -77,6 +88,17 @@ func (m RefreshTokenMySqlMapper) GetTokenByToken(tokenStr string) model.RefreshT
 		}
 		util.Logger.Errorw("Failed to get refresh token", "error", err, "token", tokenStr)
 		return model.RefreshToken{}
+	}
+
+	// Parse ObjectIDs
+	if createUserIdStr != "" {
+		token.CreateUserId, _ = primitive.ObjectIDFromHex(createUserIdStr)
+	}
+	if updateUserIdStr != "" {
+		token.UpdateUserId, _ = primitive.ObjectIDFromHex(updateUserIdStr)
+	}
+	if updateTime.Valid {
+		token.UpdateTime = updateTime.Time
 	}
 
 	// Handle nullable fields
@@ -111,14 +133,16 @@ func (m RefreshTokenMySqlMapper) GetTokenByToken(tokenStr string) model.RefreshT
 // RevokeToken revokes a refresh token by its token string
 func (m RefreshTokenMySqlMapper) RevokeToken(tokenStr string, revokedBy string) error {
 	// Create the SQL query
-	query := `UPDATE refresh_tokens SET revoked_at = ?, revoked_by = ? WHERE token = ?`
+	query := `UPDATE auth_token_refresh SET revoked_at = ?, revoked_by = ?, update_time = ?, update_user_id = ? WHERE token = ?`
 
 	// Get database connection
 	connection := database.GetMySqlConnection()
 	defer database.CloseMySqlConnection()
 
+	updateUserId := util.Convert2ObjectId(revokedBy)
+
 	// Execute the query
-	result, err := connection.Exec(query, time.Now(), revokedBy, tokenStr)
+	result, err := connection.Exec(query, time.Now(), revokedBy, time.Now(), updateUserId.Hex(), tokenStr)
 	if err != nil {
 		util.Logger.Errorw("Failed to revoke refresh token", "error", err, "token", tokenStr)
 		return err
@@ -141,14 +165,16 @@ func (m RefreshTokenMySqlMapper) RevokeToken(tokenStr string, revokedBy string) 
 // RevokeAllTokensByUserId revokes all refresh tokens for a user
 func (m RefreshTokenMySqlMapper) RevokeAllTokensByUserId(userId string) error {
 	// Create the SQL query
-	query := `UPDATE refresh_tokens SET revoked_at = ?, revoked_by = ? WHERE user_id = ? AND revoked_at IS NULL`
+	query := `UPDATE auth_token_refresh SET revoked_at = ?, revoked_by = ?, update_time = ?, update_user_id = ? WHERE user_id = ? AND revoked_at IS NULL`
 
 	// Get database connection
 	connection := database.GetMySqlConnection()
 	defer database.CloseMySqlConnection()
 
+	updateUserId := util.Convert2ObjectId(userId)
+
 	// Execute the query
-	_, err := connection.Exec(query, time.Now(), userId, userId)
+	_, err := connection.Exec(query, time.Now(), userId, time.Now(), updateUserId.Hex(), userId)
 	if err != nil {
 		util.Logger.Errorw("Failed to revoke all refresh tokens for user", "error", err, "user_id", userId)
 		return err
@@ -162,10 +188,11 @@ func (m RefreshTokenMySqlMapper) GetTokensByUserId(userId string) []model.Refres
 	var tokens []model.RefreshToken
 
 	// Create the SQL query
-	query := `SELECT id, user_id, token, expires_at, created_at, revoked_at, revoked_by,
-		device_id, device_name, ip_address, user_agent FROM refresh_tokens 
+	query := `SELECT id, user_id, token, expires_at, create_time, create_user_id, revoked_at, revoked_by,
+		device_id, device_name, ip_address, user_agent, update_time, update_user_id
+		FROM auth_token_refresh 
 		WHERE user_id = ? 
-		ORDER BY created_at DESC`
+		ORDER BY create_time DESC`
 
 	// Get database connection
 	connection := database.GetMySqlConnection()
@@ -184,12 +211,25 @@ func (m RefreshTokenMySqlMapper) GetTokensByUserId(userId string) []model.Refres
 		var revokedAt sql.NullTime
 		var revokedBy sql.NullString
 		var deviceId, deviceName, ipAddress, userAgent sql.NullString
+		var createUserIdStr, updateUserIdStr string
+		var updateTime sql.NullTime
 
-		err := rows.Scan(&token.Id, &token.UserId, &token.Token, &token.ExpiresAt, &token.CreatedAt,
-			&revokedAt, &revokedBy, &deviceId, &deviceName, &ipAddress, &userAgent)
+		err := rows.Scan(&token.Id, &token.UserId, &token.Token, &token.ExpiresAt, &token.CreateTime, &createUserIdStr,
+			&revokedAt, &revokedBy, &deviceId, &deviceName, &ipAddress, &userAgent, &updateTime, &updateUserIdStr)
 		if err != nil {
 			util.Logger.Errorw("Failed to scan refresh token", "error", err)
 			continue
+		}
+
+		// Parse ObjectIDs
+		if createUserIdStr != "" {
+			token.CreateUserId, _ = primitive.ObjectIDFromHex(createUserIdStr)
+		}
+		if updateUserIdStr != "" {
+			token.UpdateUserId, _ = primitive.ObjectIDFromHex(updateUserIdStr)
+		}
+		if updateTime.Valid {
+			token.UpdateTime = updateTime.Time
 		}
 
 		// Handle nullable fields

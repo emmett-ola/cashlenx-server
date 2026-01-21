@@ -3,7 +3,9 @@ package util
 import (
 	"encoding/json"
 	"io"
+	"net"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/macar-x/cashlenx-server/errors"
@@ -248,4 +250,26 @@ func SendFile(w http.ResponseWriter, file io.Reader) {
 		w.WriteHeader(http.StatusInternalServerError)
 		ComposeJSONResponse(w, http.StatusInternalServerError, errors.NewInternalError("Failed to send file", err))
 	}
+}
+
+// GetClientIP extracts the client's real IP address from the request
+func GetClientIP(r *http.Request) string {
+	// Check X-Forwarded-For header
+	forwarded := r.Header.Get("X-Forwarded-For")
+	if forwarded != "" {
+		return strings.Split(forwarded, ",")[0]
+	}
+
+	// Check X-Real-IP header
+	realIP := r.Header.Get("X-Real-IP")
+	if realIP != "" {
+		return realIP
+	}
+
+	// Fallback to RemoteAddr
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
+	}
+	return host
 }

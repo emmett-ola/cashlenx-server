@@ -58,8 +58,10 @@ func (m RefreshTokenMongoDbMapper) RevokeToken(tokenStr string, revokedBy string
 	filter := map[string]interface{}{"token": tokenStr}
 	update := map[string]interface{}{
 		"$set": map[string]interface{}{
-			"revoked_at": util.GetCurrentTime(),
-			"revoked_by": revokedBy,
+			"revoked_at":     util.GetCurrentTime(),
+			"revoked_by":     revokedBy,
+			"update_time":    util.GetCurrentTime(),
+			"update_user_id": util.Convert2ObjectId(revokedBy),
 		},
 	}
 
@@ -85,8 +87,10 @@ func (m RefreshTokenMongoDbMapper) RevokeAllTokensByUserId(userId string) error 
 	}
 	update := map[string]interface{}{
 		"$set": map[string]interface{}{
-			"revoked_at": util.GetCurrentTime(),
-			"revoked_by": userId,
+			"revoked_at":     util.GetCurrentTime(),
+			"revoked_by":     userId,
+			"update_time":    util.GetCurrentTime(),
+			"update_user_id": util.Convert2ObjectId(userId),
 		},
 	}
 

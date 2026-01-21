@@ -15,12 +15,8 @@ import (
 // Login handles user login requests
 func Login(w http.ResponseWriter, r *http.Request) {
 	var loginRequest struct {
-		Username   string `json:"username"`
-		Password   string `json:"password"`
-		DeviceId   string `json:"device_id,omitempty"`
-		DeviceName string `json:"device_name,omitempty"`
-		IPAddress  string `json:"ip_address,omitempty"`
-		UserAgent  string `json:"user_agent,omitempty"`
+		Username string `json:"username"`
+		Password string `json:"password"`
 	}
 	if err := util.ParseJSONRequest(r, &loginRequest); err != nil {
 		util.ComposeJSONResponse(w, http.StatusBadRequest, errors.NewInvalidInputError("invalid request body"))
@@ -33,9 +29,11 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	deviceId, deviceName, ipAddress, userAgent := getDeviceInfo(r)
+
 	// Use auth service to authenticate
 	accessToken, refreshToken, user, err := auth.Service.Authenticate(loginRequest.Username, loginRequest.Password,
-		loginRequest.DeviceId, loginRequest.DeviceName, loginRequest.IPAddress, loginRequest.UserAgent)
+		deviceId, deviceName, ipAddress, userAgent)
 	if err != nil {
 		util.ComposeJSONResponse(w, http.StatusUnauthorized, err)
 		return
@@ -71,9 +69,11 @@ func RefreshToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	deviceId, deviceName, ipAddress, userAgent := getDeviceInfo(r)
+
 	// Use auth service to refresh token
 	accessToken, newRefreshToken, user, err := auth.Service.RefreshToken(refreshRequest.RefreshToken,
-		refreshRequest.DeviceId, refreshRequest.DeviceName, refreshRequest.IPAddress, refreshRequest.UserAgent)
+		deviceId, deviceName, ipAddress, userAgent)
 	if err != nil {
 		util.ComposeJSONResponse(w, http.StatusUnauthorized, err)
 		return
@@ -207,4 +207,26 @@ func GetTokens(w http.ResponseWriter, r *http.Request) {
 	tokens := refresh_token_service.GetUserRefreshTokens(userID)
 
 	util.ComposeJSONResponse(w, http.StatusOK, tokens)
+}
+
+func getDeviceInfo(r *http.Request) (string, string, string, string) {
+	userAgent := r.UserAgent()
+	if userAgent == "" {
+		userAgent = "Unknown"
+	}
+
+	// Simple parsing logic
+	deviceName := "Unknown Device"
+	if len(userAgent) > 0 {
+		if len(userAgent) > 50 {
+			deviceName = userAgent[:50] + "..."
+		} else {
+			deviceName = userAgent
+		}
+	}
+
+	ipAddress := util.GetClientIP(r)
+	deviceId := "" // Let service handle or generate if needed
+
+	return deviceId, deviceName, ipAddress, userAgent
 }

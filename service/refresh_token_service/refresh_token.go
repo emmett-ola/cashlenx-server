@@ -17,19 +17,14 @@ func GetRefreshTokenByToken(token string, deviceID, deviceName, ipAddress, userA
 		return model.RefreshToken{}, errors.NewUnauthorizedError("invalid or expired refresh token")
 	}
 
-	// Validate device information if provided
-	if deviceID != "" && refreshToken.DeviceId != "" && refreshToken.DeviceId != deviceID {
-		return model.RefreshToken{}, errors.NewUnauthorizedError("device information does not match")
-	}
-	if deviceName != "" && refreshToken.DeviceName != "" && refreshToken.DeviceName != deviceName {
-		return model.RefreshToken{}, errors.NewUnauthorizedError("device information does not match")
-	}
-	if ipAddress != "" && refreshToken.IPAddress != "" && refreshToken.IPAddress != ipAddress {
-		return model.RefreshToken{}, errors.NewUnauthorizedError("device information does not match")
-	}
+	// Validate device information
+	// We primarily use User-Agent for validation as requested
 	if userAgent != "" && refreshToken.UserAgent != "" && refreshToken.UserAgent != userAgent {
 		return model.RefreshToken{}, errors.NewUnauthorizedError("device information does not match")
 	}
+
+	// We skip strict IP validation to allow network changes (e.g. wifi to cellular)
+	// We skip DeviceID validation as it's not reliably provided by all clients
 
 	return refreshToken, nil
 }
@@ -45,13 +40,22 @@ func CreateRefreshToken(userID string, deviceID, deviceName, ipAddress, userAgen
 		}
 	}
 
+	userObjectId := util.Convert2ObjectId(userID)
+	currentTime := util.GetCurrentTime()
+
 	// Generate refresh token
 	refreshToken := model.RefreshToken{
+		BaseEntity: model.BaseEntity{
+			CreateTime:   currentTime,
+			CreateUserId: userObjectId,
+			UpdateTime:   currentTime,
+			UpdateUserId: userObjectId,
+			IsDelete:     false,
+		},
 		Id:        util.GenerateUUID(),
 		UserId:    userID,
 		Token:     util.GenerateUUID(),
 		ExpiresAt: time.Now().AddDate(0, 0, expDays),
-		CreatedAt: time.Now(),
 		// Device information
 		DeviceId:   deviceID,
 		DeviceName: deviceName,
