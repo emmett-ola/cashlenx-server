@@ -37,12 +37,17 @@ func StartServer(port int32) {
 	r := mux.NewRouter()
 
 	// Register routes with new structure
-	registerOpenRoutes(r)       // Public endpoints (no auth)
-	registerAdminRoutes(r)      // Admin-only endpoints
-	registerUserRoutes(r)       // User-specific profile endpoints
-	registerCashRoute(r)        // User-specific cash flow endpoints
-	registerCategoryRoute(r)    // User-specific category endpoints
-	registerStatisticRoute(r)   // User-specific statistic endpoints
+	registerOpenRoutes(r) // Public endpoints (no auth)
+
+	// Create admin subrouter with Admin middleware
+	adminRouter := r.PathPrefix("/api/admin").Subrouter()
+	adminRouter.Use(middleware.Admin)
+	registerAdminRoutes(adminRouter) // Admin-only endpoints
+
+	registerUserRoutes(r)     // User-specific profile endpoints
+	registerCashRoute(r)      // User-specific cash flow endpoints
+	registerCategoryRoute(r)  // User-specific category endpoints
+	registerStatisticRoute(r) // User-specific statistic endpoints
 
 	// Apply middleware
 	handler := middleware.Logging(middleware.Auth(middleware.SchemaValidation(middleware.CORS(r))))
@@ -62,7 +67,7 @@ func registerOpenRoutes(r *mux.Router) {
 	r.HandleFunc("/api/open/auth/login", auth_controller.Login).Methods("POST")
 	r.HandleFunc("/api/open/auth/register", auth_controller.Register).Methods("POST")
 	r.HandleFunc("/api/open/auth/refresh", auth_controller.RefreshToken).Methods("POST")
-	
+
 	// Password reset routes
 	r.HandleFunc("/api/open/auth/reset-password", user_controller.RequestPasswordReset).Methods("POST")
 	r.HandleFunc("/api/open/auth/reset-password/confirm", user_controller.ConfirmPasswordReset).Methods("POST")
@@ -71,19 +76,19 @@ func registerOpenRoutes(r *mux.Router) {
 // registerAdminRoutes registers admin-only endpoints
 func registerAdminRoutes(r *mux.Router) {
 	// User management - admin only
-	r.HandleFunc("/api/admin/user", user_controller.Create).Methods("POST")
-	r.HandleFunc("/api/admin/user", user_controller.ListAll).Methods("GET")
-	r.HandleFunc("/api/admin/user/{id}", user_controller.Get).Methods("GET")
-	r.HandleFunc("/api/admin/user/{id}", user_controller.Update).Methods("PUT")
-	r.HandleFunc("/api/admin/user/{id}", user_controller.Delete).Methods("DELETE")
+	r.HandleFunc("/user", user_controller.Create).Methods("POST")
+	r.HandleFunc("/user", user_controller.ListAll).Methods("GET")
+	r.HandleFunc("/user/{id}", user_controller.Get).Methods("GET")
+	r.HandleFunc("/user/{id}", user_controller.Update).Methods("PUT")
+	r.HandleFunc("/user/{id}", user_controller.Delete).Methods("DELETE")
 	// User password management
-	r.HandleFunc("/api/admin/user/{id}/password", user_controller.SetPassword).Methods("PUT")
+	r.HandleFunc("/user/{id}/password", user_controller.SetPassword).Methods("PUT")
 
 	// Database management - admin only
-	r.HandleFunc("/api/admin/manage/dump", manage_controller.DumpDatabase).Methods("GET")
-	r.HandleFunc("/api/admin/manage/restore", manage_controller.RestoreDatabase).Methods("POST")
-	r.HandleFunc("/api/admin/manage/export", manage_controller.ExportData).Methods("GET")
-	r.HandleFunc("/api/admin/manage/import", manage_controller.ImportData).Methods("POST")
+	r.HandleFunc("/manage/dump", manage_controller.DumpDatabase).Methods("GET")
+	r.HandleFunc("/manage/restore", manage_controller.RestoreDatabase).Methods("POST")
+	r.HandleFunc("/manage/export", manage_controller.ExportData).Methods("GET")
+	r.HandleFunc("/manage/import", manage_controller.ImportData).Methods("POST")
 }
 
 // registerUserRoutes registers user-specific endpoints (authenticated users can access their own profiles)
@@ -186,29 +191,29 @@ func versionInfo(w http.ResponseWriter, r *http.Request) {
 		"description": "Personal finance management API",
 		"endpoints": map[string][]string{
 			"open": {
-			"GET /api/open/health",
-			"GET /api/open/version",
-			"POST /api/open/auth/login",
-			"POST /api/open/auth/register",
-			"POST /api/open/auth/refresh",
-			"POST /api/open/auth/reset-password",
-			"POST /api/open/auth/reset-password/confirm",
-		},
+				"GET /api/open/health",
+				"GET /api/open/version",
+				"POST /api/open/auth/login",
+				"POST /api/open/auth/register",
+				"POST /api/open/auth/refresh",
+				"POST /api/open/auth/reset-password",
+				"POST /api/open/auth/reset-password/confirm",
+			},
 			"admin": {
-			"POST /api/admin/user",
-			"GET /api/admin/user",
-			"GET /api/admin/user/{id}",
-			"PUT /api/admin/user/{id}",
-			"DELETE /api/admin/user/{id}",
-			"PUT /api/admin/user/{id}/password",
-			"GET /api/admin/manage/dump",
-			"POST /api/admin/manage/restore",
-			"GET /api/admin/manage/export",
-			"POST /api/admin/manage/import",
-		},
+				"POST /api/admin/user",
+				"GET /api/admin/user",
+				"GET /api/admin/user/{id}",
+				"PUT /api/admin/user/{id}",
+				"DELETE /api/admin/user/{id}",
+				"PUT /api/admin/user/{id}/password",
+				"GET /api/admin/manage/dump",
+				"POST /api/admin/manage/restore",
+				"GET /api/admin/manage/export",
+				"POST /api/admin/manage/import",
+			},
 			"user": {
-			"PUT /api/user/profile",
-		},
+				"PUT /api/user/profile",
+			},
 			"cash_flow": {
 				"POST /api/cash/expense",
 				"POST /api/cash/income",
