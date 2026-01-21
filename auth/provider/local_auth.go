@@ -31,7 +31,7 @@ type jwtClaims struct {
 }
 
 // Authenticate validates user credentials and returns a token and user info
-func (s *LocalAuthService) Authenticate(username, password string) (string, string, model.UserEntity, error) {
+func (s *LocalAuthService) Authenticate(username, password, deviceID, deviceName, ipAddress, userAgent string) (string, string, model.UserEntity, error) {
 	// Get user by username
 	user := user_service.GetUserByUsername(username)
 	if user.Id.IsZero() {
@@ -50,8 +50,8 @@ func (s *LocalAuthService) Authenticate(username, password string) (string, stri
 		return "", "", model.UserEntity{}, err
 	}
 
-	// Generate refresh token
-	refreshToken, err := refresh_token_service.CreateRefreshToken(user.Id.Hex())
+	// Generate refresh token with device information
+	refreshToken, err := refresh_token_service.CreateRefreshToken(user.Id.Hex(), deviceID, deviceName, ipAddress, userAgent)
 	if err != nil {
 		return "", "", model.UserEntity{}, err
 	}
@@ -133,9 +133,9 @@ func (s *LocalAuthService) GenerateToken(userID, username, role string) (string,
 }
 
 // RefreshToken generates a new access token using a refresh token
-func (s *LocalAuthService) RefreshToken(refreshToken string) (string, string, model.UserEntity, error) {
-	// Validate refresh token
-	token, err := refresh_token_service.GetRefreshTokenByToken(refreshToken)
+func (s *LocalAuthService) RefreshToken(refreshToken, deviceID, deviceName, ipAddress, userAgent string) (string, string, model.UserEntity, error) {
+	// Validate refresh token with device information
+	token, err := refresh_token_service.GetRefreshTokenByToken(refreshToken, deviceID, deviceName, ipAddress, userAgent)
 	if err != nil {
 		return "", "", model.UserEntity{}, err
 	}
@@ -158,8 +158,8 @@ func (s *LocalAuthService) RefreshToken(refreshToken string) (string, string, mo
 		return "", "", model.UserEntity{}, err
 	}
 
-	// Generate new refresh token
-	newRefreshToken, err := refresh_token_service.CreateRefreshToken(user.Id.Hex())
+	// Generate new refresh token with device information
+	newRefreshToken, err := refresh_token_service.CreateRefreshToken(user.Id.Hex(), deviceID, deviceName, ipAddress, userAgent)
 	if err != nil {
 		return "", "", model.UserEntity{}, err
 	}

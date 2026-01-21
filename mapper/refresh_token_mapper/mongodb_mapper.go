@@ -99,3 +99,32 @@ func (m RefreshTokenMongoDbMapper) RevokeAllTokensByUserId(userId string) error 
 
 	return nil
 }
+
+	// GetTokensByUserId retrieves all refresh tokens for a user
+func (m RefreshTokenMongoDbMapper) GetTokensByUserId(userId string) []model.RefreshToken {
+	var tokens []model.RefreshToken
+	
+	// Get database connection
+	collection := database.GetMongoCollection(database.RefreshTokenCollectionName)
+	
+	// Define filter
+	filter := map[string]interface{}{
+		"user_id": userId,
+	}
+	
+	// Find all tokens for the user
+	cursor, err := collection.Find(nil, filter)
+	if err != nil {
+		util.Logger.Errorw("Failed to get refresh tokens by user ID", "error", err, "userId", userId)
+		return tokens
+	}
+	defer cursor.Close(nil)
+	
+	// Decode the results
+	if err := cursor.All(nil, &tokens); err != nil {
+		util.Logger.Errorw("Failed to decode refresh tokens", "error", err)
+		return tokens
+	}
+	
+	return tokens
+}

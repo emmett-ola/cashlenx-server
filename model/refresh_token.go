@@ -11,11 +11,21 @@ type RefreshToken struct {
 	CreatedAt     time.Time  `bson:"created_at" json:"created_at"`
 	RevokedAt     *time.Time `bson:"revoked_at,omitempty" json:"revoked_at,omitempty"`
 	RevokedBy     string     `bson:"revoked_by,omitempty" json:"revoked_by,omitempty"`
+	// Device information
+	DeviceId      string `bson:"device_id,omitempty" json:"device_id,omitempty"`
+	DeviceName    string `bson:"device_name,omitempty" json:"device_name,omitempty"`
+	IPAddress     string `bson:"ip_address,omitempty" json:"ip_address,omitempty"`
+	UserAgent     string `bson:"user_agent,omitempty" json:"user_agent,omitempty"`
 }
 
 // RefreshTokenRequest represents a request to refresh an access token
 type RefreshTokenRequest struct {
 	RefreshToken string `json:"refresh_token"`
+	// Device information for validation
+	DeviceId      string `json:"device_id,omitempty"`
+	DeviceName    string `json:"device_name,omitempty"`
+	IPAddress     string `json:"ip_address,omitempty"`
+	UserAgent     string `json:"user_agent,omitempty"`
 }
 
 // RefreshTokenResponse represents a response with new access and refresh tokens

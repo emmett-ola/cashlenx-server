@@ -10,7 +10,7 @@ import (
 // AuthService defines the main authentication service interface
 type AuthService interface {
 	// Authenticate validates user credentials and returns tokens and user info
-	Authenticate(username, password string) (string, string, model.UserEntity, error)
+	Authenticate(username, password, deviceID, deviceName, ipAddress, userAgent string) (string, string, model.UserEntity, error)
 
 	// ValidateToken validates a JWT token and returns the claims if valid
 	ValidateToken(tokenString string) (*provider.Claims, error)
@@ -19,7 +19,7 @@ type AuthService interface {
 	GenerateToken(userID, username, role string) (string, error)
 
 	// RefreshToken generates new tokens using a refresh token
-	RefreshToken(refreshToken string) (string, string, model.UserEntity, error)
+	RefreshToken(refreshToken, deviceID, deviceName, ipAddress, userAgent string) (string, string, model.UserEntity, error)
 
 	// GetUserFromToken extracts user information from a token
 	GetUserFromToken(tokenString string) (model.UserEntity, error)
@@ -41,8 +41,8 @@ func NewAuthService() *Service {
 }
 
 // Authenticate delegates to the underlying provider
-func (s *Service) Authenticate(username, password string) (string, string, model.UserEntity, error) {
-	return s.provider.Authenticate(username, password)
+func (s *Service) Authenticate(username, password, deviceID, deviceName, ipAddress, userAgent string) (string, string, model.UserEntity, error) {
+	return s.provider.Authenticate(username, password, deviceID, deviceName, ipAddress, userAgent)
 }
 
 // ValidateToken delegates to the underlying provider
@@ -56,8 +56,8 @@ func (s *Service) GenerateToken(userID, username, role string) (string, error) {
 }
 
 // RefreshToken delegates to the underlying provider
-func (s *Service) RefreshToken(refreshToken string) (string, string, model.UserEntity, error) {
-	return s.provider.RefreshToken(refreshToken)
+func (s *Service) RefreshToken(refreshToken, deviceID, deviceName, ipAddress, userAgent string) (string, string, model.UserEntity, error) {
+	return s.provider.RefreshToken(refreshToken, deviceID, deviceName, ipAddress, userAgent)
 }
 
 // GetUserFromToken delegates to the underlying provider

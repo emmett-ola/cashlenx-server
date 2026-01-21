@@ -14,7 +14,14 @@ import (
 
 // Login handles user login requests
 func Login(w http.ResponseWriter, r *http.Request) {
-	var loginRequest model.UserLoginRequest
+	var loginRequest struct {
+		Username   string `json:"username"`
+		Password   string `json:"password"`
+		DeviceId   string `json:"device_id,omitempty"`
+		DeviceName string `json:"device_name,omitempty"`
+		IPAddress  string `json:"ip_address,omitempty"`
+		UserAgent  string `json:"user_agent,omitempty"`
+	}
 	if err := util.ParseJSONRequest(r, &loginRequest); err != nil {
 		util.ComposeJSONResponse(w, http.StatusBadRequest, errors.NewInvalidInputError("invalid request body"))
 		return
@@ -27,7 +34,8 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Use auth service to authenticate
-	accessToken, refreshToken, user, err := auth.Service.Authenticate(loginRequest.Username, loginRequest.Password)
+	accessToken, refreshToken, user, err := auth.Service.Authenticate(loginRequest.Username, loginRequest.Password,
+		loginRequest.DeviceId, loginRequest.DeviceName, loginRequest.IPAddress, loginRequest.UserAgent)
 	if err != nil {
 		util.ComposeJSONResponse(w, http.StatusUnauthorized, err)
 		return
@@ -64,7 +72,8 @@ func RefreshToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Use auth service to refresh token
-	accessToken, newRefreshToken, user, err := auth.Service.RefreshToken(refreshRequest.RefreshToken)
+	accessToken, newRefreshToken, user, err := auth.Service.RefreshToken(refreshRequest.RefreshToken,
+		refreshRequest.DeviceId, refreshRequest.DeviceName, refreshRequest.IPAddress, refreshRequest.UserAgent)
 	if err != nil {
 		util.ComposeJSONResponse(w, http.StatusUnauthorized, err)
 		return
@@ -183,4 +192,19 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 	util.ComposeJSONResponse(w, http.StatusOK, map[string]string{
 		"message": message,
 	})
+}
+
+// GetTokens handles requests to list all user's refresh tokens
+func GetTokens(w http.ResponseWriter, r *http.Request) {
+	// Get user ID from context (set by auth middleware)
+	userID, ok := r.Context().Value("user_id").(string)
+	if !ok || userID == "" {
+		util.ComposeJSONResponse(w, http.StatusUnauthorized, errors.NewUnauthorizedError("user not authenticated"))
+		return
+	}
+
+	// Get all refresh tokens for the user
+	tokens := refresh_token_service.GetUserRefreshTokens(userID)
+
+	util.ComposeJSONResponse(w, http.StatusOK, tokens)
 }

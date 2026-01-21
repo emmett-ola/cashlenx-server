@@ -15,6 +15,9 @@ type RefreshTokenMapper interface {
 	// GetTokenByToken retrieves a refresh token by its token string
 	GetTokenByToken(token string) model.RefreshToken
 	
+	// GetTokensByUserId retrieves all refresh tokens for a user
+	GetTokensByUserId(userId string) []model.RefreshToken
+	
 	// RevokeToken revokes a refresh token by its token string
 	RevokeToken(token string, revokedBy string) error
 	
