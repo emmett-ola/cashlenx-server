@@ -89,8 +89,6 @@ func registerAdminRoutes(r *mux.Router) {
 	// Database management - admin only
 	r.HandleFunc("/manage/dump", manage_controller.DumpDatabase).Methods("GET")
 	r.HandleFunc("/manage/restore", manage_controller.RestoreDatabase).Methods("POST")
-	r.HandleFunc("/manage/export", manage_controller.ExportData).Methods("GET")
-	r.HandleFunc("/manage/import", manage_controller.ImportData).Methods("POST")
 }
 
 // registerUserRoutes registers user-specific endpoints (authenticated users can access their own profiles)
@@ -211,8 +209,6 @@ func versionInfo(w http.ResponseWriter, r *http.Request) {
 				"DELETE /api/admin/user/{id}",
 				"GET /api/admin/manage/dump",
 				"POST /api/admin/manage/restore",
-				"GET /api/admin/manage/export",
-				"POST /api/admin/manage/import",
 			},
 			"user": {
 				"GET /api/user/profile",

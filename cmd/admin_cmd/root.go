@@ -14,9 +14,7 @@ These commands are restricted and mirror the /api/admin/* endpoints.
 
 Available sub-commands:
   backup  - Create database backup
-  restore - Restore database from backup
-  export  - Export data to Excel (TODO: move to user statistic module with data isolation)
-  import  - Import data from Excel (TODO: move to user statistic module with data isolation)`,
+  restore - Restore database from backup`,
 }
 
 func init() {
@@ -27,6 +25,4 @@ func init() {
 	// Register all admin commands directly
 	AdminCmd.AddCommand(backupCmd)
 	AdminCmd.AddCommand(restoreBackupCmd)
-	AdminCmd.AddCommand(exportCmd)
-	AdminCmd.AddCommand(importCmd)
 }

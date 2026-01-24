@@ -284,11 +284,23 @@ func validateRequest(r *http.Request) error {
 	// Create validation context
 	ctx := context.Background()
 
+	// Configure validation options
+	options := &openapi3filter.Options{
+		ExcludeRequestBody: false,
+	}
+
+	// Skip body validation for file upload endpoints to avoid "value must be a string" error
+	// This is a known issue with kin-openapi validation for multipart/form-data
+	if strings.HasSuffix(r.URL.Path, "/restore") {
+		options.ExcludeRequestBody = true
+	}
+
 	// Validate request using the original request but matched route
 	requestValidationInput := &openapi3filter.RequestValidationInput{
 		Request:    r,
 		PathParams: pathParams,
 		Route:      route,
+		Options:    options,
 	}
 
 	return openapi3filter.ValidateRequest(ctx, requestValidationInput)
