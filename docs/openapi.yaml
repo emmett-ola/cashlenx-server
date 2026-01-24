@@ -785,6 +785,75 @@ paths:
               schema:
                 $ref: '#/components/schemas/ResponseWrapper'
 
+  # User Profile endpoints
+  /user/profile:
+    get:
+      summary: Get user profile
+      description: Get the profile of the currently authenticated user
+      operationId: getUserProfile
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+    put:
+      summary: Update user profile
+      description: Update the profile of the currently authenticated user
+      operationId: updateUserProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileUpdateRequest'
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+
+  /user/password:
+    put:
+      summary: Change password
+      description: Change the password of the currently authenticated user
+      operationId: changeUserPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserChangePasswordRequest'
+      responses:
+        '200':
+          description: Password changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+        '401':
+          description: Invalid old password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+
+  /user/account:
+    delete:
+      summary: Delete account
+      description: Delete the account of the currently authenticated user
+      operationId: deleteUserAccount
+      responses:
+        '200':
+          description: Account deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+
 components:
   schemas:
     # Response wrapper schema
@@ -1079,3 +1148,30 @@ components:
           description: JWT token for authentication
         user:
           $ref: '#/components/schemas/UserResponse'
+
+    UserProfileUpdateRequest:
+      type: object
+      properties:
+        nickname:
+          type: string
+          description: User nickname
+        avatar_url:
+          type: string
+          description: URL to user avatar
+        gender:
+          type: string
+          description: User gender
+          enum: [male, female, others, ""]
+      
+    UserChangePasswordRequest:
+      type: object
+      properties:
+        old_password:
+          type: string
+          description: Current password
+        new_password:
+          type: string
+          description: New password
+      required:
+        - old_password
+        - new_password

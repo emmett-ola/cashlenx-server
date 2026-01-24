@@ -89,6 +89,7 @@ func registerAdminRoutes(r *mux.Router) {
 	r.HandleFunc("/user", user_controller.Create).Methods("POST")
 	r.HandleFunc("/user", user_controller.ListAll).Methods("GET")
 	r.HandleFunc("/user/{id}", user_controller.Get).Methods("GET")
+	r.HandleFunc("/user/{id}", user_controller.Update).Methods("PUT")
 	r.HandleFunc("/user/{id}", user_controller.Delete).Methods("DELETE")
 
 

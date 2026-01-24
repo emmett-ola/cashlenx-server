@@ -45,6 +45,9 @@ func UpdateService(plainId string, requestBody model.UserDTO) (model.UserEntity,
 		existingUser.EmailAddress = requestBody.EmailAddress
 	}
 	if requestBody.Gender != "" {
+		if err := validation.ValidateGender(requestBody.Gender); err != nil {
+			return model.UserEntity{}, err
+		}
 		existingUser.Gender = requestBody.Gender
 	}
 
@@ -141,6 +144,9 @@ func UpdateProfileService(plainId string, requestBody model.UserProfileUpdateReq
 		existingUser.AvatarUrl = requestBody.AvatarUrl
 	}
 	if requestBody.Gender != "" {
+		if err := validation.ValidateGender(requestBody.Gender); err != nil {
+			return model.UserEntity{}, err
+		}
 		existingUser.Gender = requestBody.Gender
 	}
 
