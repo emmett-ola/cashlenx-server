@@ -78,8 +78,9 @@ type UserDTO struct {
 
 // UserLoginRequest represents a login request
 type UserLoginRequest struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Username     string `json:"username,omitempty"`
+	Password     string `json:"password,omitempty"`
+	RefreshToken string `json:"refresh_token,omitempty"`
 }
 
 // UserLoginResponse represents a login response with JWT token

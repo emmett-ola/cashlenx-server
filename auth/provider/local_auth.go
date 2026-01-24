@@ -189,9 +189,19 @@ func (s *LocalAuthService) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Authentication is always enabled
 
-		// Skip authentication for all public endpoints under /api/open/*
+		// Skip authentication for all public endpoints under /api/{version}/open/*
 		path := r.URL.Path
-		if strings.HasPrefix(path, "/api/open/") {
+		// Get API prefix from config (same as in server.go)
+		apiVersion := util.GetConfigByKey("api.version")
+		if apiVersion == "" {
+			apiVersion = "v0"
+		}
+		apiPrefix := "/api/" + apiVersion
+
+		// Debug log for auth middleware
+		// util.Logger.Debugw("Auth middleware", "path", path, "apiPrefix", apiPrefix, "isPublic", strings.HasPrefix(path, apiPrefix+"/open/"))
+
+		if strings.HasPrefix(path, apiPrefix+"/open/") {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -228,7 +238,7 @@ func (s *LocalAuthService) Middleware(next http.Handler) http.Handler {
 		r = r.WithContext(ctx)
 
 		// Check if admin role is required for admin-only routes
-		if strings.HasPrefix(path, "/api/admin/") {
+		if strings.HasPrefix(path, apiPrefix+"/admin/") {
 			if claims.Role != "admin" {
 				util.ComposeJSONResponse(w, http.StatusForbidden, errors.NewForbiddenError("admin role required"))
 				return

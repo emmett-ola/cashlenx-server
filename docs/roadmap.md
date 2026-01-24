@@ -91,6 +91,14 @@
 - [ ] Implement mapper for fetching category name efficiently #performance
 - [ ] Fix SQL injection vulnerability in MySQL mappers #security
 
+## v2.2.0 — Big Feature: API Versioning & Refinements (Completed)
+- [x] Implement global API path versioning (default `/v0/`) #api #dx
+- [x] Configurable API version via env var `API_VERSION` #dx
+- [x] Update OpenAPI spec and docs for versioned paths #docs
+- [x] Refine auth flow: merged login/refresh, removed redundant endpoints #security #api
+- [x] Remove redundant admin export/import in favor of dump/restore and user stats #api
+- [x] Fix validation issues with multipart file uploads #api #bugfix
+
 ## v2.1.0 — Big Feature: Statistic Module (Completed)
 - [x] Three-layer architecture for statistics (Controller -> Service -> Mapper) #api #stats
 - [x] Multi-format export (Excel, CSV, PDF) with binary file download #api #data

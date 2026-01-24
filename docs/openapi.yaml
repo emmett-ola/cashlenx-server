@@ -8,12 +8,12 @@ info:
     email: support@cashlenx.com
 
 servers:
-  - url: http://localhost:8080
+  - url: http://localhost:8080/api/v0
     description: Local development server
 
 paths:
   # Health endpoints
-  /api/open/health:
+  /open/health:
     get:
       summary: Health check
       description: Check if the API is running
@@ -36,7 +36,7 @@ paths:
                 extra: {}
                 errors: []
 
-  /api/open/version:
+  /open/version:
     get:
       summary: Version information
       description: Get API version and information
@@ -50,7 +50,7 @@ paths:
                 $ref: '#/components/schemas/ResponseWrapper'
 
   # Cash Flow endpoints
-  /api/cash/expense:
+  /cash/expense:
     post:
       summary: Create expense transaction
       description: Record a new expense transaction
@@ -69,7 +69,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ResponseWrapper'
 
-  /api/cash/income:
+  /cash/income:
     post:
       summary: Create income transaction
       description: Record a new income transaction
@@ -88,7 +88,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ResponseWrapper'
 
-  /api/cash:
+  /cash:
     get:
       summary: List all transactions
       description: Get all cash flow transactions with optional filtering and pagination
@@ -126,7 +126,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ResponseWrapper'
 
-  /api/cash/{id}:
+  /cash/{id}:
     get:
       summary: Get transaction by ID
       description: Retrieve a specific transaction by its ID
@@ -206,7 +206,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ResponseWrapper'
 
-  /api/cash/date/{date}:
+  /cash/date/{date}:
     get:
       summary: Get transactions by date
       description: Retrieve transactions for a specific date (YYYYMMDD format)
@@ -244,7 +244,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ResponseWrapper'
 
-  /api/cash/range:
+  /cash/range:
     get:
       summary: Get transactions by date range
       description: Retrieve transactions between two dates
@@ -270,7 +270,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ResponseWrapper'
 
-  /api/cash/summary/daily/{date}:
+  /cash/summary/daily/{date}:
     get:
       summary: Get daily summary
       description: Get financial summary for a specific date
@@ -290,7 +290,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ResponseWrapper'
 
-  /api/cash/summary/monthly/{month}:
+  /cash/summary/monthly/{month}:
     get:
       summary: Get monthly summary
       description: Get financial summary for a specific month (YYYYMM format)
@@ -310,7 +310,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ResponseWrapper'
 
-  /api/cash/summary/yearly/{year}:
+  /cash/summary/yearly/{year}:
     get:
       summary: Get yearly summary
       description: Get financial summary for a specific year (YYYY format)
@@ -331,7 +331,7 @@ paths:
                 $ref: '#/components/schemas/ResponseWrapper'
 
   # Category endpoints
-  /api/category:
+  /category:
     post:
       summary: Create category
       description: Create a new transaction category
@@ -380,7 +380,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ResponseWrapper'
 
-  /api/category/{id}:
+  /category/{id}:
     get:
       summary: Get category by ID
       description: Retrieve a specific category by its ID
@@ -460,7 +460,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ResponseWrapper'
 
-  /api/category/name/{name}:
+  /category/name/{name}:
     get:
       summary: Get category by name
       description: Retrieve a category by its name
@@ -485,7 +485,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ResponseWrapper'
 
-  /api/category/{parent_id}/children:
+  /category/{parent_id}/children:
     get:
       summary: Get child categories
       description: Retrieve all child categories for a parent category
@@ -512,7 +512,7 @@ paths:
                 $ref: '#/components/schemas/ResponseWrapper'
 
   # Manage endpoints
-  /api/admin/manage/dump:
+  /admin/manage/dump:
     get:
       summary: Download database dump
       description: Export the entire database as a JSON dump file
@@ -526,7 +526,7 @@ paths:
                 type: string
                 format: binary
 
-  /api/admin/manage/restore:
+  /admin/manage/restore:
     post:
       summary: Restore database from dump
       description: Restore the database from a JSON dump file
@@ -553,7 +553,7 @@ paths:
                 $ref: '#/components/schemas/ResponseWrapper'
 
   # User management endpoints
-  /api/admin/user:
+  /admin/user:
     post:
       summary: Create user
       description: Create a new user (admin only)
@@ -608,7 +608,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ResponseWrapper'
 
-  /api/admin/user/{id}:
+  /admin/user/{id}:
     get:
       summary: Get user by ID
       description: Retrieve a specific user by their ID (admin only)
@@ -695,10 +695,40 @@ paths:
                 $ref: '#/components/schemas/ResponseWrapper'
 
   # Authentication endpoints
-  /api/open/auth/login:
+  /auth/logout:
     post:
-      summary: User login
-      description: Authenticate a user and return a JWT token (public endpoint, no auth required)
+      summary: User logout
+      description: Invalidate the current session or all sessions
+      operationId: logout
+      tags:
+        - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token:
+                  type: string
+                  description: "If provided, only this session is invalidated. If omitted, all sessions are invalidated."
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+        '401':
+          description: Unauthorized (invalid token)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseWrapper'
+
+  /open/auth/login:
+    post:
+      summary: User login or token refresh
+      description: Authenticate a user via username/password or refresh an existing token
       operationId: login
       tags:
         - Authentication
@@ -710,19 +740,19 @@ paths:
               $ref: '#/components/schemas/UserLoginRequest'
       responses:
         '200':
-          description: Login successful
+          description: Login/Refresh successful
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ResponseWrapper'
         '401':
-          description: Invalid credentials
+          description: Invalid credentials or token
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ResponseWrapper'
 
-  /api/open/auth/register:
+  /open/auth/register:
     post:
       summary: User registration
       description: Register a new user account (public endpoint, no auth required)
@@ -1015,13 +1045,14 @@ components:
       properties:
         username:
           type: string
-          description: Username
+          description: Username (required for login)
         password:
           type: string
-          description: Password
-      required:
-        - username
-        - password
+          description: Password (required for login)
+        refresh_token:
+          type: string
+          description: Refresh Token (required for refresh)
+      description: "Must provide either (username and password) OR (refresh_token)"
 
     UserRegistrationRequest:
       type: object

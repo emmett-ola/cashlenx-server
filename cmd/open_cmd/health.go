@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/macar-x/cashlenx-server/util"
 	"github.com/spf13/cobra"
 )
 
@@ -18,7 +19,13 @@ var healthCmd = &cobra.Command{
 			Timeout: 5 * time.Second,
 		}
 
-		resp, err := client.Get("http://localhost:8080/api/open/health")
+		apiVersion := util.GetConfigByKey("api.version")
+		if apiVersion == "" {
+			apiVersion = "v0"
+		}
+		url := fmt.Sprintf("http://localhost:8080/api/%s/open/health", apiVersion)
+
+		resp, err := client.Get(url)
 		if err != nil {
 			fmt.Println("❌ System is not healthy: Server is not reachable")
 			fmt.Printf("Error: %v\n", err)

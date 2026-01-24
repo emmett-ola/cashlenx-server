@@ -116,6 +116,13 @@ func initDefaultValues() {
 	configurationMap["server.host"] = os.Getenv("SERVER_HOST")
 	configurationMap["timezone"] = os.Getenv("TIMEZONE")
 
+	// API Version
+	apiVersion := os.Getenv("API_VERSION")
+	if apiVersion == "" {
+		apiVersion = "v0"
+	}
+	configurationMap["api.version"] = apiVersion
+
 	// Snowflake ID generator worker ID
 	snowflakeWorkerID := os.Getenv("SNOWFLAKE_WORKER_ID")
 	if snowflakeWorkerID == "" {

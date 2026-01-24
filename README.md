@@ -62,25 +62,24 @@ go run main.go cash summary -f 2024-01-01 -t 2024-01-31
 ```
 
 ## REST API
-- `POST /api/cash/expense`
-- `POST /api/cash/income`
-- `GET /api/cash/{id}`
-- `GET /api/cash/date/{date}`
-- `DELETE /api/cash/{id}`
-- `DELETE /api/cash/date/{date}`
-- `GET /api/open/health`
-- `GET /api/open/version`
+Base URL: `http://localhost:8080/api/v0` (configurable version)
+
+- `POST /api/v0/cash/expense`
+- `POST /api/v0/cash/income`
+- `GET /api/v0/cash/{id}`
+- `GET /api/v0/cash/date/{date}`
+- `DELETE /api/v0/cash/{id}`
+- `DELETE /api/v0/cash/date/{date}`
+- `GET /api/v0/open/health`
+- `GET /api/v0/open/version`
 
 See `docs/api.md` for detailed endpoints.
 
 ## Documentation
 - `docs/cli.md` — CLI command reference
 - `docs/api.md` — REST API reference
-- `docs/testing.md` — Testing guide
-- `docs/deployment_guide.md` — Deployment guide
 - `docs/roadmap.md` — Versioned roadmap and task tracking
-- `docs/quick_start.md` — Quick start guide
-- `docs/feature_parity.md` — Feature parity matrix
+- `docs/openapi.yaml` — OpenAPI Specification
 
 ## Build and Test
 ```bash

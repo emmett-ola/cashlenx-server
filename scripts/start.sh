@@ -201,7 +201,8 @@ show_info() {
 
     if [[ "$ENABLE_SERVICES" == *"backend"* ]] || [[ "$1" == *"backend"* ]]; then
         local port=${SERVER_PORT:-8080}
-        echo -e "Backend API: ${GREEN}http://localhost:$port${NC}"
+        local api_version=${API_VERSION:-v0}
+        echo -e "Backend API: ${GREEN}http://localhost:$port/api/$api_version${NC}"
     fi
 
     if [[ "$ENABLE_SERVICES" == *"mongodb"* ]] || [[ "$1" == *"mongodb"* ]]; then

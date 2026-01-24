@@ -12,28 +12,36 @@ import (
 	"github.com/macar-x/cashlenx-server/validation"
 )
 
-// Login handles user login requests
+// Login handles user login requests (via username/password or refresh_token)
 func Login(w http.ResponseWriter, r *http.Request) {
-	var loginRequest struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-	}
+	var loginRequest model.UserLoginRequest
 	if err := util.ParseJSONRequest(r, &loginRequest); err != nil {
 		util.ComposeJSONResponse(w, http.StatusBadRequest, errors.NewInvalidInputError("invalid request body"))
 		return
 	}
 
-	// Validate required fields
-	if loginRequest.Username == "" || loginRequest.Password == "" {
-		util.ComposeJSONResponse(w, http.StatusBadRequest, errors.NewValidationError("username and password are required"))
-		return
+	deviceId, deviceName, ipAddress, userAgent := getDeviceInfo(r)
+	var accessToken, refreshToken string
+	var user model.UserEntity
+	var err error
+
+	// Check if this is a refresh token request
+	if loginRequest.RefreshToken != "" {
+		accessToken, refreshToken, user, err = auth.Service.RefreshToken(loginRequest.RefreshToken,
+			deviceId, deviceName, ipAddress, userAgent)
+	} else {
+		// Normal login request
+		// Validate required fields
+		if loginRequest.Username == "" || loginRequest.Password == "" {
+			util.ComposeJSONResponse(w, http.StatusBadRequest, errors.NewValidationError("username and password (or refresh_token) are required"))
+			return
+		}
+
+		// Use auth service to authenticate
+		accessToken, refreshToken, user, err = auth.Service.Authenticate(loginRequest.Username, loginRequest.Password,
+			deviceId, deviceName, ipAddress, userAgent)
 	}
 
-	deviceId, deviceName, ipAddress, userAgent := getDeviceInfo(r)
-
-	// Use auth service to authenticate
-	accessToken, refreshToken, user, err := auth.Service.Authenticate(loginRequest.Username, loginRequest.Password,
-		deviceId, deviceName, ipAddress, userAgent)
 	if err != nil {
 		util.ComposeJSONResponse(w, http.StatusUnauthorized, err)
 		return
@@ -55,45 +63,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	util.ComposeJSONResponse(w, http.StatusOK, response)
 }
 
-// RefreshToken handles token refresh requests
-func RefreshToken(w http.ResponseWriter, r *http.Request) {
-	var refreshRequest model.RefreshTokenRequest
-	if err := util.ParseJSONRequest(r, &refreshRequest); err != nil {
-		util.ComposeJSONResponse(w, http.StatusBadRequest, errors.NewInvalidInputError("invalid request body"))
-		return
-	}
 
-	// Validate required field
-	if refreshRequest.RefreshToken == "" {
-		util.ComposeJSONResponse(w, http.StatusBadRequest, errors.NewValidationError("refresh_token is required"))
-		return
-	}
-
-	deviceId, deviceName, ipAddress, userAgent := getDeviceInfo(r)
-
-	// Use auth service to refresh token
-	accessToken, newRefreshToken, user, err := auth.Service.RefreshToken(refreshRequest.RefreshToken,
-		deviceId, deviceName, ipAddress, userAgent)
-	if err != nil {
-		util.ComposeJSONResponse(w, http.StatusUnauthorized, err)
-		return
-	}
-
-	// Return user info with new tokens
-	response := map[string]interface{}{
-		"user": map[string]interface{}{
-			"id":         user.Id.Hex(),
-			"username":   user.Username,
-			"role":       user.Role,
-			"created_at": user.CreateTime,
-			"updated_at": user.UpdateTime,
-		},
-		"access_token":  accessToken,
-		"refresh_token": newRefreshToken,
-	}
-
-	util.ComposeJSONResponse(w, http.StatusOK, response)
-}
 
 // Register handles user registration requests
 func Register(w http.ResponseWriter, r *http.Request) {

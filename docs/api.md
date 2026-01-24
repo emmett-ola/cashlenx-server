@@ -9,8 +9,11 @@ CashLenX provides a RESTful API for personal finance management with multi-user 
 
 ### Base URL
 ```
-http://localhost:8080/api
+http://localhost:8080/api/v0
 ```
+
+**Note**: The API version is configurable via `API_VERSION` environment variable. Default is `v0`.
+Paths in this documentation are relative to the versioned base URL (e.g., `/open/health` maps to `/api/v0/open/health`).
 
 ### Authentication
 Most endpoints require JWT authentication. Include the token in the Authorization header:
@@ -22,19 +25,19 @@ Authorization: Bearer <your-jwt-token>
 
 Routes are organized by access level:
 
-- **`/api/open/*`** - Public endpoints (no authentication required)
-- **`/api/admin/*`** - Admin-only endpoints (requires admin role)
-- **`/api/cash/*`** - User-specific cash flow operations (requires authentication)
-- **`/api/category/*`** - User-specific category operations (requires authentication)
-- **`/api/statistic/*`** - User-specific analytics and exports (requires authentication)
+- **`/open/*`** - Public endpoints (no authentication required)
+- **`/admin/*`** - Admin-only endpoints (requires admin role)
+- **`/cash/*`** - User-specific cash flow operations (requires authentication)
+- **`/category/*`** - User-specific category operations (requires authentication)
+- **`/statistic/*`** - User-specific analytics and exports (requires authentication)
 
 ## API Reference
 
-### Public Endpoints (`/api/open/*`)
+### Public Endpoints (`/open/*`)
 
 #### Health Check
 ```http
-GET /api/open/health
+GET /open/health
 ```
 
 **Response**:
@@ -47,7 +50,7 @@ GET /api/open/health
 
 #### Version Info
 ```http
-GET /api/open/version
+GET /open/version
 ```
 
 **Response**:
@@ -61,7 +64,7 @@ GET /api/open/version
 
 #### User Login
 ```http
-POST /api/open/auth/login
+POST /open/auth/login
 ```
 
 **Request**:
@@ -86,7 +89,7 @@ POST /api/open/auth/login
 
 #### User Registration
 ```http
-POST /api/open/auth/register
+POST /open/auth/register
 ```
 
 **Request**:
@@ -109,13 +112,13 @@ POST /api/open/auth/register
 
 ---
 
-### Cash Flow Endpoints (`/api/cash/*`)
+### Cash Flow Endpoints (`/cash/*`)
 
 All cash flow endpoints enforce user data isolation - users can only access their own transactions.
 
 #### Create Income
 ```http
-POST /api/cash/income
+POST /cash/income
 Authorization: Bearer <token>
 ```
 
@@ -131,7 +134,7 @@ Authorization: Bearer <token>
 
 #### Create Expense
 ```http
-POST /api/cash/expense
+POST /cash/expense
 Authorization: Bearer <token>
 ```
 
@@ -147,7 +150,7 @@ Authorization: Bearer <token>
 
 #### Query by ID
 ```http
-GET /api/cash/{id}
+GET /cash/{id}
 Authorization: Bearer <token>
 ```
 
@@ -155,17 +158,17 @@ Authorization: Bearer <token>
 
 #### Query by Date
 ```http
-GET /api/cash/date/{date}
+GET /cash/date/{date}
 Authorization: Bearer <token>
 ```
 
-**Example**: `GET /api/cash/date/2024-01-15`
+**Example**: `GET /cash/date/2024-01-15`
 
 **Note**: Only returns transactions belonging to the authenticated user.
 
 #### Update Transaction
 ```http
-PUT /api/cash/{id}
+PUT /cash/{id}
 Authorization: Bearer <token>
 ```
 
@@ -182,7 +185,7 @@ Authorization: Bearer <token>
 
 #### Delete by ID
 ```http
-DELETE /api/cash/{id}
+DELETE /cash/{id}
 Authorization: Bearer <token>
 ```
 
@@ -190,7 +193,7 @@ Authorization: Bearer <token>
 
 #### Delete by Date
 ```http
-DELETE /api/cash/date/{date}
+DELETE /cash/date/{date}
 Authorization: Bearer <token>
 ```
 
@@ -198,7 +201,7 @@ Authorization: Bearer <token>
 
 #### List Transactions
 ```http
-GET /api/cash?limit=50&offset=0&type=expense
+GET /cash?limit=50&offset=0&type=expense
 Authorization: Bearer <token>
 ```
 
@@ -211,7 +214,7 @@ Authorization: Bearer <token>
 
 #### Query Date Range
 ```http
-GET /api/cash/range?from=2024-01-01&to=2024-01-31
+GET /cash/range?from=2024-01-01&to=2024-01-31
 Authorization: Bearer <token>
 ```
 
@@ -236,11 +239,11 @@ Authorization: Bearer <token>
 
 #### Monthly Summary
 ```http
-GET /api/cash/summary/monthly/{yyyymm}
+GET /cash/summary/monthly/{yyyymm}
 Authorization: Bearer <token>
 ```
 
-**Example**: `GET /api/cash/summary/monthly/202401`
+**Example**: `GET /cash/summary/monthly/202401`
 
 **Response**:
 ```json
@@ -259,13 +262,13 @@ Authorization: Bearer <token>
 
 ---
 
-### Category Endpoints (`/api/category/*`)
+### Category Endpoints (`/category/*`)
 
 All category endpoints enforce user data isolation - users can only access their own categories.
 
 #### Create Category
 ```http
-POST /api/category
+POST /category
 Authorization: Bearer <token>
 ```
 
@@ -283,7 +286,7 @@ Authorization: Bearer <token>
 
 #### List Categories
 ```http
-GET /api/category?limit=50&offset=0&type=expense
+GET /category?limit=50&offset=0&type=expense
 Authorization: Bearer <token>
 ```
 
@@ -296,7 +299,7 @@ Authorization: Bearer <token>
 
 #### Query by ID
 ```http
-GET /api/category/{id}
+GET /category/{id}
 Authorization: Bearer <token>
 ```
 
@@ -304,17 +307,17 @@ Authorization: Bearer <token>
 
 #### Query by Name
 ```http
-GET /api/category/name/{name}
+GET /category/name/{name}
 Authorization: Bearer <token>
 ```
 
-**Example**: `GET /api/category/name/Food%20%26%20Dining`
+**Example**: `GET /category/name/Food%20%26%20Dining`
 
 **Note**: Only searches categories belonging to the authenticated user.
 
 #### Get Child Categories
 ```http
-GET /api/category/{id}/children?type=expense
+GET /category/{id}/children?type=expense
 Authorization: Bearer <token>
 ```
 
@@ -325,7 +328,7 @@ Authorization: Bearer <token>
 
 #### Update Category
 ```http
-PUT /api/category/{id}
+PUT /category/{id}
 Authorization: Bearer <token>
 ```
 
@@ -343,7 +346,7 @@ Authorization: Bearer <token>
 
 #### Delete Category
 ```http
-DELETE /api/category/{id}
+DELETE /category/{id}
 Authorization: Bearer <token>
 ```
 
@@ -351,7 +354,7 @@ Authorization: Bearer <token>
 
 #### Get Category Tree
 ```http
-GET /api/category/tree?type=expense
+GET /category/tree?type=expense
 Authorization: Bearer <token>
 ```
 
@@ -364,7 +367,7 @@ Authorization: Bearer <token>
 
 ---
 
-### Admin Endpoints (`/api/admin/*`)
+### Admin Endpoints (`/admin/*`)
 
 All admin endpoints require the `admin` role.
 
@@ -372,7 +375,7 @@ All admin endpoints require the `admin` role.
 
 ##### Create User
 ```http
-POST /api/admin/user
+POST /admin/user
 Authorization: Bearer <admin-token>
 ```
 
@@ -388,25 +391,25 @@ Authorization: Bearer <admin-token>
 
 ##### List Users
 ```http
-GET /api/admin/user?limit=50&offset=0
+GET /admin/user?limit=50&offset=0
 Authorization: Bearer <admin-token>
 ```
 
 ##### Get User by ID
 ```http
-GET /api/admin/user/{id}
+GET /admin/user/{id}
 Authorization: Bearer <admin-token>
 ```
 
 ##### Update User
 ```http
-PUT /api/admin/user/{id}
+PUT /admin/user/{id}
 Authorization: Bearer <admin-token>
 ```
 
 ##### Delete User
 ```http
-DELETE /api/admin/user/{id}
+DELETE /admin/user/{id}
 Authorization: Bearer <admin-token>
 ```
 
@@ -414,7 +417,7 @@ Authorization: Bearer <admin-token>
 
 ##### Database Backup
 ```http
-GET /api/admin/manage/dump
+GET /admin/manage/dump
 Authorization: Bearer <admin-token>
 Header: ADMIN_TOKEN=<your-admin-token>
 ```
@@ -428,7 +431,7 @@ Header: ADMIN_TOKEN=<your-admin-token>
 
 ##### Database Restore
 ```http
-POST /api/admin/manage/restore
+POST /admin/manage/restore
 Authorization: Bearer <admin-token>
 Header: ADMIN_TOKEN=<your-admin-token>
 Content-Type: application/json
@@ -443,7 +446,7 @@ Content-Type: application/json
 
 ##### Export to Excel
 ```http
-GET /api/admin/manage/export?from=2024-01-01&to=2024-01-31
+GET /admin/manage/export?from=2024-01-01&to=2024-01-31
 Authorization: Bearer <admin-token>
 ```
 
@@ -453,22 +456,22 @@ Authorization: Bearer <admin-token>
 
 **Response**: Excel file (.xlsx)
 
-**TODO**: This endpoint will be moved to `/api/statistic/export` with user data isolation.
+**TODO**: This endpoint will be moved to `/statistic/export` with user data isolation.
 
 ##### Import from Excel
 ```http
-POST /api/admin/manage/import
+POST /admin/manage/import
 Authorization: Bearer <admin-token>
 Content-Type: multipart/form-data
 ```
 
 **Request**: Upload Excel file (.xlsx)
 
-**TODO**: This endpoint will be moved to `/api/statistic/import` with user data isolation.
+**TODO**: This endpoint will be moved to `/statistic/import` with user data isolation.
 
 ---
 
-## ✅ User Statistic Endpoints (`/api/statistic/*`)
+## ✅ User Statistic Endpoints (`/statistic/*`)
 
 All statistic endpoints are user-specific with complete data isolation. Only authenticated users can access their own data.
 
@@ -476,7 +479,7 @@ All statistic endpoints are user-specific with complete data isolation. Only aut
 
 #### Export User Data (Multi-Format)
 ```http
-GET /api/statistic/export?format=xlsx&from_date=20240101&to_date=20241231
+GET /statistic/export?format=xlsx&from_date=20240101&to_date=20241231
 Authorization: Bearer <token>
 ```
 
@@ -501,7 +504,7 @@ Content-Length: 15234
 
 #### Import User Data
 ```http
-POST /api/statistic/import?file_path=/path/to/file.xlsx
+POST /statistic/import?file_path=/path/to/file.xlsx
 Authorization: Bearer <token>
 ```
 
@@ -523,7 +526,7 @@ Authorization: Bearer <token>
 
 #### Daily Summary
 ```http
-GET /api/statistic/summary/daily/20240115
+GET /statistic/summary/daily/20240115
 Authorization: Bearer <token>
 ```
 
@@ -549,13 +552,13 @@ Authorization: Bearer <token>
 
 #### Monthly Summary
 ```http
-GET /api/statistic/summary/monthly/202401
+GET /statistic/summary/monthly/202401
 Authorization: Bearer <token>
 ```
 
 #### Yearly Summary
 ```http
-GET /api/statistic/summary/yearly/2024
+GET /statistic/summary/yearly/2024
 Authorization: Bearer <token>
 ```
 
@@ -563,7 +566,7 @@ Authorization: Bearer <token>
 
 #### Daily Breakdown
 ```http
-GET /api/statistic/breakdown/daily/20240115
+GET /statistic/breakdown/daily/20240115
 Authorization: Bearer <token>
 ```
 
@@ -600,13 +603,13 @@ Authorization: Bearer <token>
 
 #### Monthly Breakdown
 ```http
-GET /api/statistic/breakdown/monthly/202401
+GET /statistic/breakdown/monthly/202401
 Authorization: Bearer <token>
 ```
 
 #### Yearly Breakdown
 ```http
-GET /api/statistic/breakdown/yearly/2024
+GET /statistic/breakdown/yearly/2024
 Authorization: Bearer <token>
 ```
 
@@ -614,7 +617,7 @@ Authorization: Bearer <token>
 
 #### Daily Trends
 ```http
-GET /api/statistic/trends/daily/20240115
+GET /statistic/trends/daily/20240115
 Authorization: Bearer <token>
 ```
 
@@ -641,7 +644,7 @@ Authorization: Bearer <token>
 
 #### Monthly Trends
 ```http
-GET /api/statistic/trends/monthly/202401
+GET /statistic/trends/monthly/202401
 Authorization: Bearer <token>
 ```
 
@@ -649,7 +652,7 @@ Authorization: Bearer <token>
 
 #### Yearly Trends
 ```http
-GET /api/statistic/trends/yearly/2024
+GET /statistic/trends/yearly/2024
 Authorization: Bearer <token>
 ```
 
@@ -659,7 +662,7 @@ Authorization: Bearer <token>
 
 #### Top Daily Expenses
 ```http
-GET /api/statistic/top/daily/20240115?limit=10
+GET /statistic/top/daily/20240115?limit=10
 Authorization: Bearer <token>
 ```
 
@@ -687,13 +690,13 @@ Authorization: Bearer <token>
 
 #### Top Monthly Expenses
 ```http
-GET /api/statistic/top/monthly/202401?limit=10
+GET /statistic/top/monthly/202401?limit=10
 Authorization: Bearer <token>
 ```
 
 #### Top Yearly Expenses
 ```http
-GET /api/statistic/top/yearly/2024?limit=10
+GET /statistic/top/yearly/2024?limit=10
 Authorization: Bearer <token>
 ```
 
@@ -703,7 +706,7 @@ These endpoints return data optimized for frontend visualization libraries (Char
 
 #### Dashboard Overview
 ```http
-GET /api/statistic/dashboard/monthly/202401
+GET /statistic/dashboard/monthly/202401
 Authorization: Bearer <token>
 ```
 
@@ -733,7 +736,7 @@ Authorization: Bearer <token>
 
 #### Income vs Expense Chart Data
 ```http
-GET /api/statistic/chart/income-expense/monthly/202401
+GET /statistic/chart/income-expense/monthly/202401
 Authorization: Bearer <token>
 ```
 
@@ -752,7 +755,7 @@ Authorization: Bearer <token>
 
 #### Category Distribution Chart Data
 ```http
-GET /api/statistic/chart/category-distribution/monthly/202401?type=expense
+GET /statistic/chart/category-distribution/monthly/202401?type=expense
 Authorization: Bearer <token>
 ```
 
@@ -773,7 +776,7 @@ Authorization: Bearer <token>
 
 #### Monthly Comparison Chart Data
 ```http
-GET /api/statistic/chart/monthly-comparison/2024
+GET /statistic/chart/monthly-comparison/2024
 Authorization: Bearer <token>
 ```
 
@@ -790,7 +793,7 @@ Authorization: Bearer <token>
 
 #### Spending Heatmap Data
 ```http
-GET /api/statistic/chart/spending-heatmap/2024
+GET /statistic/chart/spending-heatmap/2024
 Authorization: Bearer <token>
 ```
 
@@ -891,33 +894,33 @@ Admin endpoints can access data across all users:
 
 ```bash
 # Register new user
-curl -X POST http://localhost:8080/api/open/auth/register \
+curl -X POST http://localhost:8080/api/v0/open/auth/register \
   -H "Content-Type: application/json" \
   -d '{"username":"testuser","password":"test123","email":"test@example.com"}'
 
 # Login
-curl -X POST http://localhost:8080/api/open/auth/login \
+curl -X POST http://localhost:8080/api/v0/open/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username":"testuser","password":"test123"}'
 
 # Use token for authenticated requests
 TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 curl -H "Authorization: Bearer $TOKEN" \
-  http://localhost:8080/api/cash
+  http://localhost:8080/api/v0/cash
 ```
 
 ### Data Isolation Testing
 
 ```bash
 # User A creates transaction
-curl -X POST http://localhost:8080/api/cash/expense \
+curl -X POST http://localhost:8080/api/v0/cash/expense \
   -H "Authorization: Bearer $TOKEN_USER_A" \
   -H "Content-Type: application/json" \
   -d '{"amount":50,"category":"Food","description":"Lunch"}'
 
 # User B cannot access User A's transaction
 curl -H "Authorization: Bearer $TOKEN_USER_B" \
-  http://localhost:8080/api/cash/$TRANSACTION_ID_FROM_USER_A
+  http://localhost:8080/api/v0/cash/$TRANSACTION_ID_FROM_USER_A
 # Should return 404 Not Found
 ```
 
@@ -925,7 +928,14 @@ curl -H "Authorization: Bearer $TOKEN_USER_B" \
 
 ## Version History
 
-### v2.1.0 (Current)
+### v2.2.0 (Current)
+- ✅ Global API versioning (default `/api/v0`)
+- ✅ Simplified authentication flow (merged login/refresh)
+- ✅ Enhanced database backup/restore with proper content types
+- ✅ Removed redundant admin export/import endpoints
+- ✅ Configurable API version prefix
+
+### v2.1.0
 - ✅ Complete statistic module with user data isolation
 - ✅ Multi-format export (Excel, CSV, PDF) with binary file download
 - ✅ Summary, breakdown, trends, and top expenses analytics
@@ -943,4 +953,3 @@ curl -H "Authorization: Bearer $TOKEN_USER_B" \
 - Basic cash flow and category CRUD
 - No user isolation
 - No authentication
-
