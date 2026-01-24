@@ -26,6 +26,19 @@ type CashFlowEntity struct {
 	BaseEntity   `bson:",inline"`
 }
 
+// CashFlowFilter defines filters for querying cash flows
+type CashFlowFilter struct {
+	UserId           primitive.ObjectID
+	CashType         string    // "income" or "expense"
+	CategoryId       string    // Hex string
+	Description      string    // Fuzzy match
+	ExactDescription string    // Exact match
+	FromDate         time.Time // Inclusive
+	ToDate           time.Time // Inclusive
+	Limit            int
+	Offset           int
+}
+
 func (entity CashFlowEntity) IsEmpty() bool {
 	return reflect.DeepEqual(entity, CashFlowEntity{})
 }

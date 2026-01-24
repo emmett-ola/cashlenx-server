@@ -15,11 +15,6 @@ type CashFlowMapper interface {
 	GetCashFlowByObjectId(plainId string) model.CashFlowEntity
 	GetCashFlowsByObjectIdArray(plainIdList []string) []model.CashFlowEntity
 	GetCashFlowsByBelongsDate(belongsDate time.Time) []model.CashFlowEntity
-	GetCashFlowsByDateRange(from, to time.Time) []model.CashFlowEntity
-	GetCashFlowsByCategoryId(categoryPlainId string) []model.CashFlowEntity
-	GetCashFlowsByExactDesc(description string) []model.CashFlowEntity
-	GetCashFlowsByFuzzyDesc(description string) []model.CashFlowEntity
-	CountCashFLowsByCategoryId(categoryPlainId string) int64
 	InsertCashFlowByEntity(newEntity model.CashFlowEntity) string
 	BulkInsertCashFlows(entities []model.CashFlowEntity) ([]string, error)
 	UpdateCashFlowByEntity(plainId string, updatedEntity model.CashFlowEntity) model.CashFlowEntity
@@ -40,6 +35,8 @@ type CashFlowMapper interface {
 	DeleteCashFlowByObjectIdAndUser(plainId string, userId primitive.ObjectID) model.CashFlowEntity
 	DeleteCashFlowsByBelongsDateAndUser(belongsDate time.Time, userId primitive.ObjectID) []model.CashFlowEntity
 	DeleteCashFlowsByCategoryIdAndUser(categoryPlainId string, userId primitive.ObjectID) int64
+	GetCashFlowsByFilter(filter model.CashFlowFilter) ([]model.CashFlowEntity, error)
+	CountCashFlowsByFilter(filter model.CashFlowFilter) (int64, error)
 }
 
 func init() {

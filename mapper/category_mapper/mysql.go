@@ -714,9 +714,9 @@ func (CategoryMySqlMapper) UpdateCategoryByEntityAndUser(plainId string, updated
 
 func (CategoryMySqlMapper) GetAllCategoriesByUser(userId primitive.ObjectID, limit, offset int) []model.CategoryEntity {
 	var sqlString bytes.Buffer
-	sqlString.WriteString("SELECT ID, USER_ID, PARENT_ID, NAME, TYPE, REMARK, CREATE_TIME, MODIFY_TIME FROM ")
+	sqlString.WriteString("SELECT ID, BELONGS_USER_ID, PARENT_ID, NAME, TYPE, REMARK, CREATE_USER_ID, CREATE_TIME, UPDATE_USER_ID, UPDATE_TIME FROM ")
 	sqlString.WriteString(database.CategoryTableName)
-	sqlString.WriteString(" WHERE USER_ID = ? AND IS_DELETE = FALSE ORDER BY NAME ASC")
+	sqlString.WriteString(" WHERE BELONGS_USER_ID = ? AND IS_DELETE = FALSE ORDER BY NAME ASC")
 
 	if limit > 0 {
 		sqlString.WriteString(" LIMIT ? OFFSET ?")
@@ -751,7 +751,7 @@ func (CategoryMySqlMapper) CountAllCategoriesByUser(userId primitive.ObjectID) i
 	var sqlString bytes.Buffer
 	sqlString.WriteString("SELECT COUNT(1) FROM ")
 	sqlString.WriteString(database.CategoryTableName)
-	sqlString.WriteString(" WHERE USER_ID = ? AND IS_DELETE = FALSE")
+	sqlString.WriteString(" WHERE BELONGS_USER_ID = ? AND IS_DELETE = FALSE")
 
 	connection := database.GetMySqlConnection()
 	defer database.CloseMySqlConnection()

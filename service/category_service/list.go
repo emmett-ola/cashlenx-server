@@ -18,12 +18,19 @@ func QueryAllForUser(userId string, categoryType string, limit int, offset int) 
 	}
 
 	// Get total count for this user
-	totalCount := category_mapper.INSTANCE.CountAllCategoriesByUser(userObjectId)
+	var totalCount int64
 
 	// Get paginated results for this user
 	var categories []model.CategoryEntity
 
 	if categoryType != "" {
+		// Get filtered count
+		count, err := category_mapper.INSTANCE.CountCategoriesByUserAndType(userObjectId, categoryType)
+		if err != nil {
+			return nil, 0, err
+		}
+		totalCount = count
+
 		// Filter by type if provided
 		categoriesByType, err := category_mapper.INSTANCE.GetCategoriesByUserAndType(userObjectId, categoryType, limit, offset)
 		if err != nil {
@@ -31,6 +38,9 @@ func QueryAllForUser(userId string, categoryType string, limit int, offset int) 
 		}
 		categories = categoriesByType
 	} else {
+		// Get total count
+		totalCount = category_mapper.INSTANCE.CountAllCategoriesByUser(userObjectId)
+
 		// Get all categories for user
 		categories = category_mapper.INSTANCE.GetAllCategoriesByUser(userObjectId, limit, offset)
 	}

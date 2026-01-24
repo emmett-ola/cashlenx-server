@@ -534,7 +534,7 @@ func (CategoryMongoDbMapper) GetAllCategoriesByUser(userId primitive.ObjectID, l
 	collection := database.GetMongoCollection(database.CategoryTableName)
 
 	filter := bson.D{
-		primitive.E{Key: "user_id", Value: userId},
+		primitive.E{Key: "belongs_user_id", Value: userId},
 		primitive.E{Key: "is_delete", Value: false},
 	}
 
@@ -572,7 +572,7 @@ func (CategoryMongoDbMapper) GetAllCategoriesByUser(userId primitive.ObjectID, l
 // CountAllCategoriesByUser counts all categories for a specific user
 func (CategoryMongoDbMapper) CountAllCategoriesByUser(userId primitive.ObjectID) int64 {
 	filter := bson.D{
-		primitive.E{Key: "user_id", Value: userId},
+		primitive.E{Key: "belongs_user_id", Value: userId},
 		primitive.E{Key: "is_delete", Value: false},
 	}
 

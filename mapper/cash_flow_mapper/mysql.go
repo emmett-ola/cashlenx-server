@@ -62,7 +62,7 @@ func (CashFlowMySqlMapper) GetCashFlowsByObjectIdArray(plainIdList []string) []m
 
 func (CashFlowMySqlMapper) GetCashFlowsByBelongsDate(belongsDate time.Time) []model.CashFlowEntity {
 	var sqlString bytes.Buffer
-	sqlString.WriteString("SELECT ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION FROM ")
+	sqlString.WriteString("SELECT ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION, REMARK, CREATE_USER_ID, CREATE_TIME, UPDATE_USER_ID, UPDATE_TIME FROM ")
 	sqlString.WriteString(database.CashFlowTableName)
 	sqlString.WriteString(" WHERE BELONGS_DATE = ? ")
 	sqlString.WriteString(database.SqlExcludeDeleted)
@@ -80,120 +80,6 @@ func (CashFlowMySqlMapper) GetCashFlowsByBelongsDate(belongsDate time.Time) []mo
 		targetEntityList = append(targetEntityList, convertRow2CashFlowEntity(rows))
 	}
 	return targetEntityList
-}
-
-func (CashFlowMySqlMapper) GetCashFlowsByDateRange(from, to time.Time) []model.CashFlowEntity {
-	var sqlString bytes.Buffer
-	sqlString.WriteString("SELECT ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION FROM ")
-	sqlString.WriteString(database.CashFlowTableName)
-	sqlString.WriteString(" WHERE BELONGS_DATE BETWEEN ? AND ? ")
-	sqlString.WriteString(database.SqlExcludeDeleted)
-
-	connection := database.GetMySqlConnection()
-	defer database.CloseMySqlConnection()
-
-	rows, err := connection.Query(sqlString.String(),
-		util.FormatDateToStringWithDash(from),
-		util.FormatDateToStringWithDash(to))
-	if err != nil {
-		util.Logger.Errorw("query failed", "error", err)
-	}
-
-	var targetEntityList []model.CashFlowEntity
-	for rows.Next() {
-		targetEntityList = append(targetEntityList, convertRow2CashFlowEntity(rows))
-	}
-	return targetEntityList
-}
-
-func (CashFlowMySqlMapper) GetCashFlowsByCategoryId(categoryPlainId string) []model.CashFlowEntity {
-	var sqlString bytes.Buffer
-	sqlString.WriteString("SELECT ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION FROM ")
-	sqlString.WriteString(database.CashFlowTableName)
-	sqlString.WriteString(" WHERE CATEGORY_ID = ? ")
-	sqlString.WriteString(database.SqlExcludeDeleted)
-
-	connection := database.GetMySqlConnection()
-	defer database.CloseMySqlConnection()
-
-	rows, err := connection.Query(sqlString.String(), categoryPlainId)
-	if err != nil {
-		util.Logger.Errorw("query failed", "error", err)
-	}
-
-	var targetEntityList []model.CashFlowEntity
-	for rows.Next() {
-		targetEntityList = append(targetEntityList, convertRow2CashFlowEntity(rows))
-	}
-	return targetEntityList
-}
-
-func (CashFlowMySqlMapper) GetCashFlowsByExactDesc(description string) []model.CashFlowEntity {
-	var sqlString bytes.Buffer
-	sqlString.WriteString("SELECT ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION FROM ")
-	sqlString.WriteString(database.CashFlowTableName)
-	sqlString.WriteString(" WHERE DESCRIPTION = ? ")
-	sqlString.WriteString(database.SqlExcludeDeleted)
-
-	connection := database.GetMySqlConnection()
-	defer database.CloseMySqlConnection()
-
-	rows, err := connection.Query(sqlString.String(), description)
-	if err != nil {
-		util.Logger.Errorw("query failed", "error", err)
-	}
-
-	var targetEntityList []model.CashFlowEntity
-	for rows.Next() {
-		targetEntityList = append(targetEntityList, convertRow2CashFlowEntity(rows))
-	}
-	return targetEntityList
-}
-
-func (CashFlowMySqlMapper) GetCashFlowsByFuzzyDesc(description string) []model.CashFlowEntity {
-	var sqlString bytes.Buffer
-	sqlString.WriteString("SELECT ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION FROM ")
-	sqlString.WriteString(database.CashFlowTableName)
-	sqlString.WriteString(" WHERE DESCRIPTION LIKE ? ")
-	sqlString.WriteString(database.SqlExcludeDeleted)
-
-	connection := database.GetMySqlConnection()
-	defer database.CloseMySqlConnection()
-
-	rows, err := connection.Query(sqlString.String(), "%"+description+"%")
-	if err != nil {
-		util.Logger.Errorw("query failed", "error", err)
-	}
-
-	var targetEntityList []model.CashFlowEntity
-	for rows.Next() {
-		targetEntityList = append(targetEntityList, convertRow2CashFlowEntity(rows))
-	}
-	return targetEntityList
-}
-
-func (CashFlowMySqlMapper) CountCashFLowsByCategoryId(categoryPlainId string) int64 {
-	var sqlString bytes.Buffer
-	sqlString.WriteString("SELECT COUNT(1) FROM ")
-	sqlString.WriteString(database.CashFlowTableName)
-	sqlString.WriteString(" WHERE CATEGORY_ID = ? ")
-	sqlString.WriteString(database.SqlExcludeDeleted)
-
-	connection := database.GetMySqlConnection()
-	defer database.CloseMySqlConnection()
-
-	rows, err := connection.Query(sqlString.String(), categoryPlainId)
-	if err != nil {
-		util.Logger.Errorw("query failed", "error", err)
-	}
-
-	var rowsAffected int64
-	rows.Next()
-	if err = rows.Scan(&rowsAffected); err != nil {
-		util.Logger.Errorw("parse row affected failed", "error", err)
-		return -1
-	}
-	return rowsAffected
 }
 
 func (CashFlowMySqlMapper) InsertCashFlowByEntity(newEntity model.CashFlowEntity) string {
@@ -823,6 +709,111 @@ func (CashFlowMySqlMapper) DeleteCashFlowsByCategoryIdAndUser(categoryPlainId st
 		return 0
 	}
 	return rowsAffected
+}
+
+func (CashFlowMySqlMapper) GetCashFlowsByFilter(filter model.CashFlowFilter) ([]model.CashFlowEntity, error) {
+	var sqlString bytes.Buffer
+	sqlString.WriteString("SELECT ID, BELONGS_USER_ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION, REMARK, CREATE_USER_ID, CREATE_TIME, UPDATE_USER_ID, UPDATE_TIME FROM ")
+	sqlString.WriteString(database.CashFlowTableName)
+	sqlString.WriteString(" WHERE BELONGS_USER_ID = ? AND IS_DELETE = FALSE ")
+
+	args := []interface{}{filter.UserId.Hex()}
+
+	if filter.CategoryId != "" {
+		sqlString.WriteString(" AND CATEGORY_ID = ? ")
+		args = append(args, filter.CategoryId)
+	}
+
+	if filter.ExactDescription != "" {
+		sqlString.WriteString(" AND DESCRIPTION = ? ")
+		args = append(args, filter.ExactDescription)
+	} else if filter.Description != "" {
+		sqlString.WriteString(" AND DESCRIPTION LIKE ? ")
+		args = append(args, "%"+filter.Description+"%")
+	}
+
+	if !filter.FromDate.IsZero() {
+		sqlString.WriteString(" AND BELONGS_DATE >= ? ")
+		args = append(args, util.FormatDateToStringWithDash(filter.FromDate))
+	}
+	if !filter.ToDate.IsZero() {
+		sqlString.WriteString(" AND BELONGS_DATE <= ? ")
+		args = append(args, util.FormatDateToStringWithDash(filter.ToDate))
+	}
+
+	// Order by belongs_date desc
+	sqlString.WriteString(" ORDER BY BELONGS_DATE DESC ")
+
+	if filter.Limit > 0 {
+		sqlString.WriteString(" LIMIT ? OFFSET ? ")
+		args = append(args, filter.Limit, filter.Offset)
+	}
+
+	connection := database.GetMySqlConnection()
+	defer database.CloseMySqlConnection()
+
+	rows, err := connection.Query(sqlString.String(), args...)
+	if err != nil {
+		util.Logger.Errorw("query cash flows by filter failed", "error", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var entities []model.CashFlowEntity
+	for rows.Next() {
+		entities = append(entities, convertRow2CashFlowEntityWithUser(rows))
+	}
+
+	return entities, nil
+}
+
+func (CashFlowMySqlMapper) CountCashFlowsByFilter(filter model.CashFlowFilter) (int64, error) {
+	var sqlString bytes.Buffer
+	sqlString.WriteString("SELECT COUNT(1) FROM ")
+	sqlString.WriteString(database.CashFlowTableName)
+	sqlString.WriteString(" WHERE BELONGS_USER_ID = ? AND IS_DELETE = FALSE ")
+
+	args := []interface{}{filter.UserId.Hex()}
+
+	if filter.CategoryId != "" {
+		sqlString.WriteString(" AND CATEGORY_ID = ? ")
+		args = append(args, filter.CategoryId)
+	}
+
+	if filter.ExactDescription != "" {
+		sqlString.WriteString(" AND DESCRIPTION = ? ")
+		args = append(args, filter.ExactDescription)
+	} else if filter.Description != "" {
+		sqlString.WriteString(" AND DESCRIPTION LIKE ? ")
+		args = append(args, "%"+filter.Description+"%")
+	}
+
+	if !filter.FromDate.IsZero() {
+		sqlString.WriteString(" AND BELONGS_DATE >= ? ")
+		args = append(args, util.FormatDateToStringWithDash(filter.FromDate))
+	}
+	if !filter.ToDate.IsZero() {
+		sqlString.WriteString(" AND BELONGS_DATE <= ? ")
+		args = append(args, util.FormatDateToStringWithDash(filter.ToDate))
+	}
+
+	connection := database.GetMySqlConnection()
+	defer database.CloseMySqlConnection()
+
+	rows, err := connection.Query(sqlString.String(), args...)
+	if err != nil {
+		util.Logger.Errorw("count cash flows by filter failed", "error", err)
+		return 0, err
+	}
+	defer rows.Close()
+
+	var count int64
+	if rows.Next() {
+		if err = rows.Scan(&count); err != nil {
+			return 0, err
+		}
+	}
+	return count, nil
 }
 
 // Helper functions
