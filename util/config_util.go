@@ -136,6 +136,13 @@ func initDefaultValues() {
 		defaultCategoriesPath = "config/default_categories.json"
 	}
 	configurationMap["default_categories.path"] = defaultCategoriesPath
+
+	// Verification Code expiration time (in minutes)
+	verificationCodeExpire := os.Getenv("VERIFICATION_CODE_EXPIRE_MINUTES")
+	if verificationCodeExpire == "" {
+		verificationCodeExpire = "30" // Default to 30 minutes
+	}
+	configurationMap["verification.code.expire_minutes"] = verificationCodeExpire
 }
 
 func GetConfigByKey(configKey string) string {

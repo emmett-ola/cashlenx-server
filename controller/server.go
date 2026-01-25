@@ -75,7 +75,7 @@ func registerOpenRoutes(r *mux.Router, prefix string) {
 
 	// Protected auth routes (technically these shouldn't be in 'open' but kept for grouping logic)
 	// Note: They are protected by middleware checking for /api/open/ prefix exception
-	r.HandleFunc(prefix+"/auth/logout", auth_controller.Logout).Methods("POST")
+	r.HandleFunc(prefix+"/open/auth/logout", auth_controller.Logout).Methods("POST")
 	r.HandleFunc(prefix+"/auth/tokens", auth_controller.GetTokens).Methods("GET")
 
 	// Password reset routes
@@ -104,11 +104,13 @@ func registerUserRoutes(r *mux.Router, prefix string) {
 	r.HandleFunc(prefix+"/user/profile", user_controller.GetProfile).Methods("GET")
 	r.HandleFunc(prefix+"/user/profile", user_controller.UpdateProfile).Methods("PUT")
 	r.HandleFunc(prefix+"/user/password", user_controller.ChangePassword).Methods("PUT")
+	r.HandleFunc(prefix+"/user/email/change", user_controller.RequestEmailChange).Methods("POST")
+	r.HandleFunc(prefix+"/user/email/confirm", user_controller.ConfirmEmailChange).Methods("POST")
 	r.HandleFunc(prefix+"/user/account", user_controller.DeleteAccount).Methods("DELETE")
 
 	// User data management
-	r.HandleFunc(prefix+"/user/manage/export", manage_controller.ExportUserData).Methods("GET")
-	r.HandleFunc(prefix+"/user/manage/import", manage_controller.ImportUserData).Methods("POST")
+	r.HandleFunc(prefix+"/user/database/backup", manage_controller.ExportUserData).Methods("GET")
+	r.HandleFunc(prefix+"/user/database/restore", manage_controller.ImportUserData).Methods("POST")
 }
 
 func registerCashRoute(r *mux.Router, prefix string) {
@@ -230,9 +232,11 @@ func versionInfo(w http.ResponseWriter, r *http.Request) {
 				"GET " + apiPrefix + "/user/profile",
 				"PUT " + apiPrefix + "/user/profile",
 				"PUT " + apiPrefix + "/user/password",
+				"POST " + apiPrefix + "/user/email/change",
+				"POST " + apiPrefix + "/user/email/confirm",
 				"DELETE " + apiPrefix + "/user/account",
-				"GET " + apiPrefix + "/user/manage/dump",
-				"POST " + apiPrefix + "/user/manage/restore",
+				"GET " + apiPrefix + "/user/database/backup",
+				"POST " + apiPrefix + "/user/database/restore",
 			},
 			"cash_flow": {
 				"POST " + apiPrefix + "/cash/expense",

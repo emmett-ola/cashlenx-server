@@ -5,57 +5,124 @@ import (
 	"fmt"
 	"net/smtp"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/macar-x/cashlenx-server/util"
 )
 
-// Email represents an email message
-type Email struct {
-	To      []string
-	Subject string
-	Body    string
-	IsHTML  bool
+// SMTPSerivce defines the interface for sending emails
+type SMTPService interface {
+	SendEmail(to []string, subject, body string, isHTML bool) error
+	IsConfigured() bool
 }
 
-// SendEmail sends an email using the configured SMTP server with retry logic
-func SendEmail(email Email) error {
-	// Get configuration
-	host := util.GetConfigByKey("smtp.host")
+// smtpServiceImpl implements SMTPService
+type smtpServiceImpl struct {
+	host         string
+	port         int
+	username     string
+	password     string
+	fromAddress  string
+	fromName     string
+	maxRetries   int
+	retryInterval int
+	configured   bool
+	mu           sync.RWMutex
+}
+
+var (
+	instance *smtpServiceImpl
+	once     sync.Once
+)
+
+// GetService returns the singleton SMTP service instance
+func GetService() SMTPService {
+	once.Do(func() {
+		instance = &smtpServiceImpl{}
+		instance.loadConfig()
+	})
+	return instance
+}
+
+// ReloadConfig reloads the SMTP configuration (useful if config changes at runtime)
+func ReloadConfig() {
+	if instance != nil {
+		instance.loadConfig()
+	}
+}
+
+func (s *smtpServiceImpl) loadConfig() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.host = util.GetConfigByKey("smtp.host")
 	portStr := util.GetConfigByKey("smtp.port")
-	username := util.GetConfigByKey("smtp.username")
-	password := util.GetConfigByKey("smtp.password")
-	fromAddress := util.GetConfigByKey("smtp.from_address")
-	fromName := util.GetConfigByKey("smtp.from_name")
+	s.username = util.GetConfigByKey("smtp.username")
+	s.password = util.GetConfigByKey("smtp.password")
+	s.fromAddress = util.GetConfigByKey("smtp.from_address")
+	s.fromName = util.GetConfigByKey("smtp.from_name")
 	
 	maxRetriesStr := util.GetConfigByKey("smtp.max_retries")
 	retryIntervalStr := util.GetConfigByKey("smtp.retry_interval")
 
-	// Validate configuration
-	if host == "" || portStr == "" || username == "" || password == "" || fromAddress == "" {
-		util.Logger.Errorw("SMTP configuration is missing", "host", host, "port", portStr, "username", username)
-		return fmt.Errorf("SMTP configuration is missing")
+	// Validate minimal required config
+	if s.host == "" || portStr == "" || s.username == "" || s.password == "" || s.fromAddress == "" {
+		s.configured = false
+		util.Logger.Warn("SMTP configuration is incomplete. Email features will be disabled.")
+		return
 	}
 
 	port, err := strconv.Atoi(portStr)
 	if err != nil {
-		util.Logger.Errorw("Invalid SMTP port", "port", portStr, "error", err)
-		return err
+		s.configured = false
+		util.Logger.Errorw("Invalid SMTP port configuration", "port", portStr, "error", err)
+		return
 	}
+	s.port = port
 
-	maxRetries := 3
+	// Optional config with defaults
+	s.maxRetries = 3
 	if maxRetriesStr != "" {
 		if val, err := strconv.Atoi(maxRetriesStr); err == nil {
-			maxRetries = val
+			s.maxRetries = val
 		}
 	}
 
-	retryInterval := 1000 // ms
+	s.retryInterval = 1000 // ms
 	if retryIntervalStr != "" {
 		if val, err := strconv.Atoi(retryIntervalStr); err == nil {
-			retryInterval = val
+			s.retryInterval = val
 		}
 	}
+
+	s.configured = true
+	util.Logger.Info("SMTP service configured successfully")
+}
+
+func (s *smtpServiceImpl) IsConfigured() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.configured
+}
+
+// SendEmail sends an email using the configured SMTP server with retry logic
+func (s *smtpServiceImpl) SendEmail(to []string, subject, body string, isHTML bool) error {
+	if !s.IsConfigured() {
+		return fmt.Errorf("SMTP service is not configured")
+	}
+
+	s.mu.RLock()
+	// Copy config to local vars to avoid holding lock during network I/O
+	host := s.host
+	port := s.port
+	username := s.username
+	password := s.password
+	fromAddress := s.fromAddress
+	fromName := s.fromName
+	maxRetries := s.maxRetries
+	retryInterval := s.retryInterval
+	s.mu.RUnlock()
 
 	// Prepare email content
 	addr := fmt.Sprintf("%s:%d", host, port)
@@ -63,14 +130,16 @@ func SendEmail(email Email) error {
 
 	// Construct headers
 	contentType := "text/plain"
-	if email.IsHTML {
+	if isHTML {
 		contentType = "text/html"
 	}
 
 	headers := make(map[string]string)
 	headers["From"] = fmt.Sprintf("%s <%s>", fromName, fromAddress)
-	headers["To"] = email.To[0] // Simplify for single recipient
-	headers["Subject"] = email.Subject
+	if len(to) > 0 {
+		headers["To"] = to[0] // Simplify for single recipient
+	}
+	headers["Subject"] = subject
 	headers["MIME-Version"] = "1.0"
 	headers["Content-Type"] = fmt.Sprintf("%s; charset=\"UTF-8\"", contentType)
 
@@ -78,24 +147,20 @@ func SendEmail(email Email) error {
 	for k, v := range headers {
 		message += fmt.Sprintf("%s: %s\r\n", k, v)
 	}
-	message += "\r\n" + email.Body
+	message += "\r\n" + body
 
 	// Retry loop
 	var sendErr error
 	for i := 0; i < maxRetries; i++ {
 		if i > 0 {
-			util.Logger.Infow("Retrying email send", "attempt", i+1, "to", email.To)
+			util.Logger.Infow("Retrying email send", "attempt", i+1, "to", to)
 			time.Sleep(time.Duration(retryInterval) * time.Millisecond)
 		}
 
-		// Try to send email
-		// Note: smtp.SendMail uses the default TLS configuration if StartTLS is supported
-		// For explicit TLS control or STARTTLS issues, might need custom implementation
-		// This is a basic implementation compatible with most providers like Mailgun
-		sendErr = sendMailWithTLS(addr, auth, fromAddress, email.To, []byte(message), host)
+		sendErr = sendMailWithTLS(addr, auth, fromAddress, to, []byte(message), host)
 		
 		if sendErr == nil {
-			util.Logger.Infow("Email sent successfully", "to", email.To, "subject", email.Subject)
+			util.Logger.Infow("Email sent successfully", "to", to, "subject", subject)
 			return nil
 		}
 
@@ -105,11 +170,18 @@ func SendEmail(email Email) error {
 	return fmt.Errorf("failed to send email after %d attempts: %w", maxRetries, sendErr)
 }
 
+// Helper function: SendEmail (Backward compatibility wrapper)
+func SendEmail(emailStruct struct {
+	To      []string
+	Subject string
+	Body    string
+	IsHTML  bool
+}) error {
+	return GetService().SendEmail(emailStruct.To, emailStruct.Subject, emailStruct.Body, emailStruct.IsHTML)
+}
+
 // sendMailWithTLS sends an email with proper TLS handling
 func sendMailWithTLS(addr string, auth smtp.Auth, from string, to []string, msg []byte, host string) error {
-	// Custom implementation to ensure TLS/StartTLS works correctly
-	// This avoids common issues with some providers
-	
 	client, err := smtp.Dial(addr)
 	if err != nil {
 		return err

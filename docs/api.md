@@ -112,6 +112,71 @@ POST /open/auth/register
 
 ---
 
+### User Profile Endpoints (`/user/*`)
+
+#### Password Change
+```http
+PUT /user/password
+Authorization: Bearer <token>
+```
+
+**Request**:
+```json
+{
+  "old_password": "currentpassword",
+  "new_password": "newsecurepassword"
+}
+```
+
+#### Email Change Request
+Initiate email change process. Sends a verification code to the new email address.
+
+```http
+POST /user/email/change
+Authorization: Bearer <token>
+```
+
+**Request**:
+```json
+{
+  "new_email": "newemail@example.com"
+}
+```
+
+**Response**:
+```json
+{
+  "message": "Verification code sent to new email address"
+}
+```
+
+#### Email Change Confirmation
+Finalize email change using the verification code sent to the new email.
+
+```http
+POST /user/email/confirm
+Authorization: Bearer <token>
+```
+
+**Request**:
+```json
+{
+  "token": "verification-token-code",
+  "password": "currentpassword"
+}
+```
+
+**Response**:
+```json
+{
+  "message": "Email address updated successfully"
+}
+```
+
+#### Delete Account
+
+---
+
 ### Cash Flow Endpoints (`/cash/*`)
 
 All cash flow endpoints enforce user data isolation - users can only access their own transactions.
@@ -443,31 +508,6 @@ Content-Type: application/json
 - Users: success/failed counts
 - Categories: success/failed counts
 - Cash Flows: success/failed counts
-
-##### Export to Excel
-```http
-GET /admin/manage/export?from=2024-01-01&to=2024-01-31
-Authorization: Bearer <admin-token>
-```
-
-**Query Parameters**:
-- `from` (optional): Start date (YYYY-MM-DD)
-- `to` (optional): End date (YYYY-MM-DD)
-
-**Response**: Excel file (.xlsx)
-
-**TODO**: This endpoint will be moved to `/statistic/export` with user data isolation.
-
-##### Import from Excel
-```http
-POST /admin/manage/import
-Authorization: Bearer <admin-token>
-Content-Type: multipart/form-data
-```
-
-**Request**: Upload Excel file (.xlsx)
-
-**TODO**: This endpoint will be moved to `/statistic/import` with user data isolation.
 
 ---
 

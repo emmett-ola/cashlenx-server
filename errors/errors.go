@@ -72,6 +72,11 @@ func NewInvalidInputError(message string) *AppError {
 	}
 }
 
+// NewBadRequestError creates an INVALID_INPUT error (alias for NewInvalidInputError)
+func NewBadRequestError(message string) *AppError {
+	return NewInvalidInputError(message)
+}
+
 // NewDatabaseError creates a DATABASE_ERROR
 func NewDatabaseError(message string, cause error) *AppError {
 	return &AppError{
