@@ -512,7 +512,7 @@ paths:
                 $ref: '#/components/schemas/ResponseWrapper'
 
   # Manage endpoints
-  /admin/manage/dump:
+  /admin/database/backup:
     get:
       summary: Download database dump
       description: Export the entire database as a JSON dump file
@@ -526,7 +526,7 @@ paths:
                 type: string
                 format: binary
 
-  /admin/manage/restore:
+  /admin/database/restore:
     post:
       summary: Restore database from dump
       description: Restore the database from a JSON dump file

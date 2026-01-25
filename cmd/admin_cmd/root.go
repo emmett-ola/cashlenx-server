@@ -4,8 +4,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var adminToken string
-
 var AdminCmd = &cobra.Command{
 	Use:   "admin",
 	Short: "Admin-only commands (requires admin privileges)",
@@ -18,11 +16,7 @@ Available sub-commands:
 }
 
 func init() {
-	// Add global admin-token flag for dangerous operations
-	AdminCmd.PersistentFlags().StringVarP(
-		&adminToken, "admin-token", "t", "", "Admin token for dangerous operations")
-
 	// Register all admin commands directly
-	AdminCmd.AddCommand(backupCmd)
-	AdminCmd.AddCommand(restoreBackupCmd)
+	// AdminCmd.AddCommand(backupCmd) // Moved to database subcommand
+	// AdminCmd.AddCommand(restoreBackupCmd) // Moved to database subcommand
 }

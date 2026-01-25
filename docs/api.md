@@ -417,7 +417,7 @@ Authorization: Bearer <admin-token>
 
 ##### Database Backup
 ```http
-GET /admin/manage/dump
+GET /admin/database/backup
 Authorization: Bearer <admin-token>
 Header: ADMIN_TOKEN=<your-admin-token>
 ```
@@ -431,7 +431,7 @@ Header: ADMIN_TOKEN=<your-admin-token>
 
 ##### Database Restore
 ```http
-POST /admin/manage/restore
+POST /admin/database/restore
 Authorization: Bearer <admin-token>
 Header: ADMIN_TOKEN=<your-admin-token>
 Content-Type: application/json

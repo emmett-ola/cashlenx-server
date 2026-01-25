@@ -36,7 +36,7 @@ cashlenx cash income -c "Salary" -a 5000
 cashlenx cash query -b $(date +%Y-%m-%d)
 
 # Create backup
-cashlenx admin backup -o backup.json
+cashlenx admin database backup -o backup.json
 ```
 
 ## Installation
@@ -75,8 +75,9 @@ cashlenx
 │   ├── version        Show version info
 │   └── start          Start API server
 ├── admin              # Admin commands (admin role required)
-│   ├── backup         Create database backup
-│   └── restore        Restore from backup
+│   └── database       # Database management
+│       ├── backup     Create database backup
+│       └── restore    Restore from backup
 ├── cash               # Cash flow commands (user auth required)
 │   ├── income         Add income
 │   ├── expense        Add expense
@@ -161,47 +162,42 @@ cashlenx open start -p 8080
 
 ## Admin Commands (`cashlenx admin`)
 
-**Note**: All admin commands require admin privileges and the ADMIN_TOKEN environment variable.
+**Note**: All admin commands require admin privileges.
 
-### admin backup
+### admin database backup
 Create a backup of all database data (all users).
 
 ```bash
 # Auto-generated filename
-cashlenx admin backup
+cashlenx admin database backup
 
 # Custom filename
-cashlenx admin backup -o backup_20240115.json
+cashlenx admin database backup -o backup_20240115.json
 ```
 
 **Flags**:
 - `-o, --output` - Backup file path (optional, default: cashlenx_backup_TIMESTAMP.json)
-- `-t, --admin-token` - Admin token for dangerous operations
 
 **Output Statistics**:
 - Users: success/failed counts
 - Categories: success/failed counts
 - Cash Flows: success/failed counts
 
-**Environment**:
-- `ADMIN_TOKEN` - Required for verification
-
 ---
 
-### admin restore
+### admin database restore
 Restore database from a backup file.
 
 ```bash
-cashlenx admin restore -i backup_20240115.json
+cashlenx admin database restore -i backup_20240115.json
 
 # Skip confirmation
-cashlenx admin restore -i backup_20240115.json -f
+cashlenx admin database restore -i backup_20240115.json -f
 ```
 
 **Flags**:
 - `-i, --input` - Backup file path (required)
 - `-f, --force` - Skip confirmation prompt
-- `-t, --admin-token` - Admin token for dangerous operations
 
 **Output Statistics**:
 - Users: success/failed counts
@@ -792,10 +788,10 @@ cashlenx category tree -t expense
 
 ```bash
 # Create backup before major changes
-cashlenx admin backup -o backup_before_cleanup.json
+cashlenx admin database backup -o backup_before_cleanup.json
 
 # Restore from backup if needed
-cashlenx admin restore -i backup_before_cleanup.json -f
+cashlenx admin database restore -i backup_before_cleanup.json -f
 ```
 
 ---
