@@ -27,7 +27,16 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	plainId, err := user_service.CreateService(requestBody)
+	// Extract admin user ID from context
+	adminUserId, ok := r.Context().Value("user_id").(string)
+	if !ok || adminUserId == "" {
+		// Should not happen if Auth middleware is working correctly
+		util.ComposeJSONResponse(w, http.StatusUnauthorized, errors.NewUnauthorizedError("user not authenticated"))
+		return
+	}
+
+	// Call CreateService with admin user ID as creator
+	plainId, err := user_service.CreateService(requestBody, &adminUserId)
 	if err != nil {
 		if errors.IsAlreadyExistsError(err) {
 			util.ComposeJSONResponse(w, http.StatusConflict, err)

@@ -5,6 +5,7 @@ import (
 
 	"github.com/macar-x/cashlenx-server/auth"
 	"github.com/macar-x/cashlenx-server/errors"
+	"github.com/macar-x/cashlenx-server/mapper/user_mapper"
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/service/refresh_token_service"
 	"github.com/macar-x/cashlenx-server/service/user_service"
@@ -96,8 +97,8 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if user already exists
-	existingUser := user_service.GetUserByUsername(registerRequest.Username)
+	// Check if user already exists (including deleted users)
+	existingUser := user_mapper.INSTANCE.GetUserByUsernameIncludeDeleted(registerRequest.Username)
 	if !existingUser.Id.IsZero() {
 		util.ComposeJSONResponse(w, http.StatusConflict, errors.NewFieldAlreadyExistsError("username", "username already exists"))
 		return
@@ -110,7 +111,8 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create user
-	userId, err := user_service.CreateService(userDTO)
+	// Pass nil as creatorId to indicate self-registration
+	userId, err := user_service.CreateService(userDTO, nil)
 	if err != nil {
 		util.ComposeJSONResponse(w, http.StatusInternalServerError, err)
 		return

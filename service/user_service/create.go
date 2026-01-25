@@ -14,15 +14,16 @@ import (
 )
 
 // CreateService creates a new user with the provided details
-func CreateService(requestBody model.UserDTO) (string, error) {
+// creatorId: optional ID of the admin creating this user. If nil, user creates themselves.
+func CreateService(requestBody model.UserDTO, creatorId *string) (string, error) {
 	// Validate password
 	err := validation.ValidatePassword(requestBody.Password)
 	if err != nil {
 		return "", err
 	}
 
-	// Check if username is already taken
-	existingUser := user_mapper.INSTANCE.GetUserByUsername(requestBody.Username)
+	// Check if username is already taken (including deleted users)
+	existingUser := user_mapper.INSTANCE.GetUserByUsernameIncludeDeleted(requestBody.Username)
 	if !existingUser.Id.IsZero() {
 		return "", errors.NewFieldAlreadyExistsError("username", "username is already taken")
 	}
@@ -31,6 +32,11 @@ func CreateService(requestBody model.UserDTO) (string, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(requestBody.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return "", std_errors.New("failed to hash password")
+	}
+
+	// Validate Gender
+	if requestBody.Gender != "" && requestBody.Gender != model.GenderMale && requestBody.Gender != model.GenderFemale && requestBody.Gender != model.GenderOthers {
+		return "", std_errors.New("invalid gender")
 	}
 
 	// Create the user entity
@@ -48,6 +54,24 @@ func CreateService(requestBody model.UserDTO) (string, error) {
 			CreateTime: util.GetCurrentTime(),
 			UpdateTime: util.GetCurrentTime(),
 		},
+	}
+
+	// Set creator/updater IDs
+	if creatorId != nil && *creatorId != "" {
+		// Created by admin
+		oid, err := primitive.ObjectIDFromHex(*creatorId)
+		if err == nil {
+			userEntity.CreateUserId = oid
+			userEntity.UpdateUserId = oid
+		} else {
+			// Fallback to self if invalid ID provided (shouldn't happen with valid auth)
+			userEntity.CreateUserId = userEntity.Id
+			userEntity.UpdateUserId = userEntity.Id
+		}
+	} else {
+		// Self-registration
+		userEntity.CreateUserId = userEntity.Id
+		userEntity.UpdateUserId = userEntity.Id
 	}
 
 	// Insert the user into the database

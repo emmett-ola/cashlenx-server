@@ -16,66 +16,27 @@ func convertBsonM2UserEntity(bsonData bson.M) model.UserEntity {
 		return model.UserEntity{}
 	}
 
-	user := model.UserEntity{}
-
-	// Convert ID
-	if id, ok := bsonData["_id"].(primitive.ObjectID); ok {
-		user.Id = id
+	var user model.UserEntity
+	bsonBytes, err := bson.Marshal(bsonData)
+	if err != nil {
+		util.Logger.Errorln(err)
+		return model.UserEntity{}
+	}
+	if err = bson.Unmarshal(bsonBytes, &user); err != nil {
+		util.Logger.Errorln(err)
+		return model.UserEntity{}
 	}
 
-	// Convert string fields
-	if username, ok := bsonData["username"].(string); ok {
-		user.Username = username
-	}
-	if passwordHash, ok := bsonData["password_hash"].(string); ok {
-		user.PasswordHash = passwordHash
-	}
-	if role, ok := bsonData["role"].(string); ok {
-		user.Role = role
+	if user.Nickname == "/null" || user.Nickname == "null" {
+		user.Nickname = ""
 	}
 
-	// Convert boolean fields
-	if isActive, ok := bsonData["is_active"].(bool); ok {
-		user.IsActive = isActive
-	}
-
-	// Convert profile fields
-	if nickname, ok := bsonData["nickname"].(string); ok {
-		user.Nickname = nickname
-	}
-	if avatarUrl, ok := bsonData["avatar_url"].(string); ok {
-		user.AvatarUrl = avatarUrl
-	}
-	if emailAddress, ok := bsonData["email_address"].(string); ok {
-		user.EmailAddress = emailAddress
-	}
-	if gender, ok := bsonData["gender"].(string); ok {
-		user.Gender = gender
-	}
-
-	// Convert time fields
-	if createTime, ok := bsonData["create_time"].(time.Time); ok {
-		user.CreateTime = createTime
-	}
-	if updateTime, ok := bsonData["update_time"].(time.Time); ok {
-		user.UpdateTime = updateTime
-	}
-
-	// Convert BaseEntity fields
-	if createUserId, ok := bsonData["create_user_id"].(primitive.ObjectID); ok {
-		user.CreateUserId = createUserId
-	}
-	if updateUserId, ok := bsonData["update_user_id"].(primitive.ObjectID); ok {
-		user.UpdateUserId = updateUserId
-	}
-	if deleteUserId, ok := bsonData["delete_user_id"].(primitive.ObjectID); ok {
-		user.DeleteUserId = &deleteUserId
-	}
-	if deleteTime, ok := bsonData["delete_time"].(time.Time); ok {
-		user.DeleteTime = &deleteTime
-	}
-	if isDelete, ok := bsonData["is_delete"].(bool); ok {
-		user.IsDelete = isDelete
+	// Validate gender (must be male, female, others or empty/null)
+	if user.Gender != "" && 
+		user.Gender != model.GenderMale && 
+		user.Gender != model.GenderFemale && 
+		user.Gender != model.GenderOthers {
+		user.Gender = ""
 	}
 
 	return user
@@ -132,6 +93,18 @@ func (m UserMongoDbMapper) GetUserByUsername(username string) model.UserEntity {
 	filter := bson.D{
 		primitive.E{Key: "username", Value: username},
 		primitive.E{Key: "is_delete", Value: false},
+	}
+
+	database.OpenMongoDbConnection(database.UserTableName)
+	defer database.CloseMongoDbConnection()
+	return convertBsonM2UserEntity(database.GetOneInMongoDB(filter))
+}
+
+// GetUserByUsernameIncludeDeleted retrieves a user by their username including deleted ones from MongoDB
+func (m UserMongoDbMapper) GetUserByUsernameIncludeDeleted(username string) model.UserEntity {
+	// Create a filter to find the user by username (including deleted)
+	filter := bson.D{
+		primitive.E{Key: "username", Value: username},
 	}
 
 	database.OpenMongoDbConnection(database.UserTableName)
@@ -274,12 +247,10 @@ func (m UserMongoDbMapper) DeleteUserByObjectId(plainId string) model.UserEntity
 	
 	// Soft delete: Update is_delete to true
 	now := time.Now()
-	newUsername := user.Username + "_deleted_" + util.FormatDateToStringWithoutDash(now)
+	// No longer renaming username, keeping original for unique constraint check on registration
 	update := bson.D{
 		primitive.E{Key: "is_delete", Value: true},
 		primitive.E{Key: "delete_time", Value: now},
-		// Rename username to avoid conflict if reused
-		primitive.E{Key: "username", Value: newUsername},
 	}
 
 	database.OpenMongoDbConnection(database.UserTableName)
@@ -290,7 +261,6 @@ func (m UserMongoDbMapper) DeleteUserByObjectId(plainId string) model.UserEntity
 
 	user.IsDelete = true
 	user.DeleteTime = &now
-	user.Username = newUsername
 	return user
 }
 

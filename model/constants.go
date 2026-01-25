@@ -27,6 +27,13 @@ const (
 	UserRoleUser  = "user"
 )
 
+// Gender constants
+const (
+	GenderMale   = "male"
+	GenderFemale = "female"
+	GenderOthers = "others"
+)
+
 // AuthConstants for JWT and authentication
 const (
 	JWTExpirationHours = 24
