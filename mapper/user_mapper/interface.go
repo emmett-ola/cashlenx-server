@@ -15,6 +15,9 @@ type UserMapper interface {
 	// GetUserByUsername retrieves a user by their username
 	GetUserByUsername(username string) model.UserEntity
 
+	// GetUserByUsernameIncludeDeleted retrieves a user by their username including deleted ones
+	GetUserByUsernameIncludeDeleted(username string) model.UserEntity
+
 	// GetUserByEmail retrieves a user by their email address
 	GetUserByEmail(email string) model.UserEntity
 	

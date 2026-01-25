@@ -304,7 +304,7 @@ func validateRequest(r *http.Request) error {
 
 	// Skip body validation for file upload endpoints to avoid "value must be a string" error
 	// This is a known issue with kin-openapi validation for multipart/form-data
-	if strings.HasSuffix(r.URL.Path, "/restore") {
+	if strings.HasSuffix(r.URL.Path, "/restore") || strings.HasSuffix(r.URL.Path, "/import") {
 		options.ExcludeRequestBody = true
 	}
 

@@ -214,25 +214,31 @@ func (s *LocalAuthService) Middleware(next http.Handler) http.Handler {
 		}
 
 		// Check if header starts with "Bearer "
-		parts := strings.Split(authHeader, " ")
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			util.ComposeJSONResponse(w, http.StatusUnauthorized, errors.NewUnauthorizedError("Invalid authorization header format"))
-			return
-		}
+	parts := strings.Split(authHeader, " ")
+	if len(parts) != 2 || parts[0] != "Bearer" {
+		util.ComposeJSONResponse(w, http.StatusUnauthorized, errors.NewUnauthorizedError("Invalid authorization header format"))
+		return
+	}
 
-		tokenString := parts[1]
+	tokenString := parts[1]
 
-		// Validate token
-		claims, err := s.ValidateToken(tokenString)
-		if err != nil {
-			util.Logger.Errorw("Invalid JWT token", "error", err)
-			util.ComposeJSONResponse(w, http.StatusUnauthorized, errors.NewUnauthorizedError("Invalid or expired token"))
-			return
-		}
+	// Validate token
+	claims, err := s.ValidateToken(tokenString)
+	if err != nil {
+		util.Logger.Errorw("Invalid JWT token", "error", err)
+		util.ComposeJSONResponse(w, http.StatusUnauthorized, errors.NewUnauthorizedError("Invalid or expired token"))
+		return
+	}
 
-		// Add user information to request context
-		ctx := r.Context()
-		ctx = context.WithValue(ctx, "user_id", claims.UserID)
+	if claims == nil {
+		util.Logger.Errorw("Invalid JWT token claims is nil")
+		util.ComposeJSONResponse(w, http.StatusUnauthorized, errors.NewUnauthorizedError("Invalid or expired token"))
+		return
+	}
+
+	// Add user information to request context
+	ctx := r.Context()
+	ctx = context.WithValue(ctx, "user_id", claims.UserID)
 		ctx = context.WithValue(ctx, "username", claims.Username)
 		ctx = context.WithValue(ctx, "role", claims.Role)
 		r = r.WithContext(ctx)

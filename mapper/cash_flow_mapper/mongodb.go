@@ -489,6 +489,43 @@ func (CashFlowMongoDbMapper) DeleteCashFlowsByCategoryIdAndUser(categoryPlainId 
 	return database.UpdateManyInMongoDB(filter, update)
 }
 
+func (CashFlowMongoDbMapper) UpdateCashFlowByEntityAndUser(plainId string, updatedEntity model.CashFlowEntity, userId primitive.ObjectID) model.CashFlowEntity {
+	objectId := util.Convert2ObjectId(plainId)
+	if plainId == "" || objectId == primitive.NilObjectID {
+		util.Logger.Warnln("cash_flow's id is not acceptable")
+		return model.CashFlowEntity{}
+	}
+
+	filter := bson.D{
+		primitive.E{Key: "_id", Value: objectId},
+		primitive.E{Key: "belongs_user_id", Value: userId},
+	}
+
+	database.OpenMongoDbConnection(database.CashFlowTableName)
+	defer database.CloseMongoDbConnection()
+
+	targetEntity := convertBsonM2CashFlowEntity(database.GetOneInMongoDB(filter))
+	if targetEntity.IsEmpty() {
+		util.Logger.Infoln("cash_flow is not exist or does not belong to user")
+		return model.CashFlowEntity{}
+	}
+
+	// Update fields from updatedEntity while preserving ID, UserId and CreateTime
+	updatedEntity.Id = targetEntity.Id
+	updatedEntity.BelongsUserId = userId
+	updatedEntity.CreateTime = targetEntity.CreateTime
+	updatedEntity.CreateUserId = targetEntity.CreateUserId
+	updatedEntity.UpdateTime = time.Now().UTC()
+
+	rowsAffected := database.UpdateManyInMongoDB(filter, convertCashFlowEntity2BsonD(updatedEntity))
+	if rowsAffected != 1 {
+		util.Logger.Errorw("update failed", "rows_affected", rowsAffected)
+		return model.CashFlowEntity{}
+	}
+
+	return updatedEntity
+}
+
 func (CashFlowMongoDbMapper) GetCashFlowsByFilter(filter model.CashFlowFilter) ([]model.CashFlowEntity, error) {
 	database.OpenMongoDbConnection(database.CashFlowTableName)
 	defer database.CloseMongoDbConnection()
@@ -532,6 +569,34 @@ func (CashFlowMongoDbMapper) CountCashFlowsByFilter(filter model.CashFlowFilter)
 
 	queryFilter := buildMongoFilter(filter)
 	return database.CountInMongoDBWithError(queryFilter)
+}
+
+func (CashFlowMongoDbMapper) GetAllCashFlowsByUserIncludeDeleted(userId primitive.ObjectID) []model.CashFlowEntity {
+	database.OpenMongoDbConnection(database.CashFlowTableName)
+	defer database.CloseMongoDbConnection()
+
+	filter := bson.D{
+		primitive.E{Key: "belongs_user_id", Value: userId},
+	}
+
+	var targetEntityList []model.CashFlowEntity
+	queryResultList := database.GetManyInMongoDBWithPaginationIncludeDeleted(filter, 0, 0)
+	for _, queryResult := range queryResultList {
+		targetEntityList = append(targetEntityList, convertBsonM2CashFlowEntity(queryResult))
+	}
+
+	return targetEntityList
+}
+
+func (CashFlowMongoDbMapper) DeleteAllCashFlowsByUser(userId primitive.ObjectID) (int64, error) {
+	database.OpenMongoDbConnection(database.CashFlowTableName)
+	defer database.CloseMongoDbConnection()
+
+	filter := bson.D{
+		primitive.E{Key: "belongs_user_id", Value: userId},
+	}
+
+	return database.DeleteManyInMongoDBIncludeDeleted(filter), nil
 }
 
 func buildMongoFilter(filter model.CashFlowFilter) bson.D {

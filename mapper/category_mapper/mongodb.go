@@ -582,6 +582,34 @@ func (CategoryMongoDbMapper) CountAllCategoriesByUser(userId primitive.ObjectID)
 	return database.CountInMongoDB(filter)
 }
 
+func (CategoryMongoDbMapper) GetAllCategoriesByUserIncludeDeleted(userId primitive.ObjectID) []model.CategoryEntity {
+	database.OpenMongoDbConnection(database.CategoryTableName)
+	defer database.CloseMongoDbConnection()
+
+	filter := bson.D{
+		primitive.E{Key: "belongs_user_id", Value: userId},
+	}
+
+	var targetEntityList []model.CategoryEntity
+	queryResultList := database.GetManyInMongoDBWithPaginationIncludeDeleted(filter, 0, 0)
+	for _, queryResult := range queryResultList {
+		targetEntityList = append(targetEntityList, convertBsonM2CategoryEntity(queryResult))
+	}
+
+	return targetEntityList
+}
+
+func (CategoryMongoDbMapper) DeleteAllCategoriesByUser(userId primitive.ObjectID) (int64, error) {
+	database.OpenMongoDbConnection(database.CategoryTableName)
+	defer database.CloseMongoDbConnection()
+
+	filter := bson.D{
+		primitive.E{Key: "belongs_user_id", Value: userId},
+	}
+
+	return database.DeleteManyInMongoDBIncludeDeleted(filter), nil
+}
+
 func convertCategoryEntity2BsonD(entity model.CategoryEntity) bson.D {
 	// Generate a new Id automatically if it's empty
 	if entity.Id == primitive.NilObjectID {

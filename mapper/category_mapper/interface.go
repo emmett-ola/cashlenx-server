@@ -35,6 +35,8 @@ type CategoryMapper interface {
 	UpdateCategoryByEntityAndUser(plainId string, updatedEntity model.CategoryEntity, userId primitive.ObjectID) model.CategoryEntity
 	GetAllCategoriesByUser(userId primitive.ObjectID, limit, offset int) []model.CategoryEntity
 	CountAllCategoriesByUser(userId primitive.ObjectID) int64
+	GetAllCategoriesByUserIncludeDeleted(userId primitive.ObjectID) []model.CategoryEntity
+	DeleteAllCategoriesByUser(userId primitive.ObjectID) (int64, error)
 }
 
 func init() {

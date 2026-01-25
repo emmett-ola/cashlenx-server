@@ -105,6 +105,10 @@ func registerUserRoutes(r *mux.Router, prefix string) {
 	r.HandleFunc(prefix+"/user/profile", user_controller.UpdateProfile).Methods("PUT")
 	r.HandleFunc(prefix+"/user/password", user_controller.ChangePassword).Methods("PUT")
 	r.HandleFunc(prefix+"/user/account", user_controller.DeleteAccount).Methods("DELETE")
+
+	// User data management
+	r.HandleFunc(prefix+"/user/manage/export", manage_controller.ExportUserData).Methods("GET")
+	r.HandleFunc(prefix+"/user/manage/import", manage_controller.ImportUserData).Methods("POST")
 }
 
 func registerCashRoute(r *mux.Router, prefix string) {
@@ -227,6 +231,8 @@ func versionInfo(w http.ResponseWriter, r *http.Request) {
 				"PUT " + apiPrefix + "/user/profile",
 				"PUT " + apiPrefix + "/user/password",
 				"DELETE " + apiPrefix + "/user/account",
+				"GET " + apiPrefix + "/user/manage/dump",
+				"POST " + apiPrefix + "/user/manage/restore",
 			},
 			"cash_flow": {
 				"POST " + apiPrefix + "/cash/expense",

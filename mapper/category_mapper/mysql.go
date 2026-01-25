@@ -794,6 +794,51 @@ func (CategoryMySqlMapper) TruncateCategories() error {
 	return nil
 }
 
+func (CategoryMySqlMapper) GetAllCategoriesByUserIncludeDeleted(userId primitive.ObjectID) []model.CategoryEntity {
+	var sqlString bytes.Buffer
+	sqlString.WriteString("SELECT ID, BELONGS_USER_ID, PARENT_ID, NAME, TYPE, REMARK, CREATE_USER_ID, CREATE_TIME, UPDATE_USER_ID, UPDATE_TIME FROM ")
+	sqlString.WriteString(database.CategoryTableName)
+	sqlString.WriteString(" WHERE BELONGS_USER_ID = ? ORDER BY NAME ASC")
+	// No SqlExcludeDeleted
+
+	connection := database.GetMySqlConnection()
+	defer database.CloseMySqlConnection()
+
+	rows, err := connection.Query(sqlString.String(), userId.Hex())
+	if err != nil {
+		util.Logger.Errorw("query all categories by user include deleted failed", "error", err)
+		return []model.CategoryEntity{}
+	}
+	defer rows.Close()
+
+	var targetEntityList []model.CategoryEntity
+	for rows.Next() {
+		targetEntityList = append(targetEntityList, convertRow2CategoryEntityWithUser(rows))
+	}
+	return targetEntityList
+}
+
+func (CategoryMySqlMapper) DeleteAllCategoriesByUser(userId primitive.ObjectID) (int64, error) {
+	var sqlString bytes.Buffer
+	sqlString.WriteString("DELETE FROM ")
+	sqlString.WriteString(database.CategoryTableName)
+	sqlString.WriteString(" WHERE BELONGS_USER_ID = ? ")
+
+	connection := database.GetMySqlConnection()
+	defer database.CloseMySqlConnection()
+
+	result, err := connection.Exec(sqlString.String(), userId.Hex())
+	if err != nil {
+		util.Logger.Errorw("delete all categories by user failed", "error", err)
+		return 0, err
+	}
+
+	// Clear cache after delete
+	cache.GetCategoryCache().Clear()
+
+	return result.RowsAffected()
+}
+
 func convertRow2CategoryEntity(rows *sql.Rows) model.CategoryEntity {
 	var id string
 	var parentId string

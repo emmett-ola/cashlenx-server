@@ -35,8 +35,11 @@ type CashFlowMapper interface {
 	DeleteCashFlowByObjectIdAndUser(plainId string, userId primitive.ObjectID) model.CashFlowEntity
 	DeleteCashFlowsByBelongsDateAndUser(belongsDate time.Time, userId primitive.ObjectID) []model.CashFlowEntity
 	DeleteCashFlowsByCategoryIdAndUser(categoryPlainId string, userId primitive.ObjectID) int64
+	UpdateCashFlowByEntityAndUser(plainId string, updatedEntity model.CashFlowEntity, userId primitive.ObjectID) model.CashFlowEntity
 	GetCashFlowsByFilter(filter model.CashFlowFilter) ([]model.CashFlowEntity, error)
 	CountCashFlowsByFilter(filter model.CashFlowFilter) (int64, error)
+	GetAllCashFlowsByUserIncludeDeleted(userId primitive.ObjectID) []model.CashFlowEntity
+	DeleteAllCashFlowsByUser(userId primitive.ObjectID) (int64, error)
 }
 
 func init() {

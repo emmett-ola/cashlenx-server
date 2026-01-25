@@ -711,6 +711,56 @@ func (CashFlowMySqlMapper) DeleteCashFlowsByCategoryIdAndUser(categoryPlainId st
 	return rowsAffected
 }
 
+func (CashFlowMySqlMapper) UpdateCashFlowByEntityAndUser(plainId string, updatedEntity model.CashFlowEntity, userId primitive.ObjectID) model.CashFlowEntity {
+	targetEntity := INSTANCE.GetCashFlowByObjectIdAndUser(plainId, userId)
+	if targetEntity.IsEmpty() {
+		return model.CashFlowEntity{}
+	}
+
+	updatedEntity.Id = targetEntity.Id
+	updatedEntity.BelongsUserId = userId
+	updatedEntity.CreateTime = targetEntity.CreateTime
+	updatedEntity.CreateUserId = targetEntity.CreateUserId
+	updatedEntity.UpdateTime = time.Now().UTC()
+
+	var sqlString bytes.Buffer
+	sqlString.WriteString("UPDATE ")
+	sqlString.WriteString(database.CashFlowTableName)
+	sqlString.WriteString(" SET CATEGORY_ID = ?, ")
+	sqlString.WriteString(" BELONGS_DATE = ?, ")
+	// sqlString.WriteString(" FLOW_TYPE = ?, ")
+	sqlString.WriteString(" AMOUNT = ?, ")
+	sqlString.WriteString(" DESCRIPTION = ?, ")
+	sqlString.WriteString(" REMARK = ?, ")
+	sqlString.WriteString(" UPDATE_USER_ID = ?, ")
+	sqlString.WriteString(" UPDATE_TIME = ? ")
+	sqlString.WriteString(" WHERE ID = ? AND BELONGS_USER_ID = ? AND IS_DELETE = FALSE ")
+
+	connection := database.GetMySqlConnection()
+	defer database.CloseMySqlConnection()
+
+	statement, err := connection.Prepare(sqlString.String())
+	if err != nil {
+		util.Logger.Errorw("update failed", "error", err)
+		return model.CashFlowEntity{}
+	}
+
+	result, err := statement.Exec(updatedEntity.CategoryId.Hex(), updatedEntity.BelongsDate,
+		updatedEntity.Amount, updatedEntity.Description, updatedEntity.Remark, updatedEntity.UpdateUserId.Hex(), updatedEntity.UpdateTime, plainId, userId.Hex())
+	if err != nil {
+		util.Logger.Errorw("update failed", "error", err)
+		return model.CashFlowEntity{}
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil || rowsAffected == 0 {
+		util.Logger.Errorw("update failed", "error", err, "rows_affected", rowsAffected)
+		return model.CashFlowEntity{}
+	}
+
+	return updatedEntity
+}
+
 func (CashFlowMySqlMapper) GetCashFlowsByFilter(filter model.CashFlowFilter) ([]model.CashFlowEntity, error) {
 	var sqlString bytes.Buffer
 	sqlString.WriteString("SELECT ID, BELONGS_USER_ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION, REMARK, CREATE_USER_ID, CREATE_TIME, UPDATE_USER_ID, UPDATE_TIME FROM ")
@@ -814,6 +864,48 @@ func (CashFlowMySqlMapper) CountCashFlowsByFilter(filter model.CashFlowFilter) (
 		}
 	}
 	return count, nil
+}
+
+func (CashFlowMySqlMapper) GetAllCashFlowsByUserIncludeDeleted(userId primitive.ObjectID) []model.CashFlowEntity {
+	var sqlString bytes.Buffer
+	sqlString.WriteString("SELECT ID, BELONGS_USER_ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION FROM ")
+	sqlString.WriteString(database.CashFlowTableName)
+	sqlString.WriteString(" WHERE BELONGS_USER_ID = ? ")
+	// No SqlExcludeDeleted
+	sqlString.WriteString(" ORDER BY BELONGS_DATE DESC ")
+
+	connection := database.GetMySqlConnection()
+	defer database.CloseMySqlConnection()
+
+	rows, err := connection.Query(sqlString.String(), userId.Hex())
+	if err != nil {
+		util.Logger.Errorw("query all by user include deleted failed", "error", err)
+		return []model.CashFlowEntity{}
+	}
+
+	var targetEntityList []model.CashFlowEntity
+	for rows.Next() {
+		targetEntityList = append(targetEntityList, convertRow2CashFlowEntityWithUser(rows))
+	}
+	return targetEntityList
+}
+
+func (CashFlowMySqlMapper) DeleteAllCashFlowsByUser(userId primitive.ObjectID) (int64, error) {
+	var sqlString bytes.Buffer
+	sqlString.WriteString("DELETE FROM ")
+	sqlString.WriteString(database.CashFlowTableName)
+	sqlString.WriteString(" WHERE BELONGS_USER_ID = ? ")
+
+	connection := database.GetMySqlConnection()
+	defer database.CloseMySqlConnection()
+
+	result, err := connection.Exec(sqlString.String(), userId.Hex())
+	if err != nil {
+		util.Logger.Errorw("delete all cash flows by user failed", "error", err)
+		return 0, err
+	}
+
+	return result.RowsAffected()
 }
 
 // Helper functions

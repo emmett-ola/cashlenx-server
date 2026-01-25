@@ -3,7 +3,9 @@ package manage_controller
 import (
 	"net/http"
 	"os"
+	"fmt"
 
+	"github.com/macar-x/cashlenx-server/errors"
 	"github.com/macar-x/cashlenx-server/service/manage_service"
 	"github.com/macar-x/cashlenx-server/util"
 )
@@ -16,7 +18,7 @@ func DumpDatabase(w http.ResponseWriter, r *http.Request) {
 	defer os.Remove(filePath) // Clean up after response
 
 	// Create the dump
-	_, err := manage_service.CreateBackup(filePath)
+	_, err := manage_service.AdminDumpDatabase(filePath)
 	if err != nil {
 		util.ComposeJSONResponse(w, http.StatusInternalServerError, err)
 		return
@@ -25,6 +27,44 @@ func DumpDatabase(w http.ResponseWriter, r *http.Request) {
 	// Set response headers for file download
 	w.Header().Set("Content-Description", "File Transfer")
 	w.Header().Set("Content-Disposition", "attachment; filename=dump.json")
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Transfer-Encoding", "binary")
+	w.Header().Set("Expires", "0")
+	w.Header().Set("Cache-Control", "must-revalidate")
+	w.Header().Set("Pragma", "public")
+
+	// Send the file
+	w.WriteHeader(http.StatusOK)
+	file, _ := os.Open(filePath)
+	defer file.Close()
+
+	// Copy file content to response
+	util.SendFile(w, file)
+}
+
+// ExportUserData exports user data to a JSON file (renamed from DumpUserDatabase)
+func ExportUserData(w http.ResponseWriter, r *http.Request) {
+	// Extract user ID from context
+	userId, ok := r.Context().Value("user_id").(string)
+	if !ok || userId == "" {
+		util.ComposeJSONResponse(w, http.StatusUnauthorized, errors.NewUnauthorizedError("User not authenticated"))
+		return
+	}
+
+	// Create a temporary file for the dump
+	filePath := fmt.Sprintf("temp_export_%s.json", userId)
+	defer os.Remove(filePath) // Clean up after response
+
+	// Create the dump
+	_, err := manage_service.UserExportData(userId, filePath)
+	if err != nil {
+		util.ComposeJSONResponse(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	// Set response headers for file download
+	w.Header().Set("Content-Description", "File Transfer")
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=export_%s.json", userId))
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Content-Transfer-Encoding", "binary")
 	w.Header().Set("Expires", "0")

@@ -3,7 +3,6 @@ package user_mapper
 import (
 	"bytes"
 	"database/sql"
-	"strconv"
 	"time"
 
 	"github.com/macar-x/cashlenx-server/model"
@@ -82,6 +81,65 @@ func (m UserMySqlMapper) GetUserByObjectId(plainId string) model.UserEntity {
 func (m UserMySqlMapper) GetUserByUsername(username string) model.UserEntity {
 	// Create the SQL query
 	query := `SELECT id, username, password_hash, is_active, role, nickname, avatar_url, email_address, gender, create_user_id, create_time, update_user_id, update_time FROM ` + database.UserTableName + ` WHERE username = ? AND is_delete = FALSE`
+
+	// Get database connection
+	connection := database.GetMySqlConnection()
+	defer database.CloseMySqlConnection()
+
+	// Execute the query
+	row := connection.QueryRow(query, username)
+
+	// Scan the result into a UserEntity
+	var user model.UserEntity
+	var createTime, updateTime time.Time
+	var id, createUserId, updateUserId string
+	var nickname, avatarUrl, emailAddress, gender sql.NullString
+
+	err := row.Scan(&id, &user.Username, &user.PasswordHash, &user.IsActive, &user.Role, &nickname, &avatarUrl, &emailAddress, &gender, &createUserId, &createTime, &updateUserId, &updateTime)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			util.Logger.Debugw("User not found", "username", username)
+			return model.UserEntity{}
+		}
+		util.Logger.Errorw("Failed to get user", "error", err, "username", username)
+		return model.UserEntity{}
+	}
+
+	// Parse the ID string to ObjectID
+	objectId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		util.Logger.Errorw("Invalid ObjectID", "error", err, "id", id)
+		return model.UserEntity{}
+	}
+
+	// Set the parsed ID and timestamps
+	user.Id = objectId
+	user.CreateUserId = util.Convert2ObjectId(createUserId)
+	user.CreateTime = createTime
+	user.UpdateUserId = util.Convert2ObjectId(updateUserId)
+	user.UpdateTime = updateTime
+
+	// Set profile fields if not null
+	if nickname.Valid {
+		user.Nickname = nickname.String
+	}
+	if avatarUrl.Valid {
+		user.AvatarUrl = avatarUrl.String
+	}
+	if emailAddress.Valid {
+		user.EmailAddress = emailAddress.String
+	}
+	if gender.Valid {
+		user.Gender = gender.String
+	}
+
+	return user
+}
+
+// GetUserByUsernameIncludeDeleted retrieves a user by their username including deleted ones from MySQL
+func (m UserMySqlMapper) GetUserByUsernameIncludeDeleted(username string) model.UserEntity {
+	// Create the SQL query
+	query := `SELECT id, username, password_hash, is_active, role, nickname, avatar_url, email_address, gender, create_user_id, create_time, update_user_id, update_time FROM ` + database.UserTableName + ` WHERE username = ?`
 
 	// Get database connection
 	connection := database.GetMySqlConnection()
@@ -478,20 +536,18 @@ func (m UserMySqlMapper) DeleteUserByObjectId(plainId string) model.UserEntity {
 	// Note: We need the operator ID here, but the interface signature doesn't provide it.
 	// For now, we'll set delete_user_id to the user's own ID or empty if unknown.
 	// Ideally, the interface should be updated, but for quick fix we use soft delete with current time.
-	// Since the user asked for "delete command with a flag set into true", we do this.
-	// We'll append timestamp to username to allow reuse of username.
+	// We no longer rename username to allow unique constraint check on registration to fail if username exists (even if deleted).
 	
 	now := time.Now()
-	newUsername := user.Username + "_deleted_" + strconv.FormatInt(now.Unix(), 10)
 	
-	query := `UPDATE ` + database.UserTableName + ` SET is_delete = TRUE, delete_time = NOW(), username = ? WHERE id = ? AND is_delete = FALSE`
+	query := `UPDATE ` + database.UserTableName + ` SET is_delete = TRUE, delete_time = NOW() WHERE id = ? AND is_delete = FALSE`
 
 	// Get database connection
 	connection := database.GetMySqlConnection()
 	defer database.CloseMySqlConnection()
 
 	// Execute the query
-	result, err := connection.Exec(query, newUsername, plainId)
+	result, err := connection.Exec(query, plainId)
 	if err != nil {
 		util.Logger.Errorw("Failed to delete user", "error", err, "userId", plainId)
 		return model.UserEntity{}
@@ -506,7 +562,6 @@ func (m UserMySqlMapper) DeleteUserByObjectId(plainId string) model.UserEntity {
 
 	user.IsDelete = true
 	user.DeleteTime = &now
-	user.Username = newUsername
 	return user
 }
 
