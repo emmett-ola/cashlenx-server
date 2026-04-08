@@ -766,6 +766,7 @@ paths:
               properties:
                 refresh_token:
                   type: string
+                  nullable: true
                   description: "If provided, only this session is invalidated. If omitted, all sessions are invalidated."
       responses:
         '200':
@@ -1282,6 +1283,7 @@ components:
           description: Password (required for login)
         refresh_token:
           type: string
+          nullable: true
           description: Refresh Token (required for refresh)
       description: "Must provide either (username and password) OR (refresh_token)"
 
