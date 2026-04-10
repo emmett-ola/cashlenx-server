@@ -4,8 +4,11 @@
 
 print('Starting MongoDB initialization for CashLenX...');
 
-// Switch to cashlenx database
-db = db.getSiblingDB('cashlenx');
+// Resolve database name from container environment
+const dbName = process.env.MONGO_INITDB_DATABASE || process.env.DB_NAME || 'cashlenx';
+
+// Switch to target database
+db = db.getSiblingDB(dbName);
 
 // Create collections
 db.createCollection('users');
@@ -55,6 +58,7 @@ print('Indexes created successfully');
 
 // Print initialization summary
 print('\n=== CashLenX MongoDB Initialized ===');
+print(`Database: ${dbName}`);
 print(`Users: ${db.users.countDocuments()}`);
 print(`Auth Token Refresh: ${db.auth_token_refresh.countDocuments()}`);
 print(`Auth Token Password Reset: ${db.auth_token_password_reset.countDocuments()}`);
