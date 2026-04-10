@@ -4,8 +4,10 @@
 
 print('Starting MongoDB initialization for CashLenX...');
 
-// Resolve database name from container environment
-const dbName = process.env.MONGO_INITDB_DATABASE || process.env.DB_NAME || 'cashlenx';
+// Resolve database name from the Mongo container initialization environment.
+// In compose.yml, MONGO_INITDB_DATABASE is sourced from DB_NAME, so DB_NAME remains
+// the single user-facing configuration field in .env.
+const dbName = process.env.MONGO_INITDB_DATABASE || 'cashlenx';
 
 // Switch to target database
 db = db.getSiblingDB(dbName);
