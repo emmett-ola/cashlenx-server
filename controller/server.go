@@ -55,8 +55,9 @@ func StartServer(port int32) {
 	registerCategoryRoute(r, apiPrefix)  // User-specific category endpoints
 	registerStatisticRoute(r, apiPrefix) // User-specific statistic endpoints
 
-	// Apply middleware
-	handler := middleware.Logging(middleware.Auth(middleware.SchemaValidation(middleware.CORS(r))))
+	// Apply middleware. CORS stays outermost so browser preflight requests are
+	// answered before auth or schema validation can reject them.
+	handler := middleware.CORS(middleware.Logging(middleware.Auth(middleware.SchemaValidation(r))))
 
 	addr := fmt.Sprintf(":%d", port)
 	fmt.Printf("API server is running on http://localhost%s\n", addr)
@@ -91,7 +92,6 @@ func registerAdminRoutes(r *mux.Router) {
 	r.HandleFunc("/user/{id}", user_controller.Get).Methods("GET")
 	r.HandleFunc("/user/{id}", user_controller.Update).Methods("PUT")
 	r.HandleFunc("/user/{id}", user_controller.Delete).Methods("DELETE")
-
 
 	// Database management - admin only
 	r.HandleFunc("/database/backup", manage_controller.DumpDatabase).Methods("GET")
