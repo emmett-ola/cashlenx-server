@@ -379,10 +379,10 @@ Be cautious when refactoring DB helpers; some newer code and older compatibility
 Current wrapping in `controller/server.go` is:
 
 ```go
-handler := middleware.Logging(
-    middleware.Auth(
-        middleware.SchemaValidation(
-            middleware.CORS(r),
+handler := middleware.CORS(
+    middleware.Logging(
+        middleware.Auth(
+            middleware.SchemaValidation(r),
         ),
     ),
 )
@@ -394,6 +394,10 @@ Middleware files:
 - `middleware/cors.go`
 - `middleware/logging.go`
 - `middleware/schema_validation.go`
+
+CORS must stay outermost so browser `OPTIONS` preflight requests are answered before auth or OpenAPI schema validation can reject them. This is required for Flutter web and other browser clients.
+
+In `dev` and `test`, loopback browser origins such as `http://localhost:55500` are allowed even when an older exact-port `CORS_ORIGINS` value exists. In production, configure explicit origins through `CORS_ORIGINS`.
 
 There is no `middleware.AdminAuth()` helper in the current code; admin routing uses `middleware.Admin`.
 

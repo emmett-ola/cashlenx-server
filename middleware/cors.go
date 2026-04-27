@@ -9,14 +9,15 @@ import (
 	"github.com/macar-x/cashlenx-server/util"
 )
 
+const defaultDevAllowedOrigins = "http://localhost:*,http://127.0.0.1:*,https://localhost:*,https://127.0.0.1:*"
+
 // CORS middleware to handle Cross-Origin Resource Sharing
 func CORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Get allowed origins from configuration or use defaults
 		allowedOrigins := util.GetConfigByKey("cors.origins")
 		if allowedOrigins == "" {
-			// Default allowed origins for development, including dynamic localhost ports.
-			allowedOrigins = "http://localhost:*,http://127.0.0.1:*,https://localhost:*,https://127.0.0.1:*"
+			allowedOrigins = defaultDevAllowedOrigins
 		}
 
 		origin := r.Header.Get("Origin")
@@ -47,6 +48,8 @@ func shouldAllowOrigin(origin string, allowedOrigins string, env string) bool {
 		return true
 	}
 
+	// Flutter web and browser-based local clients often use random localhost ports.
+	// Keep that ergonomic in dev/test, but require explicit origins outside those modes.
 	if env == "" || env == "dev" || env == "test" {
 		return isLoopbackOrigin(origin)
 	}

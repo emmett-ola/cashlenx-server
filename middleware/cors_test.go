@@ -1,6 +1,30 @@
 package middleware
 
-import "testing"
+import (
+	"net/http"
+	"net/http/httptest"
+	"testing"
+)
+
+func TestCORSPrefightAllowsDevLoopbackOrigin(t *testing.T) {
+	handler := CORS(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatal("preflight request should not reach the next handler")
+	}))
+
+	req := httptest.NewRequest(http.MethodOptions, "/api/v0/open/auth/login", nil)
+	req.Header.Set("Origin", "http://localhost:55500")
+
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+
+	if got := rec.Header().Get("Access-Control-Allow-Origin"); got != "http://localhost:55500" {
+		t.Fatalf("Access-Control-Allow-Origin = %q, want %q", got, "http://localhost:55500")
+	}
+}
 
 func TestOriginMatchesRule(t *testing.T) {
 	tests := []struct {
