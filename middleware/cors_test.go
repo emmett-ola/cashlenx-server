@@ -51,3 +51,57 @@ func TestOriginMatchesRule(t *testing.T) {
 	}
 }
 
+func TestShouldAllowOrigin(t *testing.T) {
+	tests := []struct {
+		name           string
+		origin         string
+		allowedOrigins string
+		env            string
+		want           bool
+	}{
+		{
+			name:           "configured origin is allowed",
+			origin:         "http://localhost:3000",
+			allowedOrigins: "http://localhost:3000",
+			env:            "prod",
+			want:           true,
+		},
+		{
+			name:           "dynamic localhost port is allowed in dev even with old config",
+			origin:         "http://localhost:55500",
+			allowedOrigins: "http://localhost:3000,http://localhost:8080",
+			env:            "dev",
+			want:           true,
+		},
+		{
+			name:           "dynamic loopback port is allowed in test",
+			origin:         "http://127.0.0.1:55500",
+			allowedOrigins: "http://localhost:3000",
+			env:            "test",
+			want:           true,
+		},
+		{
+			name:           "dynamic localhost port is rejected in prod unless configured",
+			origin:         "http://localhost:55500",
+			allowedOrigins: "http://localhost:3000",
+			env:            "prod",
+			want:           false,
+		},
+		{
+			name:           "external origin is rejected in dev when not configured",
+			origin:         "http://example.com:55500",
+			allowedOrigins: "http://localhost:3000",
+			env:            "dev",
+			want:           false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := shouldAllowOrigin(tt.origin, tt.allowedOrigins, tt.env)
+			if got != tt.want {
+				t.Fatalf("shouldAllowOrigin(%q, %q, %q) = %v, want %v", tt.origin, tt.allowedOrigins, tt.env, got, tt.want)
+			}
+		})
+	}
+}

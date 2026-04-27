@@ -22,7 +22,7 @@ func CORS(next http.Handler) http.Handler {
 		origin := r.Header.Get("Origin")
 
 		// Check if origin is allowed
-		if origin != "" && isAllowedOrigin(origin, allowedOrigins) {
+		if origin != "" && shouldAllowOrigin(origin, allowedOrigins, util.GetConfigByKey("env")) {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 		}
 
@@ -40,6 +40,18 @@ func CORS(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+func shouldAllowOrigin(origin string, allowedOrigins string, env string) bool {
+	if isAllowedOrigin(origin, allowedOrigins) {
+		return true
+	}
+
+	if env == "" || env == "dev" || env == "test" {
+		return isLoopbackOrigin(origin)
+	}
+
+	return false
 }
 
 func isAllowedOrigin(origin string, allowedOrigins string) bool {
@@ -85,6 +97,25 @@ func originMatchesRule(origin string, allowedOrigin string) bool {
 	}
 
 	return false
+}
+
+func isLoopbackOrigin(origin string) bool {
+	originURL, err := url.Parse(origin)
+	if err != nil {
+		return false
+	}
+
+	if originURL.Scheme != "http" && originURL.Scheme != "https" {
+		return false
+	}
+
+	host := originURL.Hostname()
+	if strings.EqualFold(host, "localhost") {
+		return true
+	}
+
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
 }
 
 func sameLoopbackHost(originHost string, allowedHost string) bool {
