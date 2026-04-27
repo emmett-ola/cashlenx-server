@@ -1,7 +1,9 @@
 package middleware
 
 import (
+	"net"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/macar-x/cashlenx-server/util"
@@ -13,21 +15,15 @@ func CORS(next http.Handler) http.Handler {
 		// Get allowed origins from configuration or use defaults
 		allowedOrigins := util.GetConfigByKey("cors.origins")
 		if allowedOrigins == "" {
-			// Default allowed origins for development
-			allowedOrigins = "http://localhost:3000,http://localhost:8080,http://localhost:4000,https://localhost:3000,https://localhost:8080"
+			// Default allowed origins for development, including dynamic localhost ports.
+			allowedOrigins = "http://localhost:*,http://127.0.0.1:*,https://localhost:*,https://127.0.0.1:*"
 		}
 
 		origin := r.Header.Get("Origin")
 
 		// Check if origin is allowed
-		if origin != "" {
-			origins := strings.Split(allowedOrigins, ",")
-			for _, allowedOrigin := range origins {
-				if strings.TrimSpace(allowedOrigin) == origin || allowedOrigin == "*" {
-					w.Header().Set("Access-Control-Allow-Origin", origin)
-					break
-				}
-			}
+		if origin != "" && isAllowedOrigin(origin, allowedOrigins) {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
 		}
 
 		// Set CORS headers
@@ -44,4 +40,63 @@ func CORS(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+func isAllowedOrigin(origin string, allowedOrigins string) bool {
+	origins := strings.Split(allowedOrigins, ",")
+	for _, allowedOrigin := range origins {
+		if originMatchesRule(origin, strings.TrimSpace(allowedOrigin)) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func originMatchesRule(origin string, allowedOrigin string) bool {
+	if allowedOrigin == "" {
+		return false
+	}
+
+	if allowedOrigin == "*" || allowedOrigin == origin {
+		return true
+	}
+
+	originURL, err := url.Parse(origin)
+	if err != nil {
+		return false
+	}
+
+	// Support patterns like http://localhost:* or https://127.0.0.1:* for dev clients.
+	if strings.HasSuffix(allowedOrigin, ":*") {
+		allowedBase := strings.TrimSuffix(allowedOrigin, ":*")
+		allowedURL, err := url.Parse(allowedBase)
+		if err != nil {
+			return false
+		}
+
+		if originURL.Scheme != allowedURL.Scheme {
+			return false
+		}
+
+		allowedHost := allowedURL.Hostname()
+		originHost := originURL.Hostname()
+		return sameLoopbackHost(originHost, allowedHost)
+	}
+
+	return false
+}
+
+func sameLoopbackHost(originHost string, allowedHost string) bool {
+	if strings.EqualFold(originHost, allowedHost) {
+		return true
+	}
+
+	originIP := net.ParseIP(originHost)
+	allowedIP := net.ParseIP(allowedHost)
+	if originIP != nil && allowedIP != nil {
+		return originIP.Equal(allowedIP)
+	}
+
+	return false
 }
