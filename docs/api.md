@@ -1,7 +1,7 @@
 # CashLenX API Documentation
 
-**Version**: 2.1.0
-**Last Updated**: 2025-12-28
+**Version**: 0.4.0
+**Last Updated**: 2026-04-28
 
 ## Overview
 
@@ -56,7 +56,7 @@ GET /open/version
 **Response**:
 ```json
 {
-  "version": "2.0.0",
+  "version": "0.4.0",
   "buildTime": "2024-01-15T10:00:00Z",
   "gitCommit": "abc1234"
 }
@@ -936,7 +936,7 @@ Admin endpoints can access data across all users:
 # Register new user
 curl -X POST http://localhost:8080/api/v0/open/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"username":"testuser","password":"test123","email":"test@example.com"}'
+  -d '{"username":"testuser","password":"test123"}'
 
 # Login
 curl -X POST http://localhost:8080/api/v0/open/auth/login \
@@ -956,7 +956,7 @@ curl -H "Authorization: Bearer $TOKEN" \
 curl -X POST http://localhost:8080/api/v0/cash/expense \
   -H "Authorization: Bearer $TOKEN_USER_A" \
   -H "Content-Type: application/json" \
-  -d '{"amount":50,"category":"Food","description":"Lunch"}'
+  -d '{"amount":50,"category_name":"Food","belongs_date":"20260101","description":"Lunch"}'
 
 # User B cannot access User A's transaction
 curl -H "Authorization: Bearer $TOKEN_USER_B" \
@@ -968,28 +968,26 @@ curl -H "Authorization: Bearer $TOKEN_USER_B" \
 
 ## Version History
 
-### v2.2.0 (Current)
-- ✅ Global API versioning (default `/api/v0`)
-- ✅ Simplified authentication flow (merged login/refresh)
-- ✅ Enhanced database backup/restore with proper content types
-- ✅ Removed redundant admin export/import endpoints
-- ✅ Configurable API version prefix
+### v0.4.0 (Current)
+- Roadmap and product-scope cleanup
+- Documentation aligned to the active `/api/v0` route surface
+- OpenAPI coverage refreshed for auth/token/password-reset, category tree, statistics, dashboard, and chart endpoints
+- Displayed project version aligned with the active `dev/v0.4.0` branch line
 
-### v2.1.0
-- ✅ Complete statistic module with user data isolation
-- ✅ Multi-format export (Excel, CSV, PDF) with binary file download
-- ✅ Summary, breakdown, trends, and top expenses analytics
-- ✅ Dashboard visualization endpoints for charts
-- ✅ Import functionality with category auto-creation
+### v0.3.0
+- User authentication and authorization
+- User data isolation for cash flows and categories
+- Route organization for `/open`, `/admin`, and authenticated user APIs
+- Admin user management endpoints
+- Backup/restore with user data support
 
-### v2.0.0
-- ✅ User authentication and authorization
-- ✅ User data isolation for cash flows and categories
-- ✅ Reorganized routes into /open and /admin
-- ✅ Admin user management endpoints
-- ✅ Backup/restore with user data support
+### v0.2.0
+- OpenAPI coverage for core endpoints
+- Schema validation middleware
+- Pagination and filtering for listing endpoints
+- CLI/API `.env` loading and local development helper scripts
 
-### v1.0.0
+### v0.1.0
 - Basic cash flow and category CRUD
-- No user isolation
-- No authentication
+- MongoDB/MySQL persistence abstraction
+- Docker Compose baseline

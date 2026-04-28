@@ -96,25 +96,36 @@ These capabilities exist in code today but were previously recorded under later/
 
 ### v0.4.0 - Roadmap and Product-Scope Cleanup
 
-- [ ] Align `README.md` with current implemented features #docs
-- [ ] Align legacy command references with `go run main.go open start -p 8080` #docs #dx
-- [ ] Reconcile `model/version.go`, OpenAPI `info.version`, roadmap status, and branch naming #docs #devops
-- [ ] Compare `docs/openapi.yaml` with `controller/server.go` and list missing or inaccurate API contracts #api #docs
-- [ ] Review OpenAPI request/response schemas for field names, enum casing, auth/token behavior, and statistic/chart endpoints #api #docs
-- [ ] Confirm `/open/auth/logout` and `/auth/tokens` route placement and document or adjust the intended auth semantics #api #security
-- [ ] Verify the core user-facing scope against the Flutter client needs and record incomplete or inconsistent behavior #flutter #api
-- [ ] Produce the final `v0.5.0` feature-completion checklist #docs
+- [x] Align `README.md` with current implemented features #docs
+- [x] Align legacy command references with `go run main.go open start -p 8080` #docs #dx
+- [x] Reconcile `model/version.go`, OpenAPI `info.version`, roadmap status, and branch naming #docs #devops
+- [x] Compare `docs/openapi.yaml` with `controller/server.go` and list missing or inaccurate API contracts #api #docs
+- [x] Review OpenAPI request/response schemas for field names, enum casing, auth/token behavior, and statistic/chart endpoints #api #docs
+- [x] Confirm `/open/auth/logout` and `/auth/tokens` route placement and document or adjust the intended auth semantics #api #security
+- [x] Verify the core user-facing scope against the Flutter client needs and record incomplete or inconsistent behavior #flutter #api
+- [x] Produce the final `v0.5.0` feature-completion checklist #docs
+
+Cleanup notes:
+
+- `README.md` now describes implemented auth, account, cash, category, statistics, import/export, admin, Docker, and OpenAPI capabilities.
+- Current local server command is documented as `go run main.go open start -p 8080`.
+- `model/version.go` and OpenAPI `info.version` now report `0.4.0` while API routes remain under `/api/v0`.
+- OpenAPI now covers the registered auth/token/password-reset, category tree, and statistic/dashboard/chart routes from `controller/server.go`.
+- Cash/category enum examples use lowercase `income` and `expense`, matching `model/constants.go`.
+- `/open/auth/logout` remains mounted under `/open` for compatibility but is documented as requiring authenticated user context in the current middleware behavior; `/auth/tokens` is documented as an authenticated token-management endpoint.
+- Flutter-facing backend validation for `v0.4.0` found no new code task beyond completing and verifying the documented API surface; deeper client smoke testing belongs in `v0.5.0`.
 
 ## Next Feature Milestone
 
 ### v0.5.0 - Core User-Facing Feature Completion
 
-- [ ] Fix API behavior gaps discovered in `v0.4.0` #api
-- [ ] Fix documentation/API contract gaps required by the Flutter client #flutter #docs
-- [ ] Complete or clearly disable unfinished email-dependent flows #api #security
-- [ ] Ensure auth, account, cash flow, category, statistic, import/export, and admin APIs have consistent responses and error behavior #api
-- [ ] Add practical targeted tests for corrected user-facing flows #api
-- [ ] Keep MongoDB as the default development path while preserving MySQL compatibility for touched persistence behavior #data
+- [ ] Run Flutter-client smoke checks against `/api/v0` for login, registration, logout, token refresh, profile, cash flow, category, statistics, import/export, and admin flows #flutter #api
+- [ ] Fix behavior gaps discovered by Flutter-client smoke checks and manual API verification #flutter #api
+- [ ] Complete or explicitly disable unfinished email-dependent flows until SMTP/provider configuration is production-usable #api #security
+- [ ] Normalize response and error behavior across auth, account, cash flow, category, statistic, import/export, and admin APIs #api
+- [ ] Add practical targeted tests for corrected user-facing flows, prioritizing paths touched by fixes #api
+- [ ] Preserve MongoDB as the default development path while keeping MySQL behavior compatible for touched persistence code #data
+- [ ] Update `docs/openapi.yaml`, `README.md`, `AGENTS.md`, and implementation docs whenever a user-facing API contract changes #docs
 
 ## Later Enhancement Milestones
 
@@ -156,10 +167,7 @@ These capabilities exist in code today but were previously recorded under later/
 
 ## Known Drift To Resolve
 
-- `README.md` is behind current implementation.
-- `docs/openapi.yaml` does not cover every registered route.
-- Version sources currently still report `0.3.0` while active development is on `dev/v0.4.0`.
-- Earlier roadmap entries used confusing `v2.x` headings for work that belongs in the `v0.x` pre-stable history.
+- Keep `README.md`, `docs/openapi.yaml`, `model/version.go`, and this roadmap synchronized when route contracts or milestone versions change.
 - SMTP configuration is documented but not fully wired through runtime config; email flows should be verified before being considered complete.
 - CI still runs a narrow test subset and should expand as core user-facing behavior stabilizes.
 

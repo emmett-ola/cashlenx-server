@@ -538,13 +538,9 @@ When adding or changing a feature:
 
 Use this section as a lightweight backlog of mismatches between implementation, docs, tooling, and intended architecture. Keep it factual and safe to commit.
 
-- [ ] Align `README.md` with current implementation status; it still describes some implemented capabilities as planned
-- [ ] Align legacy command references with the real CLI entrypoint `go run main.go open start -p 8080`
-- [ ] Decide whether the roadmap version source should move from `v0.3.0` to the current active branch line `dev/v0.4.0`, or whether the roadmap is intentionally lagging behind active development
-- [ ] Sync `model/version.go`, `docs/roadmap.md`, OpenAPI `info.version`, and future release/versioning rules so there is one clear canonical version story
-- [ ] Review OpenAPI coverage versus actual registered routes in `controller/server.go`; the spec appears incomplete for statistics/chart routes and some auth/token behavior
-- [ ] Review OpenAPI enum/value accuracy, for example cash flow type casing and request/response field naming, against the actual API behavior
-- [ ] Confirm whether `/open/auth/logout` and `/auth/tokens` route placement is intentional or should be reorganized for clearer auth semantics
+- [ ] Keep `README.md`, `docs/openapi.yaml`, `docs/roadmap.md`, and `model/version.go` synchronized when the active milestone or API contract changes
+- [ ] Treat `/open/auth/logout` as a compatibility path that currently requires authenticated user context; reconsider route naming before stable `/api/v1`
+- [ ] Treat `/auth/tokens` as authenticated token-management API; keep OpenAPI/docs explicit about its auth expectation
 - [ ] Wire SMTP settings from `.env` into `util/config_util.go` if email flows are meant to become usable, or explicitly mark them disabled in runtime behavior until then
 - [ ] Decide on the future provider strategy for email delivery, likely a third-party provider such as Mailgun, and document the intended integration approach
 - [ ] Align CI Go version with `go.mod` so local development and automation target the same toolchain

@@ -133,10 +133,10 @@ cashlenx open version
 
 **Output**:
 ```
-CashLenX v2.1.0
+CashLenX v0.4.0
 Build Time: 2024-01-15T10:00:00Z
 Git Commit: abc1234
-Go Version: go1.21.5
+Go Version: go1.23.0
 OS/Arch: linux/amd64
 ```
 
