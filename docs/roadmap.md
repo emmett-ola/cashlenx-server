@@ -4,10 +4,10 @@ This roadmap tracks backend work by versioned milestones. During the `v0.x` phas
 
 ## Current Direction
 
-- Active branch line: `dev/v0.4.0`
+- Active branch line: `dev/v0.5.0`
 - Active API path version: `/api/v0`
-- Current roadmap milestone: `v0.4.0` roadmap and product-scope cleanup
-- Next feature milestone: `v0.5.0` core user-facing feature completion
+- Current roadmap milestone: `v0.5.0` core user-facing feature completion
+- Next enhancement milestone: `v0.6.0` observability
 
 ## Versioning Policy
 
@@ -92,7 +92,7 @@ These capabilities exist in code today but were previously recorded under later/
 - [x] Global API path versioning through `/api/v0` and `API_VERSION` #api #dx
 - [x] Auth flow refinements around login/refresh and multipart validation fixes #api #security
 
-## Active Milestone
+## Completed Milestone
 
 ### v0.4.0 - Roadmap and Product-Scope Cleanup
 
@@ -115,7 +115,7 @@ Cleanup notes:
 - `/open/auth/logout` remains mounted under `/open` for compatibility but is documented as requiring authenticated user context in the current middleware behavior; `/auth/tokens` is documented as an authenticated token-management endpoint.
 - Flutter-facing backend validation for `v0.4.0` found no new code task beyond completing and verifying the documented API surface; deeper client smoke testing belongs in `v0.5.0`.
 
-## Next Feature Milestone
+## Active Milestone
 
 ### v0.5.0 - Core User-Facing Feature Completion
 
