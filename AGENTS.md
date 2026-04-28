@@ -37,6 +37,8 @@ These are collaboration defaults provided by the project owner and should be tre
 - Once planned work for `v0.4.0` is complete, it is intended to be merged/promoted to `main`, then development moves to the next branch line such as `dev/v0.5.0`
 - API versioning stays under `/api/v0` during active development
 - A stable release is expected to introduce `/api/v1` alongside a stable application version such as `v1.0.0`
+- User-facing feature/function completion takes priority over enhancement work such as observability, performance, migration tooling, cloud hardening, and release automation
+- Enhancement work should move earlier only when it directly unblocks user-facing functionality or safe delivery
 - Unless the user explicitly says not to, make a commit after each completed request/change set
 
 ## Working Agreement
