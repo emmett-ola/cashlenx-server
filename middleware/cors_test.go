@@ -3,6 +3,7 @@ package middleware
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -19,6 +20,54 @@ func TestCORSPrefightAllowsDevLoopbackOrigin(t *testing.T) {
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+
+	if got := rec.Header().Get("Access-Control-Allow-Origin"); got != "http://localhost:55500" {
+		t.Fatalf("Access-Control-Allow-Origin = %q, want %q", got, "http://localhost:55500")
+	}
+}
+
+func TestCORSPreflightAllowsLoginRequestHeaders(t *testing.T) {
+	handler := CORS(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatal("preflight request should not reach the next handler")
+	}))
+
+	req := httptest.NewRequest(http.MethodOptions, "/api/v0/open/auth/login", nil)
+	req.Header.Set("Origin", "http://localhost:55500")
+	req.Header.Set("Access-Control-Request-Method", http.MethodPost)
+	req.Header.Set("Access-Control-Request-Headers", "content-type,x-request-id")
+
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+
+	allowHeaders := rec.Header().Get("Access-Control-Allow-Headers")
+	for _, header := range []string{"Content-Type", "Accept", "X-Request-ID"} {
+		if !strings.Contains(allowHeaders, header) {
+			t.Fatalf("Access-Control-Allow-Headers = %q, want it to include %q", allowHeaders, header)
+		}
+	}
+}
+
+func TestCORSAddsHeadersToPostResponse(t *testing.T) {
+	handler := CORS(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "invalid credentials", http.StatusUnauthorized)
+	}))
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v0/open/auth/login", nil)
+	req.Header.Set("Origin", "http://localhost:55500")
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("X-Request-ID", "request-1")
+
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
 	}
 
 	if got := rec.Header().Get("Access-Control-Allow-Origin"); got != "http://localhost:55500" {
