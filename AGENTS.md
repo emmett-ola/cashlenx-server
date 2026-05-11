@@ -342,7 +342,8 @@ Important keys currently loaded there:
 - `db.mysql.url`
 - `api.schema.validation`
 - `auth.jwt.secret`
-- `auth.jwt.expiration_hours`
+- `auth.jwt.expiration_minutes`
+- `auth.refresh_token.expiration_days`
 - `auth.registration.enabled`
 - `admin.username`
 - `admin.password`

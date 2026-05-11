@@ -94,12 +94,12 @@ func (s *LocalAuthService) GenerateToken(userID, username, role string) (string,
 		return "", errors.NewInternalError("JWT secret is not configured", nil)
 	}
 
-	expirationHours := util.GetConfigInt("auth.jwt.expiration_hours", 24)
-	if expirationHours <= 0 {
-		util.Logger.Warnw("Invalid JWT expiration hours, using default", "value", expirationHours, "default", 24)
-		expirationHours = 24
+	expirationMinutes := util.GetConfigInt("auth.jwt.expiration_minutes", 30)
+	if expirationMinutes <= 0 {
+		util.Logger.Warnw("Invalid JWT expiration minutes, using default", "value", expirationMinutes, "default", 30)
+		expirationMinutes = 30
 	}
-	expirationTime := time.Now().Add(time.Duration(expirationHours) * time.Hour)
+	expirationTime := time.Now().Add(time.Duration(expirationMinutes) * time.Minute)
 
 	// Create claims
 	claims := &jwtClaims{

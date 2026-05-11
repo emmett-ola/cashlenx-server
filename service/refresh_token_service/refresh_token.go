@@ -1,7 +1,6 @@
 package refresh_token_service
 
 import (
-	"strconv"
 	"time"
 
 	"github.com/macar-x/cashlenx-server/errors"
@@ -31,14 +30,7 @@ func GetRefreshTokenByToken(token string, deviceID, deviceName, ipAddress, userA
 
 // CreateRefreshToken creates a new refresh token for a user
 func CreateRefreshToken(userID string, deviceID, deviceName, ipAddress, userAgent string) (string, error) {
-	// Get refresh token expiration days from configuration
-	expDaysStr := util.GetConfigByKey("auth.refresh_token.expiration_days")
-	expDays := 30 // Default to 30 days
-	if expDaysStr != "" {
-		if parsedDays, err := strconv.Atoi(expDaysStr); err == nil {
-			expDays = parsedDays
-		}
-	}
+	expDays := refreshTokenExpirationDays()
 
 	userObjectId := util.Convert2ObjectId(userID)
 	currentTime := util.GetCurrentTime()
@@ -69,6 +61,15 @@ func CreateRefreshToken(userID string, deviceID, deviceName, ipAddress, userAgen
 	}
 
 	return createdToken, nil
+}
+
+func refreshTokenExpirationDays() int {
+	expDays := util.GetConfigInt("auth.refresh_token.expiration_days", 14)
+	if expDays <= 0 {
+		util.Logger.Warnw("Invalid refresh token expiration days, using default", "value", expDays, "default", 14)
+		return 14
+	}
+	return int(expDays)
 }
 
 // RevokeRefreshToken revokes a refresh token

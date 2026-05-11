@@ -76,12 +76,19 @@ func initDefaultValues() {
 	}
 	configurationMap["auth.jwt.secret"] = jwtSecret
 
-	// JWT expiration time in hours
-	jwtExpirationHours := os.Getenv("JWT_EXPIRATION_HOURS")
-	if jwtExpirationHours == "" {
-		jwtExpirationHours = "24" // Default to 24 hours
+	// JWT access token expiration time in minutes
+	jwtExpirationMinutes := os.Getenv("JWT_EXPIRATION_MINUTES")
+	if jwtExpirationMinutes == "" {
+		jwtExpirationMinutes = "30"
 	}
-	configurationMap["auth.jwt.expiration_hours"] = jwtExpirationHours
+	configurationMap["auth.jwt.expiration_minutes"] = jwtExpirationMinutes
+
+	// Refresh token expiration time in days
+	refreshTokenExpirationDays := os.Getenv("REFRESH_TOKEN_EXPIRATION_DAYS")
+	if refreshTokenExpirationDays == "" {
+		refreshTokenExpirationDays = "14"
+	}
+	configurationMap["auth.refresh_token.expiration_days"] = refreshTokenExpirationDays
 
 	// Registration enabled
 	registerEnabled := os.Getenv("AUTH_REGISTRATION_ENABLED")

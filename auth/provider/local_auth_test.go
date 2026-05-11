@@ -8,14 +8,14 @@ import (
 	"github.com/macar-x/cashlenx-server/util"
 )
 
-func TestGenerateTokenUsesConfiguredExpirationHours(t *testing.T) {
+func TestGenerateTokenUsesConfiguredExpirationMinutes(t *testing.T) {
 	originalSecret := util.GetConfigByKey("auth.jwt.secret")
-	originalExpirationHours := util.GetConfigByKey("auth.jwt.expiration_hours")
+	originalExpirationMinutes := util.GetConfigByKey("auth.jwt.expiration_minutes")
 	defer util.SetConfigByKey("auth.jwt.secret", originalSecret)
-	defer util.SetConfigByKey("auth.jwt.expiration_hours", originalExpirationHours)
+	defer util.SetConfigByKey("auth.jwt.expiration_minutes", originalExpirationMinutes)
 
 	util.SetConfigByKey("auth.jwt.secret", "test-secret")
-	util.SetConfigByKey("auth.jwt.expiration_hours", "2")
+	util.SetConfigByKey("auth.jwt.expiration_minutes", "30")
 
 	before := time.Now()
 	tokenString, err := NewLocalAuthService().GenerateToken("user-id", "tester", "user")
@@ -34,9 +34,9 @@ func TestGenerateTokenUsesConfiguredExpirationHours(t *testing.T) {
 		t.Fatal("token is not valid")
 	}
 
-	minExpiration := before.Add(2*time.Hour - time.Second)
-	maxExpiration := time.Now().Add(2*time.Hour + time.Second)
+	minExpiration := before.Add(30*time.Minute - time.Second)
+	maxExpiration := time.Now().Add(30*time.Minute + time.Second)
 	if claims.ExpiresAt.Time.Before(minExpiration) || claims.ExpiresAt.Time.After(maxExpiration) {
-		t.Fatalf("ExpiresAt = %v, want around 2 hours from now between %v and %v", claims.ExpiresAt.Time, minExpiration, maxExpiration)
+		t.Fatalf("ExpiresAt = %v, want around 30 minutes from now between %v and %v", claims.ExpiresAt.Time, minExpiration, maxExpiration)
 	}
 }

@@ -119,7 +119,7 @@ Cleanup notes:
 
 ### v0.5.0 - Core User-Facing Feature Completion
 
-- [x] Reconcile JWT expiration configuration so `JWT_EXPIRATION_HOURS` / `auth.jwt.expiration_hours` controls access-token lifetime #security #api
+- [x] Reconcile token expiration defaults: access tokens use `JWT_EXPIRATION_MINUTES` / `auth.jwt.expiration_minutes` with a 30-minute default, and refresh tokens use `REFRESH_TOKEN_EXPIRATION_DAYS` / `auth.refresh_token.expiration_days` with a 14-day default #security #api
 - [ ] Complete or explicitly disable unfinished email-dependent flows until SMTP/provider configuration is production-usable #api #security
 - [ ] Run beta smoke checks against `/api/v0` for registration, login, token refresh, logout, profile, password change, cash flow, category, statistics, import/export, admin bootstrap, and admin APIs #api #security
 - [ ] Decide whether beta support is MongoDB-only or includes MySQL; if MySQL is included, finish verification-code persistence and run focused MySQL smoke tests #data #security
