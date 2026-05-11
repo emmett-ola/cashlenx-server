@@ -122,7 +122,7 @@ Cleanup notes:
 - [x] Reconcile token expiration defaults: access tokens use `JWT_EXPIRATION_MINUTES` / `auth.jwt.expiration_minutes` with a 30-minute default, and refresh tokens use `REFRESH_TOKEN_EXPIRATION_DAYS` / `auth.refresh_token.expiration_days` with a 14-day default #security #api
 - [ ] Complete or explicitly disable unfinished email-dependent flows until SMTP/provider configuration is production-usable #api #security
 - [ ] Run beta smoke checks against `/api/v0` for registration, login, token refresh, logout, profile, password change, cash flow, category, statistics, import/export, admin bootstrap, and admin APIs #api #security
-- [ ] Decide whether beta support is MongoDB-only or includes MySQL; if MySQL is included, finish verification-code persistence and run focused MySQL smoke tests #data #security
+- [x] Decide beta support stance: MongoDB is the supported beta deployment backend, while MySQL should remain build-compatible and avoid known mapper gaps in touched code #data #security
 - [ ] Run Flutter-client smoke checks against `/api/v0` for login, registration, logout, token refresh, profile, cash flow, category, statistics, import/export, and admin flows #flutter #api
 - [ ] Fix behavior gaps discovered by Flutter-client smoke checks and manual API verification #flutter #api
 - [ ] Normalize response and error behavior across auth, account, cash flow, category, statistic, import/export, and admin APIs #api

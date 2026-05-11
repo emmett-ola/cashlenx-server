@@ -2,6 +2,7 @@ package verification_code_mapper
 
 import (
 	"github.com/macar-x/cashlenx-server/model"
+	"github.com/macar-x/cashlenx-server/util"
 )
 
 var INSTANCE VerificationCodeMapper
@@ -18,7 +19,18 @@ type VerificationCodeMapper interface {
 
 	// MarkCodeAsUsed marks a specific code as used
 	MarkCodeAsUsed(id string) error
-	
+
 	// DeleteCode physically deletes a code (optional, mainly for cleanup)
 	DeleteCode(id string) error
+}
+
+func init() {
+	switch util.GetConfigByKey("db.type") {
+	case "mongodb":
+		INSTANCE = &VerificationCodeMongoMapper{}
+	case "mysql":
+		INSTANCE = &VerificationCodeMySQLMapper{}
+	default:
+		panic("database type not supported")
+	}
 }

@@ -54,25 +54,34 @@ CREATE TABLE `refresh_tokens`
     COMMENT ='Refresh Tokens';
 
 -- -------------------
--- Create table `password_reset_tokens`
+-- Create table `auth_token_password_reset`
 -- -------------------
-DROP TABLE IF EXISTS password_reset_tokens;
-CREATE TABLE `password_reset_tokens`
+DROP TABLE IF EXISTS auth_token_password_reset;
+CREATE TABLE `auth_token_password_reset`
 (
     `id`              VARCHAR(24)  NOT NULL,
     `user_id`         VARCHAR(24)  NOT NULL,
     `token`           VARCHAR(255) NOT NULL,
+    `operation_type`  VARCHAR(50)  NOT NULL DEFAULT 'password_reset',
+    `payload`         TEXT         NULL,
     `expires_at`      TIMESTAMP    NOT NULL,
-    `created_at`      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP(),
     `used_at`         TIMESTAMP    NULL,
+    `create_user_id`  VARCHAR(24)  NOT NULL,
+    `create_time`     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP(),
+    `update_user_id`  VARCHAR(24)  NOT NULL,
+    `update_time`     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP() ON UPDATE CURRENT_TIMESTAMP(),
+    `delete_user_id`  VARCHAR(24)           DEFAULT NULL,
+    `delete_time`     TIMESTAMP             DEFAULT NULL,
+    `is_delete`       BOOLEAN      NOT NULL DEFAULT FALSE,
     PRIMARY KEY (`id`),
-    UNIQUE INDEX password_reset_tokens_token_unique_index ON password_reset_tokens (token),
-    INDEX password_reset_tokens_user_id_index ON password_reset_tokens (user_id),
-    INDEX password_reset_tokens_expires_at_index ON password_reset_tokens (expires_at),
-    CONSTRAINT password_reset_tokens_user_id_fk FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    UNIQUE INDEX auth_token_password_reset_token_unique_index ON auth_token_password_reset (token),
+    INDEX auth_token_password_reset_user_id_index ON auth_token_password_reset (user_id),
+    INDEX auth_token_password_reset_operation_type_index ON auth_token_password_reset (operation_type),
+    INDEX auth_token_password_reset_expires_at_index ON auth_token_password_reset (expires_at),
+    CONSTRAINT auth_token_password_reset_user_id_fk FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE = InnoDB
   DEFAULT CHARSET = UTF8MB4
-    COMMENT ='Password Reset Tokens';
+    COMMENT ='Operation Verification Tokens';
 
 -- -------------------
 -- Create table `categories`
@@ -139,5 +148,5 @@ SELECT
     (SELECT COUNT(*) FROM categories) AS default_categories,
     (SELECT COUNT(*) FROM cash_flows) AS initial_transactions,
     (SELECT COUNT(*) FROM refresh_tokens) AS refresh_tokens_count,
-    (SELECT COUNT(*) FROM password_reset_tokens) AS password_reset_tokens_count,
+    (SELECT COUNT(*) FROM auth_token_password_reset) AS password_reset_tokens_count,
     NOW() AS initialized_at;

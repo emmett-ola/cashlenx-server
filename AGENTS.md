@@ -239,7 +239,7 @@ Mapper packages currently include:
 
 Both MongoDB and MySQL implementations are expected for production-facing features. When adding persistence features, update both backends unless the change is explicitly database-specific and documented.
 
-Current caveat: `mapper/verification_code_mapper/mysql_mapper.go` is a placeholder that returns nil/empty values. Password reset and email-change verification should be treated as MongoDB-backed only until the MySQL implementation is completed.
+Beta deployments are MongoDB-first, but touched persistence code should remain build-compatible across MongoDB and MySQL. Verification-code persistence is implemented for both mapper backends.
 
 ### Service packages
 
@@ -561,7 +561,6 @@ Use this section as a lightweight backlog of mismatches between implementation, 
 - [ ] Treat `/auth/tokens` as authenticated token-management API; keep OpenAPI/docs explicit about its auth expectation
 - [ ] Smoke test SMTP-backed password reset and email-change flows with a real provider before beta
 - [ ] Decide on the future provider strategy for email delivery, likely a third-party provider such as Mailgun, and document the intended integration approach
-- [ ] Implement `mapper/verification_code_mapper/mysql_mapper.go` before claiming password reset or email-change verification support on MySQL
 - [ ] Replace statistic CLI import/export default-admin fallback with an explicit user/auth model before treating those commands as production-ready multi-user workflows
 - [ ] Expand CI and/or local verification to cover more than `./errors` and `./validation`, especially DB-backed service paths as the project matures
 - [ ] Review legacy DB helper behavior that still uses package-global state plus `panic`/`log.Fatal`, and gradually normalize error handling

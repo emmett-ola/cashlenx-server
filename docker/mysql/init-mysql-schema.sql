@@ -70,6 +70,8 @@ CREATE TABLE `auth_token_password_reset`
     `id`             VARCHAR(24)  NOT NULL,
     `user_id`        VARCHAR(24)  NOT NULL,
     `token`          VARCHAR(255) NOT NULL,
+    `operation_type` VARCHAR(50)  NOT NULL DEFAULT 'password_reset',
+    `payload`        TEXT         NULL,
     `expires_at`     TIMESTAMP    NOT NULL,
     `used_at`        TIMESTAMP    NULL,
     `ip_address`     VARCHAR(45)  NULL,
@@ -83,9 +85,10 @@ CREATE TABLE `auth_token_password_reset`
     PRIMARY KEY (`id`),
     UNIQUE INDEX auth_token_password_reset_token_unique_index (`token`),
     INDEX auth_token_password_reset_user_id_index (`user_id`),
+    INDEX auth_token_password_reset_operation_type_index (`operation_type`),
     INDEX auth_token_password_reset_expires_at_index (`expires_at`),
     CONSTRAINT auth_token_password_reset_user_id_fk FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE = InnoDB DEFAULT CHARSET = UTF8MB4 COMMENT ='Password Reset Tokens';
+) ENGINE = InnoDB DEFAULT CHARSET = UTF8MB4 COMMENT ='Operation Verification Tokens';
 
 -- -------------------
 -- Create table `categories`
