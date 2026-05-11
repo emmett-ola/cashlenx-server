@@ -145,7 +145,7 @@ function Get-Services {
             "5" {
                 $services = "backend"
                 Print-Warning "Backend only mode requires an external database!" >&2
-                Print-Info "Make sure DB_TYPE and corresponding DB_URI are configured in .env" >&2
+                Print-Info "Make sure DB_TYPE and the matching MONGO_DB_URI or MYSQL_DB_URI are configured in .env" >&2
             }
             "6" {
                 Write-Output ""

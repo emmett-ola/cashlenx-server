@@ -59,8 +59,14 @@ func StartServer(port int32) {
 	// answered before auth or schema validation can reject them.
 	handler := middleware.CORS(middleware.Logging(middleware.Auth(middleware.SchemaValidation(r))))
 
+	host := util.GetConfigByKey("server.host")
 	addr := fmt.Sprintf(":%d", port)
-	fmt.Printf("API server is running on http://localhost%s\n", addr)
+	displayHost := "localhost"
+	if host != "" {
+		addr = fmt.Sprintf("%s:%d", host, port)
+		displayHost = host
+	}
+	fmt.Printf("API server is running on http://%s:%d\n", displayHost, port)
 	http.ListenAndServe(addr, handler)
 }
 

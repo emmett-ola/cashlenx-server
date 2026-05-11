@@ -115,7 +115,7 @@ get_services() {
             5)
                 services="backend"
                 print_warning "Backend only mode requires an external database!" >&2
-                print_info "Make sure DB_TYPE and corresponding DB_URI are configured in .env" >&2
+                print_info "Make sure DB_TYPE and the matching MONGO_DB_URI or MYSQL_DB_URI are configured in .env" >&2
                 ;;
             6)
                 echo ""
