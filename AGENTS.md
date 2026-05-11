@@ -563,7 +563,6 @@ Use this section as a lightweight backlog of mismatches between implementation, 
 - [ ] Decide on the future provider strategy for email delivery, likely a third-party provider such as Mailgun, and document the intended integration approach
 - [ ] Implement `mapper/verification_code_mapper/mysql_mapper.go` before claiming password reset or email-change verification support on MySQL
 - [ ] Replace statistic CLI import/export default-admin fallback with an explicit user/auth model before treating those commands as production-ready multi-user workflows
-- [ ] Align CI Go version with `go.mod` so local development and automation target the same toolchain
 - [ ] Expand CI and/or local verification to cover more than `./errors` and `./validation`, especially DB-backed service paths as the project matures
 - [ ] Review legacy DB helper behavior that still uses package-global state plus `panic`/`log.Fatal`, and gradually normalize error handling
 - [ ] Confirm whether MongoDB-only eager initialization in the Cobra root command is still the intended default lifecycle, or if DB initialization should be made more explicit and symmetric across backends

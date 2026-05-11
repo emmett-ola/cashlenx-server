@@ -128,7 +128,7 @@ Cleanup notes:
 - [ ] Normalize response and error behavior across auth, account, cash flow, category, statistic, import/export, and admin APIs #api
 - [ ] Add practical targeted tests for corrected user-facing flows, prioritizing paths touched by fixes #api
 - [ ] Preserve MongoDB as the default development path while keeping MySQL behavior compatible for touched persistence code #data
-- [ ] Align CI Go version with `go.mod` before beta tagging so automation and local development use the same toolchain #devops
+- [x] Align CI Go version and branch coverage with `go.mod` and the active `dev/*` branch line before beta tagging #devops
 - [ ] Update `docs/openapi.yaml`, `README.md`, `AGENTS.md`, and implementation docs whenever a user-facing API contract changes #docs
 
 ## Later Enhancement Milestones
