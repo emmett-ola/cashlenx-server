@@ -3,7 +3,6 @@ package provider
 import (
 	"context"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -95,16 +94,12 @@ func (s *LocalAuthService) GenerateToken(userID, username, role string) (string,
 		return "", errors.NewInternalError("JWT secret is not configured", nil)
 	}
 
-	// Get JWT expiration minutes from configuration
-	expMinutesStr := util.GetConfigByKey("auth.jwt.expiration_minutes")
-	expMinutes := 30 // Default to 30 minutes
-	if expMinutesStr != "" {
-		if parsedMinutes, err := strconv.Atoi(expMinutesStr); err == nil {
-			expMinutes = parsedMinutes
-		}
+	expirationHours := util.GetConfigInt("auth.jwt.expiration_hours", 24)
+	if expirationHours <= 0 {
+		util.Logger.Warnw("Invalid JWT expiration hours, using default", "value", expirationHours, "default", 24)
+		expirationHours = 24
 	}
-	// Set token expiration time
-	expirationTime := time.Now().Add(time.Duration(expMinutes) * time.Minute)
+	expirationTime := time.Now().Add(time.Duration(expirationHours) * time.Hour)
 
 	// Create claims
 	claims := &jwtClaims{
@@ -220,31 +215,31 @@ func (s *LocalAuthService) Middleware(next http.Handler) http.Handler {
 		}
 
 		// Check if header starts with "Bearer "
-	parts := strings.Split(authHeader, " ")
-	if len(parts) != 2 || parts[0] != "Bearer" {
-		util.ComposeJSONResponse(w, http.StatusUnauthorized, errors.NewUnauthorizedError("Invalid authorization header format"))
-		return
-	}
+		parts := strings.Split(authHeader, " ")
+		if len(parts) != 2 || parts[0] != "Bearer" {
+			util.ComposeJSONResponse(w, http.StatusUnauthorized, errors.NewUnauthorizedError("Invalid authorization header format"))
+			return
+		}
 
-	tokenString := parts[1]
+		tokenString := parts[1]
 
-	// Validate token
-	claims, err := s.ValidateToken(tokenString)
-	if err != nil {
-		util.Logger.Errorw("Invalid JWT token", "error", err)
-		util.ComposeJSONResponse(w, http.StatusUnauthorized, errors.NewUnauthorizedError("Invalid or expired token"))
-		return
-	}
+		// Validate token
+		claims, err := s.ValidateToken(tokenString)
+		if err != nil {
+			util.Logger.Errorw("Invalid JWT token", "error", err)
+			util.ComposeJSONResponse(w, http.StatusUnauthorized, errors.NewUnauthorizedError("Invalid or expired token"))
+			return
+		}
 
-	if claims == nil {
-		util.Logger.Errorw("Invalid JWT token claims is nil")
-		util.ComposeJSONResponse(w, http.StatusUnauthorized, errors.NewUnauthorizedError("Invalid or expired token"))
-		return
-	}
+		if claims == nil {
+			util.Logger.Errorw("Invalid JWT token claims is nil")
+			util.ComposeJSONResponse(w, http.StatusUnauthorized, errors.NewUnauthorizedError("Invalid or expired token"))
+			return
+		}
 
-	// Add user information to request context
-	ctx := r.Context()
-	ctx = context.WithValue(ctx, "user_id", claims.UserID)
+		// Add user information to request context
+		ctx := r.Context()
+		ctx = context.WithValue(ctx, "user_id", claims.UserID)
 		ctx = context.WithValue(ctx, "username", claims.Username)
 		ctx = context.WithValue(ctx, "role", claims.Role)
 		r = r.WithContext(ctx)

@@ -357,7 +357,6 @@ Important keys currently loaded there:
 
 Important nuance:
 
-- `util/config_util.go` currently populates `auth.jwt.expiration_hours` from `JWT_EXPIRATION_HOURS`, while `auth/provider/local_auth.go` reads `auth.jwt.expiration_minutes` and defaults to 30 minutes. If token expiry behavior is changed or documented, reconcile this key mismatch first.
 - `.env.sample` also documents SMTP settings such as `SMTP_HOST`, `SMTP_PORT`, and friends.
 - `util/email/smtp_util.go` reads `smtp.*` keys from `util.GetConfigByKey(...)`.
 - `util/config_util.go` does not currently populate those SMTP keys.
@@ -555,7 +554,6 @@ Use this section as a lightweight backlog of mismatches between implementation, 
 - [ ] Keep `README.md`, `docs/openapi.yaml`, `docs/roadmap.md`, and `model/version.go` synchronized when the active milestone or API contract changes
 - [ ] Treat `/open/auth/logout` as a compatibility path that currently requires authenticated user context; reconsider route naming before stable `/api/v1`
 - [ ] Treat `/auth/tokens` as authenticated token-management API; keep OpenAPI/docs explicit about its auth expectation
-- [ ] Reconcile JWT expiration configuration: `JWT_EXPIRATION_HOURS`/`auth.jwt.expiration_hours` is loaded, but token generation reads `auth.jwt.expiration_minutes`
 - [ ] Wire SMTP settings from `.env` into `util/config_util.go` if email flows are meant to become usable, or explicitly mark them disabled in runtime behavior until then
 - [ ] Decide on the future provider strategy for email delivery, likely a third-party provider such as Mailgun, and document the intended integration approach
 - [ ] Implement `mapper/verification_code_mapper/mysql_mapper.go` before claiming password reset or email-change verification support on MySQL
@@ -565,7 +563,6 @@ Use this section as a lightweight backlog of mismatches between implementation, 
 - [ ] Review legacy DB helper behavior that still uses package-global state plus `panic`/`log.Fatal`, and gradually normalize error handling
 - [ ] Confirm whether MongoDB-only eager initialization in the Cobra root command is still the intended default lifecycle, or if DB initialization should be made more explicit and symmetric across backends
 - [ ] Keep `/docs/roadmap.md` synchronized with the actual working branch/version plan as collaboration decisions evolve
-- [ ] Update stale roadmap cleanup notes that still mention `0.4.0`; `model/version.go` currently reports `0.5.0`
 
 ## Testing Expectation Right Now
 

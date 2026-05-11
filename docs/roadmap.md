@@ -109,7 +109,7 @@ Cleanup notes:
 
 - `README.md` now describes implemented auth, account, cash, category, statistics, import/export, admin, Docker, and OpenAPI capabilities.
 - Current local server command is documented as `go run main.go open start -p 8080`.
-- `model/version.go` and OpenAPI `info.version` now report `0.4.0` while API routes remain under `/api/v0`.
+- `model/version.go` and OpenAPI `info.version` now report `0.5.0` while API routes remain under `/api/v0`.
 - OpenAPI now covers the registered auth/token/password-reset, category tree, and statistic/dashboard/chart routes from `controller/server.go`.
 - Cash/category enum examples use lowercase `income` and `expense`, matching `model/constants.go`.
 - `/open/auth/logout` remains mounted under `/open` for compatibility but is documented as requiring authenticated user context in the current middleware behavior; `/auth/tokens` is documented as an authenticated token-management endpoint.
@@ -119,12 +119,16 @@ Cleanup notes:
 
 ### v0.5.0 - Core User-Facing Feature Completion
 
+- [x] Reconcile JWT expiration configuration so `JWT_EXPIRATION_HOURS` / `auth.jwt.expiration_hours` controls access-token lifetime #security #api
+- [ ] Complete or explicitly disable unfinished email-dependent flows until SMTP/provider configuration is production-usable #api #security
+- [ ] Run beta smoke checks against `/api/v0` for registration, login, token refresh, logout, profile, password change, cash flow, category, statistics, import/export, admin bootstrap, and admin APIs #api #security
+- [ ] Decide whether beta support is MongoDB-only or includes MySQL; if MySQL is included, finish verification-code persistence and run focused MySQL smoke tests #data #security
 - [ ] Run Flutter-client smoke checks against `/api/v0` for login, registration, logout, token refresh, profile, cash flow, category, statistics, import/export, and admin flows #flutter #api
 - [ ] Fix behavior gaps discovered by Flutter-client smoke checks and manual API verification #flutter #api
-- [ ] Complete or explicitly disable unfinished email-dependent flows until SMTP/provider configuration is production-usable #api #security
 - [ ] Normalize response and error behavior across auth, account, cash flow, category, statistic, import/export, and admin APIs #api
 - [ ] Add practical targeted tests for corrected user-facing flows, prioritizing paths touched by fixes #api
 - [ ] Preserve MongoDB as the default development path while keeping MySQL behavior compatible for touched persistence code #data
+- [ ] Align CI Go version with `go.mod` before beta tagging so automation and local development use the same toolchain #devops
 - [ ] Update `docs/openapi.yaml`, `README.md`, `AGENTS.md`, and implementation docs whenever a user-facing API contract changes #docs
 
 ## Later Enhancement Milestones
