@@ -170,5 +170,5 @@ curl -H "Authorization: Bearer <access_token>" \
 
 - Keep `docs/openapi.yaml` synchronized with `controller/server.go` when changing routes.
 - Keep enum examples lowercase for cash/category types: `income` and `expense`.
-- Treat SMTP-backed flows as in-progress until provider/runtime config is completed.
+- Treat SMTP-backed flows as in-progress until provider-level smoke testing is completed.
 - If this document and code disagree, trust code first, then update this document and OpenAPI together.

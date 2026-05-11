@@ -52,10 +52,12 @@ func initDefaultValues() {
 	configurationMap["db.type"] = dbType
 
 	// MongoDB URI format: mongodb+srv://username:password@host/database
-	configurationMap["db.mongodb.url"] = os.Getenv("MONGO_DB_URI")
+	mongoDbURI := os.Getenv("MONGO_DB_URI")
+	configurationMap["db.mongodb.url"] = mongoDbURI
 
 	// MySQL URI format: username:password@tcp(host:port)/database
-	configurationMap["db.mysql.url"] = os.Getenv("MYSQL_DB_URI")
+	mySQLURI := os.Getenv("MYSQL_DB_URI")
+	configurationMap["db.mysql.url"] = mySQLURI
 
 	// OpenAPI schema validation: true/false
 	schemaValidation := os.Getenv("SCHEMA_VALIDATION")
@@ -150,6 +152,16 @@ func initDefaultValues() {
 		verificationCodeExpire = "30" // Default to 30 minutes
 	}
 	configurationMap["verification.code.expire_minutes"] = verificationCodeExpire
+
+	// SMTP email delivery configuration
+	configurationMap["smtp.host"] = os.Getenv("SMTP_HOST")
+	configurationMap["smtp.port"] = os.Getenv("SMTP_PORT")
+	configurationMap["smtp.username"] = os.Getenv("SMTP_USERNAME")
+	configurationMap["smtp.password"] = os.Getenv("SMTP_PASSWORD")
+	configurationMap["smtp.from_address"] = os.Getenv("SMTP_FROM_ADDRESS")
+	configurationMap["smtp.from_name"] = os.Getenv("SMTP_FROM_NAME")
+	configurationMap["smtp.max_retries"] = os.Getenv("SMTP_MAX_RETRIES")
+	configurationMap["smtp.retry_interval"] = os.Getenv("SMTP_RETRY_INTERVAL")
 }
 
 func GetConfigByKey(configKey string) string {

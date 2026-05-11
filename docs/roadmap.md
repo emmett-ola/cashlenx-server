@@ -172,7 +172,7 @@ Cleanup notes:
 ## Known Drift To Resolve
 
 - Keep `README.md`, `docs/openapi.yaml`, `model/version.go`, and this roadmap synchronized when route contracts or milestone versions change.
-- SMTP configuration is documented but not fully wired through runtime config; email flows should be verified before being considered complete.
+- SMTP configuration is wired through runtime config, but email flows still need provider-level smoke testing before being considered complete.
 - CI still runs a narrow test subset and should expand as core user-facing behavior stabilizes.
 
 ## Notes

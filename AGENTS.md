@@ -355,15 +355,19 @@ Important keys currently loaded there:
 - `snowflake.worker_id`
 - `default_categories.path`
 - `verification.code.expire_minutes`
+- `smtp.host`
+- `smtp.port`
+- `smtp.username`
+- `smtp.password`
+- `smtp.from_address`
+- `smtp.from_name`
+- `smtp.max_retries`
+- `smtp.retry_interval`
 
 Important nuance:
 
-- `.env.sample` also documents SMTP settings such as `SMTP_HOST`, `SMTP_PORT`, and friends.
-- `util/email/smtp_util.go` reads `smtp.*` keys from `util.GetConfigByKey(...)`.
-- `util/config_util.go` does not currently populate those SMTP keys.
-
-If email delivery is expected to work in all environments, this gap should be resolved before relying on SMTP-driven flows.
-For now, email should be treated as non-primary/in-progress infrastructure rather than a core guaranteed workflow.
+- Use `db.mongodb.url` and `db.mysql.url` for database connection strings; legacy `mongodb.uri` and `mysql.uri` keys are intentionally not registered.
+- SMTP keys are wired from `.env`, but email flows still need provider-level smoke testing before beta.
 
 ## Database Utilities
 
@@ -555,7 +559,7 @@ Use this section as a lightweight backlog of mismatches between implementation, 
 - [ ] Keep `README.md`, `docs/openapi.yaml`, `docs/roadmap.md`, and `model/version.go` synchronized when the active milestone or API contract changes
 - [ ] Treat `/open/auth/logout` as a compatibility path that currently requires authenticated user context; reconsider route naming before stable `/api/v1`
 - [ ] Treat `/auth/tokens` as authenticated token-management API; keep OpenAPI/docs explicit about its auth expectation
-- [ ] Wire SMTP settings from `.env` into `util/config_util.go` if email flows are meant to become usable, or explicitly mark them disabled in runtime behavior until then
+- [ ] Smoke test SMTP-backed password reset and email-change flows with a real provider before beta
 - [ ] Decide on the future provider strategy for email delivery, likely a third-party provider such as Mailgun, and document the intended integration approach
 - [ ] Implement `mapper/verification_code_mapper/mysql_mapper.go` before claiming password reset or email-change verification support on MySQL
 - [ ] Replace statistic CLI import/export default-admin fallback with an explicit user/auth model before treating those commands as production-ready multi-user workflows
