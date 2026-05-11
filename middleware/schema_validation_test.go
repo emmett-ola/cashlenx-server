@@ -1,9 +1,36 @@
 package middleware
 
 import (
+	"context"
 	"errors"
+	"os"
+	"path/filepath"
+	"runtime"
 	"testing"
+
+	"github.com/getkin/kin-openapi/openapi3"
 )
+
+func TestOpenAPISpecLoadsAndValidates(t *testing.T) {
+	_, currentFile, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("failed to locate current test file")
+	}
+
+	specPath := filepath.Clean(filepath.Join(filepath.Dir(currentFile), "..", "docs", "openapi.yaml"))
+	data, err := os.ReadFile(specPath)
+	if err != nil {
+		t.Fatalf("failed to read OpenAPI spec: %v", err)
+	}
+
+	spec, err := openapi3.NewLoader().LoadFromData(data)
+	if err != nil {
+		t.Fatalf("failed to load OpenAPI spec: %v", err)
+	}
+	if err := spec.Validate(context.Background()); err != nil {
+		t.Fatalf("invalid OpenAPI spec: %v", err)
+	}
+}
 
 func TestParseOpenAPIValidationErrors_ErrorAt(t *testing.T) {
 	err := errors.New("request body has an error: doesn't match schema #/components/schemas/UserCreateRequest: Error at \"/username\": minimum string length is 6\nError at \"/password\": minimum string length is 6\n")
