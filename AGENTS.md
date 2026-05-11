@@ -18,6 +18,7 @@ CashLenX Server is a Go backend that exposes:
 - Go `1.23.0` in `go.mod`
 - Cobra for CLI
 - Gorilla Mux for HTTP routing
+- Gin is still a direct dependency, but current HTTP routing is Gorilla Mux; Gin only appears in legacy response helpers under `util/http_util.go`
 - Zap-based logging utilities in `util/log_util.go`
 - MongoDB driver and MySQL driver
 - JWT via `github.com/golang-jwt/jwt/v5`
@@ -86,6 +87,7 @@ The repository is farther along than some older docs imply. These features are p
 - Admin bootstrap user initialization on server startup
 - User profile update, password change, email change request/confirm, and account deletion
 - Password reset request/confirm using verification codes
+- Login can also refresh tokens by passing `refresh_token` to `POST /open/auth/login`
 - Cash flow CRUD, date/range queries, summaries, pagination/filtering
 - Category CRUD plus tree/children/name lookup
 - Statistics summary, breakdown, trends, top expenses, dashboard, and chart endpoints
@@ -237,6 +239,8 @@ Mapper packages currently include:
 
 Both MongoDB and MySQL implementations are expected for production-facing features. When adding persistence features, update both backends unless the change is explicitly database-specific and documented.
 
+Current caveat: `mapper/verification_code_mapper/mysql_mapper.go` is a placeholder that returns nil/empty values. Password reset and email-change verification should be treated as MongoDB-backed only until the MySQL implementation is completed.
+
 ### Service packages
 
 Current service packages:
@@ -353,6 +357,7 @@ Important keys currently loaded there:
 
 Important nuance:
 
+- `util/config_util.go` currently populates `auth.jwt.expiration_hours` from `JWT_EXPIRATION_HOURS`, while `auth/provider/local_auth.go` reads `auth.jwt.expiration_minutes` and defaults to 30 minutes. If token expiry behavior is changed or documented, reconcile this key mismatch first.
 - `.env.sample` also documents SMTP settings such as `SMTP_HOST`, `SMTP_PORT`, and friends.
 - `util/email/smtp_util.go` reads `smtp.*` keys from `util.GetConfigByKey(...)`.
 - `util/config_util.go` does not currently populate those SMTP keys.
@@ -398,6 +403,10 @@ Middleware files:
 - `middleware/schema_validation.go`
 
 CORS must stay outermost so browser `OPTIONS` preflight requests are answered before auth or OpenAPI schema validation can reject them. This is required for Flutter web and other browser clients.
+
+Auth middleware skips `/api/{version}/open/*` except `/open/auth/logout`, which deliberately falls through to JWT validation. Do not assume every route under `/open` is unauthenticated.
+
+OpenAPI schema validation loads `docs/openapi.yaml` at package init when enabled. Keep route paths in that spec aligned with `controller/server.go`; validation is bypassed automatically if the spec cannot be loaded or parsed.
 
 In `dev` and `test`, loopback browser origins such as `http://localhost:55500` are allowed even when an older exact-port `CORS_ORIGINS` value exists. In production, configure explicit origins through `CORS_ORIGINS`.
 
@@ -477,6 +486,9 @@ There are some package tests, but test coverage is uneven.
 
 Observed test locations include:
 
+- `cache/category_cache_test.go`
+- `errors/errors_test.go`
+- `middleware/cors_test.go`
 - `validation/validators_test.go`
 - `middleware/schema_validation_test.go`
 - `util/date_util_test.go`
@@ -485,6 +497,8 @@ Observed test locations include:
 - `service/manage_service/*_test.go`
 
 Before relying on a refactor, check whether the affected path is covered. In many areas, manual verification is still necessary.
+
+CLI statistic import/export note: `cmd/statistic_cmd/export.go` and `cmd/statistic_cmd/import.go` accept `--user`, but currently fall back to `user_service.GetDefaultAdminUserId()` when it is omitted. Treat this as a development convenience, not a finished multi-user CLI auth story.
 
 ## Development Commands
 
@@ -541,13 +555,17 @@ Use this section as a lightweight backlog of mismatches between implementation, 
 - [ ] Keep `README.md`, `docs/openapi.yaml`, `docs/roadmap.md`, and `model/version.go` synchronized when the active milestone or API contract changes
 - [ ] Treat `/open/auth/logout` as a compatibility path that currently requires authenticated user context; reconsider route naming before stable `/api/v1`
 - [ ] Treat `/auth/tokens` as authenticated token-management API; keep OpenAPI/docs explicit about its auth expectation
+- [ ] Reconcile JWT expiration configuration: `JWT_EXPIRATION_HOURS`/`auth.jwt.expiration_hours` is loaded, but token generation reads `auth.jwt.expiration_minutes`
 - [ ] Wire SMTP settings from `.env` into `util/config_util.go` if email flows are meant to become usable, or explicitly mark them disabled in runtime behavior until then
 - [ ] Decide on the future provider strategy for email delivery, likely a third-party provider such as Mailgun, and document the intended integration approach
+- [ ] Implement `mapper/verification_code_mapper/mysql_mapper.go` before claiming password reset or email-change verification support on MySQL
+- [ ] Replace statistic CLI import/export default-admin fallback with an explicit user/auth model before treating those commands as production-ready multi-user workflows
 - [ ] Align CI Go version with `go.mod` so local development and automation target the same toolchain
 - [ ] Expand CI and/or local verification to cover more than `./errors` and `./validation`, especially DB-backed service paths as the project matures
 - [ ] Review legacy DB helper behavior that still uses package-global state plus `panic`/`log.Fatal`, and gradually normalize error handling
 - [ ] Confirm whether MongoDB-only eager initialization in the Cobra root command is still the intended default lifecycle, or if DB initialization should be made more explicit and symmetric across backends
 - [ ] Keep `/docs/roadmap.md` synchronized with the actual working branch/version plan as collaboration decisions evolve
+- [ ] Update stale roadmap cleanup notes that still mention `0.4.0`; `model/version.go` currently reports `0.5.0`
 
 ## Testing Expectation Right Now
 
