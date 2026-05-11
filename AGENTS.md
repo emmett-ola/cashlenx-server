@@ -235,7 +235,7 @@ Mapper packages currently include:
 - `category_mapper`
 - `user_mapper`
 - `refresh_token_mapper`
-- `verification_code_mapper`
+- `operation_confirm_code_mapper`
 
 Both MongoDB and MySQL implementations are expected for production-facing features. When adding persistence features, update both backends unless the change is explicitly database-specific and documented.
 
@@ -296,7 +296,7 @@ Admin routes use `middleware.Admin`, which expects `role` to be present in reque
 ### Token-related persistence
 
 - Refresh tokens are stored through `mapper/refresh_token_mapper`
-- Verification codes are stored through `mapper/verification_code_mapper`
+- Verification codes are stored through `mapper/operation_confirm_code_mapper`
 
 ### Verification flows
 

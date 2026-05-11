@@ -12,7 +12,7 @@ type RefreshTokenMongoDbMapper struct{}
 // CreateToken creates a new refresh token in MongoDB
 func (m RefreshTokenMongoDbMapper) CreateToken(token model.RefreshToken) string {
 	// Get database connection
-	collection := database.GetMongoCollection(database.RefreshTokenCollectionName)
+	collection := database.GetMongoCollection(database.RefreshTokenTableName)
 
 	// Insert the token into the collection
 	_, err := collection.InsertOne(nil, token)
@@ -27,7 +27,7 @@ func (m RefreshTokenMongoDbMapper) CreateToken(token model.RefreshToken) string 
 // GetTokenByToken retrieves a refresh token by its token string from MongoDB
 func (m RefreshTokenMongoDbMapper) GetTokenByToken(tokenStr string) model.RefreshToken {
 	// Get database connection
-	collection := database.GetMongoCollection(database.RefreshTokenCollectionName)
+	collection := database.GetMongoCollection(database.RefreshTokenTableName)
 
 	// Define filter
 	filter := map[string]interface{}{
@@ -52,7 +52,7 @@ func (m RefreshTokenMongoDbMapper) GetTokenByToken(tokenStr string) model.Refres
 // RevokeToken revokes a refresh token by its token string in MongoDB
 func (m RefreshTokenMongoDbMapper) RevokeToken(tokenStr string, revokedBy string) error {
 	// Get database connection
-	collection := database.GetMongoCollection(database.RefreshTokenCollectionName)
+	collection := database.GetMongoCollection(database.RefreshTokenTableName)
 
 	// Define filter and update
 	filter := map[string]interface{}{"token": tokenStr}
@@ -78,7 +78,7 @@ func (m RefreshTokenMongoDbMapper) RevokeToken(tokenStr string, revokedBy string
 // RevokeAllTokensByUserId revokes all refresh tokens for a user in MongoDB
 func (m RefreshTokenMongoDbMapper) RevokeAllTokensByUserId(userId string) error {
 	// Get database connection
-	collection := database.GetMongoCollection(database.RefreshTokenCollectionName)
+	collection := database.GetMongoCollection(database.RefreshTokenTableName)
 
 	// Define filter and update
 	filter := map[string]interface{}{
@@ -109,7 +109,7 @@ func (m RefreshTokenMongoDbMapper) GetTokensByUserId(userId string) []model.Refr
 	var tokens []model.RefreshToken
 	
 	// Get database connection
-	collection := database.GetMongoCollection(database.RefreshTokenCollectionName)
+	collection := database.GetMongoCollection(database.RefreshTokenTableName)
 	
 	// Define filter
 	filter := map[string]interface{}{

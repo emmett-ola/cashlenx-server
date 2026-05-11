@@ -1,4 +1,4 @@
-package verification_code_mapper
+package operation_confirm_code_mapper
 
 import (
 	"database/sql"
@@ -10,11 +10,11 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// VerificationCodeMySQLMapper implements VerificationCodeMapper for MySQL.
-type VerificationCodeMySQLMapper struct{}
+// OperationConfirmCodeMySQLMapper implements OperationConfirmCodeMapper for MySQL.
+type OperationConfirmCodeMySQLMapper struct{}
 
-func (mapper *VerificationCodeMySQLMapper) CreateCode(code model.OperationConfirmCode) error {
-	query := `INSERT INTO ` + database.PasswordResetCollectionName + `
+func (mapper *OperationConfirmCodeMySQLMapper) CreateCode(code model.OperationConfirmCode) error {
+	query := `INSERT INTO ` + database.OperationConfirmCodeTableName + `
 		(id, user_id, token, operation_type, payload, expires_at, used_at,
 		 create_user_id, create_time, update_user_id, update_time, delete_user_id, delete_time, is_delete)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
@@ -42,10 +42,10 @@ func (mapper *VerificationCodeMySQLMapper) CreateCode(code model.OperationConfir
 	return err
 }
 
-func (mapper *VerificationCodeMySQLMapper) GetCodeByToken(token string) model.OperationConfirmCode {
+func (mapper *OperationConfirmCodeMySQLMapper) GetCodeByToken(token string) model.OperationConfirmCode {
 	query := `SELECT id, user_id, token, operation_type, payload, expires_at, used_at,
 		create_user_id, create_time, update_user_id, update_time, delete_user_id, delete_time, is_delete
-		FROM ` + database.PasswordResetCollectionName + `
+		FROM ` + database.OperationConfirmCodeTableName + `
 		WHERE token = ? AND is_delete = FALSE`
 
 	connection := database.GetMySqlConnection()
@@ -76,7 +76,7 @@ func (mapper *VerificationCodeMySQLMapper) GetCodeByToken(token string) model.Op
 	)
 	if err != nil {
 		if err != sql.ErrNoRows {
-			util.Logger.Errorw("Failed to get verification code", "error", err)
+			util.Logger.Errorw("Failed to get operation confirmation code", "error", err)
 		}
 		return model.OperationConfirmCode{}
 	}
@@ -104,8 +104,8 @@ func (mapper *VerificationCodeMySQLMapper) GetCodeByToken(token string) model.Op
 	return entity
 }
 
-func (mapper *VerificationCodeMySQLMapper) InvalidateActiveCodes(userId string, operationType string) error {
-	query := `UPDATE ` + database.PasswordResetCollectionName + `
+func (mapper *OperationConfirmCodeMySQLMapper) InvalidateActiveCodes(userId string, operationType string) error {
+	query := `UPDATE ` + database.OperationConfirmCodeTableName + `
 		SET is_delete = TRUE, delete_time = ?, update_time = ?
 		WHERE user_id = ? AND operation_type = ? AND is_delete = FALSE AND used_at IS NULL`
 
@@ -117,8 +117,8 @@ func (mapper *VerificationCodeMySQLMapper) InvalidateActiveCodes(userId string, 
 	return err
 }
 
-func (mapper *VerificationCodeMySQLMapper) MarkCodeAsUsed(id string) error {
-	query := `UPDATE ` + database.PasswordResetCollectionName + `
+func (mapper *OperationConfirmCodeMySQLMapper) MarkCodeAsUsed(id string) error {
+	query := `UPDATE ` + database.OperationConfirmCodeTableName + `
 		SET used_at = ?, update_time = ?
 		WHERE id = ? AND is_delete = FALSE`
 
@@ -130,8 +130,8 @@ func (mapper *VerificationCodeMySQLMapper) MarkCodeAsUsed(id string) error {
 	return err
 }
 
-func (mapper *VerificationCodeMySQLMapper) DeleteCode(id string) error {
-	query := `UPDATE ` + database.PasswordResetCollectionName + `
+func (mapper *OperationConfirmCodeMySQLMapper) DeleteCode(id string) error {
+	query := `UPDATE ` + database.OperationConfirmCodeTableName + `
 		SET is_delete = TRUE, delete_time = ?, update_time = ?
 		WHERE id = ?`
 

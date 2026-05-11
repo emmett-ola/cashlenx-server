@@ -1,12 +1,14 @@
-CREATE TABLE IF NOT EXISTS auth_token_password_reset (
+CREATE TABLE IF NOT EXISTS refresh_tokens (
     id VARCHAR(36) PRIMARY KEY,
     user_id VARCHAR(36) NOT NULL,
     token VARCHAR(255) NOT NULL UNIQUE,
-    operation_type VARCHAR(50) NOT NULL DEFAULT 'password_reset',
-    payload TEXT,
     expires_at DATETIME NOT NULL,
-    used_at DATETIME,
+    revoked_at DATETIME,
+    revoked_by VARCHAR(36),
+    device_id VARCHAR(100),
+    device_name VARCHAR(100),
     ip_address VARCHAR(45),
+    user_agent VARCHAR(255),
     
     -- BaseEntity columns
     create_user_id VARCHAR(36) NOT NULL,
@@ -18,6 +20,5 @@ CREATE TABLE IF NOT EXISTS auth_token_password_reset (
     is_delete BOOLEAN NOT NULL DEFAULT FALSE,
     
     INDEX idx_user_id (user_id),
-    INDEX idx_operation_type (operation_type),
     INDEX idx_token (token)
 );

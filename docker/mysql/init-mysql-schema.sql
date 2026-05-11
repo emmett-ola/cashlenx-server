@@ -32,10 +32,10 @@ CREATE TABLE `users`
 CREATE UNIQUE INDEX users_username_unique_index ON users (username);
 
 -- -------------------
--- Create table `auth_token_refresh`
+-- Create table `refresh_tokens`
 -- -------------------
-DROP TABLE IF EXISTS auth_token_refresh;
-CREATE TABLE `auth_token_refresh`
+DROP TABLE IF EXISTS refresh_tokens;
+CREATE TABLE `refresh_tokens`
 (
     `id`             VARCHAR(24)  NOT NULL,
     `user_id`        VARCHAR(24)  NOT NULL,
@@ -55,17 +55,17 @@ CREATE TABLE `auth_token_refresh`
     `delete_time`    TIMESTAMP             DEFAULT NULL,
     `is_delete`      BOOLEAN      NOT NULL DEFAULT FALSE,
     PRIMARY KEY (`id`),
-    UNIQUE INDEX auth_token_refresh_token_unique_index (`token`),
-    INDEX auth_token_refresh_user_id_index (`user_id`),
-    INDEX auth_token_refresh_expires_at_index (`expires_at`),
-    CONSTRAINT auth_token_refresh_user_id_fk FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+    UNIQUE INDEX refresh_tokens_token_unique_index (`token`),
+    INDEX refresh_tokens_user_id_index (`user_id`),
+    INDEX refresh_tokens_expires_at_index (`expires_at`),
+    CONSTRAINT refresh_tokens_user_id_fk FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE = InnoDB DEFAULT CHARSET = UTF8MB4 COMMENT ='Refresh Tokens';
 
 -- -------------------
--- Create table `auth_token_password_reset`
+-- Create table `operation_confirm_codes`
 -- -------------------
-DROP TABLE IF EXISTS auth_token_password_reset;
-CREATE TABLE `auth_token_password_reset`
+DROP TABLE IF EXISTS operation_confirm_codes;
+CREATE TABLE `operation_confirm_codes`
 (
     `id`             VARCHAR(24)  NOT NULL,
     `user_id`        VARCHAR(24)  NOT NULL,
@@ -83,12 +83,12 @@ CREATE TABLE `auth_token_password_reset`
     `delete_time`    TIMESTAMP             DEFAULT NULL,
     `is_delete`      BOOLEAN      NOT NULL DEFAULT FALSE,
     PRIMARY KEY (`id`),
-    UNIQUE INDEX auth_token_password_reset_token_unique_index (`token`),
-    INDEX auth_token_password_reset_user_id_index (`user_id`),
-    INDEX auth_token_password_reset_operation_type_index (`operation_type`),
-    INDEX auth_token_password_reset_expires_at_index (`expires_at`),
-    CONSTRAINT auth_token_password_reset_user_id_fk FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE = InnoDB DEFAULT CHARSET = UTF8MB4 COMMENT ='Operation Verification Tokens';
+    UNIQUE INDEX operation_confirm_codes_token_unique_index (`token`),
+    INDEX operation_confirm_codes_user_id_index (`user_id`),
+    INDEX operation_confirm_codes_operation_type_index (`operation_type`),
+    INDEX operation_confirm_codes_expires_at_index (`expires_at`),
+    CONSTRAINT operation_confirm_codes_user_id_fk FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE = InnoDB DEFAULT CHARSET = UTF8MB4 COMMENT ='Operation Confirmation Codes';
 
 -- -------------------
 -- Create table `categories`
@@ -154,6 +154,6 @@ SELECT
     (SELECT COUNT(*) FROM users) AS users_count,
     (SELECT COUNT(*) FROM categories) AS default_categories,
     (SELECT COUNT(*) FROM cash_flows) AS initial_transactions,
-    (SELECT COUNT(*) FROM auth_token_refresh) AS refresh_tokens_count,
-    (SELECT COUNT(*) FROM auth_token_password_reset) AS password_reset_tokens_count,
+    (SELECT COUNT(*) FROM refresh_tokens) AS refresh_tokens_count,
+    (SELECT COUNT(*) FROM operation_confirm_codes) AS operation_confirm_codes_count,
     NOW() AS initialized_at;

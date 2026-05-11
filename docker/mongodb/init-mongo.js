@@ -14,8 +14,8 @@ db = db.getSiblingDB(dbName);
 
 // Create collections
 db.createCollection('users');
-db.createCollection('auth_token_refresh');
-db.createCollection('operation_confirm_code');
+db.createCollection('refresh_tokens');
+db.createCollection('operation_confirm_codes');
 db.createCollection('cash_flows');
 db.createCollection('categories');
 
@@ -30,20 +30,20 @@ db.users.createIndex({ username: 1 }, { unique: true });
 db.users.createIndex({ role: 1 });
 db.users.createIndex({ is_delete: 1 });
 
-// Auth token refresh indexes
-db.auth_token_refresh.createIndex({ token: 1 }, { unique: true });
-db.auth_token_refresh.createIndex({ user_id: 1 });
-db.auth_token_refresh.createIndex({ expires_at: 1 });
-db.auth_token_refresh.createIndex({ is_delete: 1 });
-db.auth_token_refresh.createIndex({ create_time: 1 });
+// Refresh token indexes
+db.refresh_tokens.createIndex({ token: 1 }, { unique: true });
+db.refresh_tokens.createIndex({ user_id: 1 });
+db.refresh_tokens.createIndex({ expires_at: 1 });
+db.refresh_tokens.createIndex({ is_delete: 1 });
+db.refresh_tokens.createIndex({ create_time: 1 });
 
-// Operation verification code indexes
-db.operation_confirm_code.createIndex({ code: 1 }, { unique: true });
-db.operation_confirm_code.createIndex({ user_id: 1 });
-db.operation_confirm_code.createIndex({ operation_type: 1 });
-db.operation_confirm_code.createIndex({ expires_time: 1 });
-db.operation_confirm_code.createIndex({ is_delete: 1 });
-db.operation_confirm_code.createIndex({ create_time: 1 });
+// Operation confirmation code indexes
+db.operation_confirm_codes.createIndex({ code: 1 }, { unique: true });
+db.operation_confirm_codes.createIndex({ user_id: 1 });
+db.operation_confirm_codes.createIndex({ operation_type: 1 });
+db.operation_confirm_codes.createIndex({ expires_time: 1 });
+db.operation_confirm_codes.createIndex({ is_delete: 1 });
+db.operation_confirm_codes.createIndex({ create_time: 1 });
 
 // Cash flows indexes
 db.cash_flows.createIndex({ belongs_date: -1 });
@@ -62,8 +62,8 @@ print('Indexes created successfully');
 print('\n=== CashLenX MongoDB Initialized ===');
 print(`Database: ${dbName}`);
 print(`Users: ${db.users.countDocuments()}`);
-print(`Auth Token Refresh: ${db.auth_token_refresh.countDocuments()}`);
-print(`Operation Confirm Code: ${db.operation_confirm_code.countDocuments()}`);
+print(`Refresh Tokens: ${db.refresh_tokens.countDocuments()}`);
+print(`Operation Confirm Codes: ${db.operation_confirm_codes.countDocuments()}`);
 print(`Categories: ${db.categories.countDocuments()}`);
 print(`Cash Flows: ${db.cash_flows.countDocuments()}`);
 print('');

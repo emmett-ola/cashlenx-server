@@ -1,4 +1,4 @@
-package verification_code_mapper
+package operation_confirm_code_mapper
 
 import (
 	"context"
@@ -10,9 +10,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type VerificationCodeMongoMapper struct{}
+type OperationConfirmCodeMongoMapper struct{}
 
-func (mapper *VerificationCodeMongoMapper) CreateCode(code model.OperationConfirmCode) error {
+func (mapper *OperationConfirmCodeMongoMapper) CreateCode(code model.OperationConfirmCode) error {
 	collection := database.GetMongoCollection(code.CollectionName())
 
 	// Convert ID string to ObjectID if needed, or let Mongo generate it
@@ -50,7 +50,7 @@ func (mapper *VerificationCodeMongoMapper) CreateCode(code model.OperationConfir
 	return err
 }
 
-func (mapper *VerificationCodeMongoMapper) GetCodeByToken(token string) model.OperationConfirmCode {
+func (mapper *OperationConfirmCodeMongoMapper) GetCodeByToken(token string) model.OperationConfirmCode {
 	collection := database.GetMongoCollection(model.OperationConfirmCode{}.CollectionName())
 
 	filter := bson.M{
@@ -67,7 +67,7 @@ func (mapper *VerificationCodeMongoMapper) GetCodeByToken(token string) model.Op
 	return mapper.mapBsonToEntity(result)
 }
 
-func (mapper *VerificationCodeMongoMapper) InvalidateActiveCodes(userId string, operationType string) error {
+func (mapper *OperationConfirmCodeMongoMapper) InvalidateActiveCodes(userId string, operationType string) error {
 	collection := database.GetMongoCollection(model.OperationConfirmCode{}.CollectionName())
 
 	filter := bson.M{
@@ -88,7 +88,7 @@ func (mapper *VerificationCodeMongoMapper) InvalidateActiveCodes(userId string, 
 	return err
 }
 
-func (mapper *VerificationCodeMongoMapper) MarkCodeAsUsed(id string) error {
+func (mapper *OperationConfirmCodeMongoMapper) MarkCodeAsUsed(id string) error {
 	collection := database.GetMongoCollection(model.OperationConfirmCode{}.CollectionName())
 
 	objectId, err := primitive.ObjectIDFromHex(id)
@@ -108,7 +108,7 @@ func (mapper *VerificationCodeMongoMapper) MarkCodeAsUsed(id string) error {
 	return err
 }
 
-func (mapper *VerificationCodeMongoMapper) DeleteCode(id string) error {
+func (mapper *OperationConfirmCodeMongoMapper) DeleteCode(id string) error {
 	collection := database.GetMongoCollection(model.OperationConfirmCode{}.CollectionName())
 
 	objectId, err := primitive.ObjectIDFromHex(id)
@@ -128,7 +128,7 @@ func (mapper *VerificationCodeMongoMapper) DeleteCode(id string) error {
 	return err
 }
 
-func (mapper *VerificationCodeMongoMapper) mapBsonToEntity(data bson.M) model.OperationConfirmCode {
+func (mapper *OperationConfirmCodeMongoMapper) mapBsonToEntity(data bson.M) model.OperationConfirmCode {
 	var entity model.OperationConfirmCode
 
 	if id, ok := data["_id"].(primitive.ObjectID); ok {

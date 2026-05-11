@@ -18,5 +18,5 @@ type OperationConfirmCode struct {
 
 // Collection name for Mongo
 func (OperationConfirmCode) CollectionName() string {
-	return "operation_confirm_code"
+	return "operation_confirm_codes"
 }
