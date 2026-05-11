@@ -30,8 +30,8 @@ jobs:
     - name: Build
       run: go build -v ./...
 
-    - name: Run tests
-      run: go test -v ./errors ./validation
+    - name: Run focused tests
+      run: go test -v ./errors ./validation ./util ./auth/provider ./service/refresh_token_service ./middleware
 
     - name: Lint (if golangci-lint is installed)
       run: |
