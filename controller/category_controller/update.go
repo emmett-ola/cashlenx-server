@@ -45,7 +45,7 @@ func UpdateById(w http.ResponseWriter, r *http.Request) {
 		if err.Error() == "category not found or access denied" {
 			util.ComposeJSONResponse(w, http.StatusNotFound, errors.NewNotFoundError(err.Error()))
 		} else {
-			util.ComposeErrorResponse(w, err)
+			util.ComposeErrorResponse(w, r, err)
 		}
 		return
 	}

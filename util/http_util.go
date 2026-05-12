@@ -2,9 +2,11 @@ package util
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
+	"runtime"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -175,8 +177,48 @@ func StatusCodeForError(err error) int {
 }
 
 // ComposeErrorResponse writes an error response with a consistent status and response shape.
-func ComposeErrorResponse(w http.ResponseWriter, err error) {
-	ComposeJSONResponse(w, StatusCodeForError(err), err)
+func ComposeErrorResponse(w http.ResponseWriter, r *http.Request, err error) {
+	statusCode := StatusCodeForError(err)
+	logRequestError(r, statusCode, err)
+	ComposeJSONResponse(w, statusCode, err)
+}
+
+func logRequestError(r *http.Request, statusCode int, err error) {
+	if err == nil {
+		return
+	}
+
+	fields := []interface{}{
+		"status", statusCode,
+		"error", err,
+		"location", callerLocation(3),
+	}
+
+	if r != nil {
+		fields = append(fields,
+			"request_id", RequestIDFromContext(r.Context()),
+			"method", r.Method,
+			"path", r.URL.RequestURI(),
+			"remote_addr", r.RemoteAddr,
+		)
+		if userID, ok := r.Context().Value("user_id").(string); ok && userID != "" {
+			fields = append(fields, "user_id", userID)
+		}
+	}
+
+	if statusCode >= http.StatusInternalServerError {
+		Logger.Errorw("API error response", fields...)
+		return
+	}
+	Logger.Warnw("API error response", fields...)
+}
+
+func callerLocation(skip int) string {
+	_, file, line, ok := runtime.Caller(skip)
+	if !ok {
+		return "unknown"
+	}
+	return fmt.Sprintf("%s:%d", file, line)
 }
 
 func applyMapPayload(response *Response, statusCode int, payload map[string]interface{}) {

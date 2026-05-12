@@ -28,7 +28,7 @@ func ImportData(w http.ResponseWriter, r *http.Request) {
 	// Call service to import data for this user
 	err := statistic_service.ImportForUser(filePath, userId)
 	if err != nil {
-		util.ComposeErrorResponse(w, err)
+		util.ComposeErrorResponse(w, r, err)
 		return
 	}
 

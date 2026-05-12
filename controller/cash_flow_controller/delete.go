@@ -28,7 +28,7 @@ func DeleteById(w http.ResponseWriter, r *http.Request) {
 		if err.Error() == "cash_flow not found or access denied" {
 			util.ComposeJSONResponse(w, http.StatusNotFound, errors.NewNotFoundError(err.Error()))
 		} else {
-			util.ComposeErrorResponse(w, err)
+			util.ComposeErrorResponse(w, r, err)
 		}
 		return
 	}
@@ -51,7 +51,7 @@ func DeleteByDate(w http.ResponseWriter, r *http.Request) {
 
 	cashFlowEntityList, err := cash_flow_service.DeleteByDateForUser(date, userId)
 	if err != nil {
-		util.ComposeErrorResponse(w, err)
+		util.ComposeErrorResponse(w, r, err)
 		return
 	}
 	util.ComposeJSONResponse(w, http.StatusOK, cashFlowEntityList)

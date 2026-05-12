@@ -34,7 +34,7 @@ func Tree(w http.ResponseWriter, r *http.Request) {
 	// Get category tree with user ID and type filter
 	tree, err := category_service.GetCategoryTreeByUser(userStrId, categoryType)
 	if err != nil {
-		util.ComposeErrorResponse(w, err)
+		util.ComposeErrorResponse(w, r, err)
 		return
 	}
 

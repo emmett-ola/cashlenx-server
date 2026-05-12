@@ -67,7 +67,7 @@ func ListAll(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if err != nil {
-		util.ComposeErrorResponse(w, err)
+		util.ComposeErrorResponse(w, r, err)
 		return
 	}
 

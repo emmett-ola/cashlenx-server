@@ -112,7 +112,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	// Pass nil as creatorId to indicate self-registration
 	userId, err := user_service.CreateService(userDTO, nil)
 	if err != nil {
-		util.ComposeErrorResponse(w, err)
+		util.ComposeErrorResponse(w, r, err)
 		return
 	}
 

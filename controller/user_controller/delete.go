@@ -22,7 +22,7 @@ func Delete(w http.ResponseWriter, r *http.Request) {
 
 	// Delete user via service
 	if err := user_service.DeleteService(userId); err != nil {
-		util.ComposeErrorResponse(w, err)
+		util.ComposeErrorResponse(w, r, err)
 		return
 	}
 

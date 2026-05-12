@@ -28,7 +28,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	// Create category using user-specific service
 	createdCategory, err := category_service.CreateForUser(req.Name, req.Type, req.Remark, req.ParentId, userIdStr)
 	if err != nil {
-		util.ComposeErrorResponse(w, err)
+		util.ComposeErrorResponse(w, r, err)
 		return
 	}
 

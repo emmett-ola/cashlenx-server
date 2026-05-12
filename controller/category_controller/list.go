@@ -43,7 +43,7 @@ func ListAll(w http.ResponseWriter, r *http.Request) {
 	// Call user-specific service to get paginated results
 	categories, totalCount, err := category_service.QueryAllForUser(userId, categoryType, limit, offset)
 	if err != nil {
-		util.ComposeErrorResponse(w, err)
+		util.ComposeErrorResponse(w, r, err)
 		return
 	}
 

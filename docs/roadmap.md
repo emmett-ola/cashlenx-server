@@ -135,7 +135,7 @@ Cleanup notes:
 
 ### v0.6.0 - Observability
 
-- [ ] Request ID propagation and structured request logging #observability
+- [x] Request ID propagation and structured request/error logging #observability
 - [ ] `/metrics` endpoint with Prometheus counters/histograms #observability #devops
 - [ ] Enable `pprof` in development #observability
 

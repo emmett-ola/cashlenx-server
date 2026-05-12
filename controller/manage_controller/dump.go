@@ -20,7 +20,7 @@ func DumpDatabase(w http.ResponseWriter, r *http.Request) {
 	// Create the dump
 	_, err := manage_service.AdminDumpDatabase(filePath)
 	if err != nil {
-		util.ComposeErrorResponse(w, err)
+		util.ComposeErrorResponse(w, r, err)
 		return
 	}
 
@@ -58,7 +58,7 @@ func ExportUserData(w http.ResponseWriter, r *http.Request) {
 	// Create the dump
 	_, err := manage_service.UserExportData(userId, filePath)
 	if err != nil {
-		util.ComposeErrorResponse(w, err)
+		util.ComposeErrorResponse(w, r, err)
 		return
 	}
 

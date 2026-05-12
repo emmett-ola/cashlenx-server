@@ -40,7 +40,7 @@ func Update(w http.ResponseWriter, r *http.Request) {
 			util.ComposeJSONResponse(w, http.StatusBadRequest, err)
 			return
 		}
-		util.ComposeErrorResponse(w, err)
+		util.ComposeErrorResponse(w, r, err)
 		return
 	}
 
