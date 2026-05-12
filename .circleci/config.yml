@@ -1,0 +1,56 @@
+version: 2.1
+
+executors:
+  go-executor:
+    docker:
+      - image: cimg/go:1.23
+    working_directory: ~/project
+
+jobs:
+  test:
+    executor: go-executor
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - go-mod-v1-{{ checksum "go.sum" }}
+            - go-mod-v1-
+      - run:
+          name: Download dependencies
+          command: go mod download
+      - save_cache:
+          key: go-mod-v1-{{ checksum "go.sum" }}
+          paths:
+            - /home/circleci/go/pkg/mod
+            - ~/.cache/go-build
+      - run:
+          name: Run tests with coverage
+          command: scripts/ci-test.sh
+      - store_artifacts:
+          path: coverage.out
+      - run:
+          name: Upload coverage to Codecov
+          command: bash <(curl -s https://codecov.io/bash) -f coverage.out -F circleci || echo "Codecov upload skipped or failed"
+
+  build:
+    executor: go-executor
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - go-mod-v1-{{ checksum "go.sum" }}
+            - go-mod-v1-
+      - run:
+          name: Download dependencies
+          command: go mod download
+      - run:
+          name: Build
+          command: go build -v ./...
+
+workflows:
+  build-test:
+    jobs:
+      - test
+      - build:
+          requires:
+            - test

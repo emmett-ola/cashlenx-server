@@ -174,7 +174,7 @@ Cleanup notes:
 - Keep `README.md`, `docs/openapi.yaml`, `model/version.go`, and this roadmap synchronized when route contracts or milestone versions change.
 - SMTP configuration is wired through runtime config, but email flows still need provider-level smoke testing before being considered complete.
 - `scripts/smoke-api.sh` provides a MongoDB-backed beta API smoke flow for the non-SMTP core API surface once the server is running.
-- CI still runs a narrow test subset and should expand as core user-facing behavior stabilizes.
+- CI now has GitHub Actions, Travis CI, CircleCI, and Codecov configuration for full Go unit tests with coverage; live API smoke testing remains a separate environment check.
 
 ## Notes
 

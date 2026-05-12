@@ -30,8 +30,16 @@ jobs:
     - name: Build
       run: go build -v ./...
 
-    - name: Run focused tests
-      run: go test -v ./errors ./validation ./util ./auth/provider ./service/refresh_token_service ./middleware
+    - name: Run tests with coverage
+      run: scripts/ci-test.sh
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        files: ./coverage.out
+        flags: github-actions
+        fail_ci_if_error: false
+        token: ${{ secrets.CODECOV_TOKEN }}
 
     - name: Lint (if golangci-lint is installed)
       run: |

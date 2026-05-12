@@ -455,21 +455,25 @@ Repo scripts include:
 - `scripts/interactive.ps1`, `scripts/interactive.sh`
 - `scripts/generate-docs.ps1`, `scripts/generate-docs.sh`
 - `scripts/smoke-api.sh`
+- `scripts/ci-test.sh`
 
 ### CI
 
 GitHub Actions workflow: `.github/workflows/ci.yml`
+Travis CI workflow: `.travis.yml`
+CircleCI workflow: `.circleci/config.yml`
+Codecov configuration: `codecov.yml`
 
 Current CI behavior:
 
 - builds the repo
-- runs a narrow test subset: `go test -v ./errors ./validation`
+- runs `scripts/ci-test.sh`, which executes `go test -v -race -covermode=atomic -coverprofile=coverage.out ./...`
+- uploads coverage to Codecov from GitHub Actions, Travis CI, and CircleCI when provider credentials/network are available
 - optionally runs `golangci-lint` if installed
 - builds Docker image
 - generates Swagger UI HTML docs from `docs/openapi.yaml`
 
-Important: CI is not currently exercising the full application or the DB-backed service packages.
-Also note: `go.mod` declares Go `1.23.0`, but `.github/workflows/ci.yml` currently runs Go `1.21`.
+Important: CI unit tests do not run the live MongoDB-backed `scripts/smoke-api.sh`; that remains an environment smoke check against a running server.
 
 ## Migrations and Data Setup
 

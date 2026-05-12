@@ -111,9 +111,10 @@ See `docs/openapi.yaml` for the current API contract and `docs/api.md` for addit
 ```bash
 go build -o cashlenx main.go
 go test ./...
+scripts/ci-test.sh
 ```
 
-Test coverage is still uneven while the project is under development. Prefer targeted tests for touched areas and report manual verification clearly when no meaningful tests exist.
+Test coverage is still uneven while the project is under development. CI uses `scripts/ci-test.sh` to run the full Go test suite with race detection and `coverage.out` generation for Codecov.
 
 ## Technology
 
