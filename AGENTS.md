@@ -285,6 +285,13 @@ When modifying queries, verify whether the helper already appends `is_delete = f
 
 Admin routes use `middleware.Admin`, which expects `role` to be present in request context from the auth layer. If you touch auth middleware or token claims, verify this still works end-to-end.
 
+Admin role lifecycle:
+
+- Admin users are only bootstrapped by `user_service.InitAdminUser()` during server startup when no admin account exists
+- Registration and admin/user creation paths must always create `user` role accounts, even if a request body includes `role: admin`
+- User update paths must not promote or demote roles; preserve admin role changes for explicit future design work rather than accepting them through generic user management
+- User deletion must reject admin accounts
+
 ## Auth and Verification
 
 ### Auth components

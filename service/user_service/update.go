@@ -29,7 +29,9 @@ func UpdateService(plainId string, requestBody model.UserDTO) (model.UserEntity,
 	}
 
 	if requestBody.Role != "" {
-		existingUser.Role = requestBody.Role
+		if requestBody.Role != existingUser.Role {
+			return model.UserEntity{}, errors.NewForbiddenError("user role cannot be changed through user management")
+		}
 	}
 
 	// Update profile fields if provided

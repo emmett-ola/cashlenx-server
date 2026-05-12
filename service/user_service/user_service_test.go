@@ -47,6 +47,24 @@ func TestCreateServiceCreatesUserAndInitializesCategories(t *testing.T) {
 	}
 }
 
+func TestCreateServiceIgnoresRequestedAdminRole(t *testing.T) {
+	repo := installUserServiceTestDeps(t)
+
+	userID, err := CreateService(model.UserDTO{
+		Username: "alice",
+		Password: "StrongPass123!",
+		Role:     model.UserRoleAdmin,
+	}, nil)
+	if err != nil {
+		t.Fatalf("CreateService returned error: %v", err)
+	}
+
+	created := repo.users[userID]
+	if created.Role != model.UserRoleUser {
+		t.Fatalf("Role = %q, want %q", created.Role, model.UserRoleUser)
+	}
+}
+
 func TestCreateServiceRejectsExistingUsername(t *testing.T) {
 	repo := installUserServiceTestDeps(t)
 	existingID := primitive.NewObjectID()
@@ -61,6 +79,26 @@ func TestCreateServiceRejectsExistingUsername(t *testing.T) {
 	}
 	if len(repo.insertedIDs) != 0 {
 		t.Fatalf("inserted count = %d, want 0", len(repo.insertedIDs))
+	}
+}
+
+func TestUpdateServiceRejectsRoleChange(t *testing.T) {
+	repo := installUserServiceTestDeps(t)
+	userID := primitive.NewObjectID()
+	repo.users[userID.Hex()] = model.UserEntity{
+		Id:       userID,
+		Username: "alice",
+		Role:     model.UserRoleUser,
+	}
+
+	_, err := UpdateService(userID.Hex(), model.UserDTO{
+		Role: model.UserRoleAdmin,
+	})
+	if err == nil {
+		t.Fatal("expected role change error")
+	}
+	if repo.users[userID.Hex()].Role != model.UserRoleUser {
+		t.Fatalf("Role = %q, want %q", repo.users[userID.Hex()].Role, model.UserRoleUser)
 	}
 }
 
@@ -188,6 +226,46 @@ func TestDeleteServiceRejectsAdminAndRevokesUserTokens(t *testing.T) {
 		}
 		if revokedUserID != userID.Hex() {
 			t.Fatalf("revokedUserID = %q, want %q", revokedUserID, userID.Hex())
+		}
+	})
+}
+
+func TestInitAdminUserCreatesAdminOnlyWhenNoAdminExists(t *testing.T) {
+	t.Run("creates bootstrap admin", func(t *testing.T) {
+		repo := installUserServiceTestDeps(t)
+		var initializedUserID string
+		initializeDefaultCategoriesForUser = func(userId string) error {
+			initializedUserID = userId
+			return nil
+		}
+
+		InitAdminUser()
+
+		if len(repo.insertedIDs) != 1 {
+			t.Fatalf("inserted count = %d, want 1", len(repo.insertedIDs))
+		}
+		created := repo.users[repo.insertedIDs[0]]
+		if created.Role != model.UserRoleAdmin {
+			t.Fatalf("Role = %q, want %q", created.Role, model.UserRoleAdmin)
+		}
+		if initializedUserID != created.Id.Hex() {
+			t.Fatalf("initializedUserID = %q, want %q", initializedUserID, created.Id.Hex())
+		}
+	})
+
+	t.Run("skips when admin already exists", func(t *testing.T) {
+		repo := installUserServiceTestDeps(t)
+		adminID := primitive.NewObjectID()
+		repo.users[adminID.Hex()] = model.UserEntity{
+			Id:       adminID,
+			Username: "admin",
+			Role:     model.UserRoleAdmin,
+		}
+
+		InitAdminUser()
+
+		if len(repo.insertedIDs) != 0 {
+			t.Fatalf("inserted count = %d, want 0", len(repo.insertedIDs))
 		}
 	})
 }
