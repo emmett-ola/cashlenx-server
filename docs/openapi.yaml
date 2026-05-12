@@ -81,7 +81,7 @@ paths:
   /open/auth/logout:
     post:
       summary: User logout
-      description: This route is mounted under `/open` for compatibility, but the current middleware expects an authenticated user. Provide refresh_token to revoke one session, or omit it to revoke all sessions.
+      description: Public idempotent logout endpoint. Without a token it returns OK as a no-op. Provide refresh_token to revoke one session, or provide a bearer access token without refresh_token to revoke all sessions for that user.
       operationId: logout
       tags: [Authentication]
       requestBody:
@@ -92,8 +92,6 @@ paths:
               $ref: '#/components/schemas/LogoutRequest'
       responses:
         '200':
-          $ref: '#/components/responses/WrappedResponse'
-        '401':
           $ref: '#/components/responses/WrappedResponse'
 
   /auth/tokens:

@@ -157,7 +157,7 @@ Important: the server start command is currently `go run main.go open start -p 8
 - `POST /api/{version}/open/auth/reset-password`
 - `POST /api/{version}/open/auth/reset-password/confirm`
 
-Note: `logout` lives under `/open/auth/logout` even though it is intended to be protected. Treat route grouping carefully when changing auth behavior.
+Note: `logout` lives under `/open/auth/logout` and is intentionally public/idempotent. It returns OK without credentials and only performs revocation when a valid `refresh_token` or bearer access token is provided.
 
 ### Admin routes
 
@@ -410,7 +410,7 @@ CORS must stay outermost so browser `OPTIONS` preflight requests are answered be
 
 `middleware.Logging` adds or preserves `X-Request-ID`, stores it in request context, echoes it in the response header, and includes it in structured request logs. `util.ComposeErrorResponse` logs API errors centrally with request ID, status, method/path, caller location, and user ID when present; 4xx responses log at warn level and 5xx responses log at error level.
 
-Auth middleware skips `/api/{version}/open/*` except `/open/auth/logout`, which deliberately falls through to JWT validation. Do not assume every route under `/open` is unauthenticated.
+Auth middleware skips all `/api/{version}/open/*` routes. `/open/auth/logout` handles optional token validation in its controller so the `/open` prefix remains consistently public.
 
 OpenAPI schema validation loads `docs/openapi.yaml` at package init when enabled. Keep route paths in that spec aligned with `controller/server.go`; validation is bypassed automatically if the spec cannot be loaded or parsed.
 
@@ -559,7 +559,7 @@ When adding or changing a feature:
 Use this section as a lightweight backlog of mismatches between implementation, docs, tooling, and intended architecture. Keep it factual and safe to commit.
 
 - [ ] Keep `README.md`, `docs/openapi.yaml`, `docs/roadmap.md`, and `model/version.go` synchronized when the active milestone or API contract changes
-- [ ] Treat `/open/auth/logout` as a compatibility path that currently requires authenticated user context; reconsider route naming before stable `/api/v1`
+- [x] Treat `/open/auth/logout` as a public idempotent compatibility path; it only revokes sessions when a valid token is supplied
 - [ ] Treat `/auth/tokens` as authenticated token-management API; keep OpenAPI/docs explicit about its auth expectation
 - [ ] Smoke test SMTP-backed password reset and email-change flows with a real provider before beta
 - [ ] Decide on the future provider strategy for email delivery, likely a third-party provider such as Mailgun, and document the intended integration approach

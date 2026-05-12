@@ -1,7 +1,9 @@
 package auth_controller
 
 import (
+	"io"
 	"net/http"
+	"strings"
 
 	"github.com/macar-x/cashlenx-server/auth"
 	"github.com/macar-x/cashlenx-server/errors"
@@ -128,40 +130,69 @@ func Register(w http.ResponseWriter, r *http.Request) {
 
 // Logout handles user logout requests
 func Logout(w http.ResponseWriter, r *http.Request) {
-	// Get user ID from context (set by auth middleware)
-	userID, ok := r.Context().Value("user_id").(string)
-	if !ok || userID == "" {
-		util.ComposeJSONResponse(w, http.StatusUnauthorized, errors.NewUnauthorizedError("user not authenticated"))
-		return
-	}
-
 	// Parse request body to check for refresh_token
 	var logoutRequest struct {
 		RefreshToken string `json:"refresh_token"`
 	}
 	err := util.ParseJSONRequest(r, &logoutRequest)
 
-	var logoutErr error
-	var message string
+	message := "Logout accepted"
 
 	if err == nil && logoutRequest.RefreshToken != "" {
-		// Refresh token provided - logout only from this session (local logout)
-		logoutErr = refresh_token_service.RevokeRefreshToken(logoutRequest.RefreshToken, userID)
-		message = "Successfully logged out from this device"
-	} else {
-		// No refresh token provided - logout from all sessions (logout everywhere)
-		logoutErr = refresh_token_service.RevokeAllRefreshTokens(userID)
-		message = "Successfully logged out from all devices"
+		deviceID, deviceName, ipAddress, userAgent := getDeviceInfo(r)
+		refreshToken, tokenErr := refresh_token_service.GetRefreshTokenByToken(logoutRequest.RefreshToken, deviceID, deviceName, ipAddress, userAgent)
+		if tokenErr != nil {
+			util.Logger.Warnw("Logout refresh token ignored", "error", tokenErr, "request_id", util.RequestIDFromContext(r.Context()))
+			util.ComposeJSONResponse(w, http.StatusOK, map[string]string{"message": message})
+			return
+		}
+		if revokeErr := refresh_token_service.RevokeRefreshToken(logoutRequest.RefreshToken, refreshToken.UserId); revokeErr != nil {
+			util.ComposeErrorResponse(w, r, revokeErr)
+			return
+		}
+		util.ComposeJSONResponse(w, http.StatusOK, map[string]string{"message": "Successfully logged out from this device"})
+		return
 	}
 
-	if logoutErr != nil {
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, logoutErr)
+	if err != nil && err != io.EOF {
+		util.Logger.Warnw("Logout request body ignored", "error", err, "request_id", util.RequestIDFromContext(r.Context()))
+	}
+
+	userID := userIDFromAuthorizationHeader(r)
+	if userID == "" {
+		util.ComposeJSONResponse(w, http.StatusOK, map[string]string{"message": message})
+		return
+	}
+
+	if revokeErr := refresh_token_service.RevokeAllRefreshTokens(userID); revokeErr != nil {
+		util.ComposeErrorResponse(w, r, revokeErr)
 		return
 	}
 
 	util.ComposeJSONResponse(w, http.StatusOK, map[string]string{
-		"message": message,
+		"message": "Successfully logged out from all devices",
 	})
+}
+
+func userIDFromAuthorizationHeader(r *http.Request) string {
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		return ""
+	}
+
+	parts := strings.Split(authHeader, " ")
+	if len(parts) != 2 || parts[0] != "Bearer" {
+		util.Logger.Warnw("Logout authorization header ignored", "request_id", util.RequestIDFromContext(r.Context()))
+		return ""
+	}
+
+	claims, err := auth.Service.ValidateToken(parts[1])
+	if err != nil || claims == nil {
+		util.Logger.Warnw("Logout access token ignored", "error", err, "request_id", util.RequestIDFromContext(r.Context()))
+		return ""
+	}
+
+	return claims.UserID
 }
 
 // GetTokens handles requests to list all user's refresh tokens

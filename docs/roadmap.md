@@ -112,7 +112,7 @@ Cleanup notes:
 - `model/version.go` and OpenAPI `info.version` now report `0.5.0` while API routes remain under `/api/v0`.
 - OpenAPI now covers the registered auth/token/password-reset, category tree, and statistic/dashboard/chart routes from `controller/server.go`.
 - Cash/category enum examples use lowercase `income` and `expense`, matching `model/constants.go`.
-- `/open/auth/logout` remains mounted under `/open` for compatibility but is documented as requiring authenticated user context in the current middleware behavior; `/auth/tokens` is documented as an authenticated token-management endpoint.
+- `/open/auth/logout` is mounted under `/open` as a public idempotent endpoint; it returns OK without credentials and revokes sessions only when a valid refresh token or bearer access token is supplied. `/auth/tokens` is documented as an authenticated token-management endpoint.
 - Flutter-facing backend validation for `v0.4.0` found no new code task beyond completing and verifying the documented API surface; deeper client smoke testing belongs in `v0.5.0`.
 
 ## Active Milestone

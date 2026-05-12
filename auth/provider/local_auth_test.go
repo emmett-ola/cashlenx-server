@@ -1,6 +1,8 @@
 package provider
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -38,5 +40,29 @@ func TestGenerateTokenUsesConfiguredExpirationMinutes(t *testing.T) {
 	maxExpiration := time.Now().Add(30*time.Minute + time.Second)
 	if claims.ExpiresAt.Time.Before(minExpiration) || claims.ExpiresAt.Time.After(maxExpiration) {
 		t.Fatalf("ExpiresAt = %v, want around 30 minutes from now between %v and %v", claims.ExpiresAt.Time, minExpiration, maxExpiration)
+	}
+}
+
+func TestMiddlewareTreatsOpenLogoutAsPublic(t *testing.T) {
+	originalAPIVersion := util.GetConfigByKey("api.version")
+	defer util.SetConfigByKey("api.version", originalAPIVersion)
+	util.SetConfigByKey("api.version", "v0")
+
+	called := false
+	handler := NewLocalAuthService().Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		called = true
+		w.WriteHeader(http.StatusNoContent)
+	}))
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v0/open/auth/logout", nil)
+	rec := httptest.NewRecorder()
+
+	handler.ServeHTTP(rec, req)
+
+	if !called {
+		t.Fatal("expected open logout request to reach next handler without auth")
+	}
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNoContent)
 	}
 }

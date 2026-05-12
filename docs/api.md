@@ -40,7 +40,7 @@ Authorization: Bearer <access_token>
 
 Route groups:
 
-- `/open/*` is public by convention, but `/open/auth/logout` is currently kept there for compatibility and still expects authenticated user context.
+- `/open/*` is public by convention. `/open/auth/logout` is idempotent: it returns OK without credentials, revokes one session when a valid `refresh_token` is provided, and revokes all sessions when a valid bearer access token is provided without `refresh_token`.
 - `/auth/tokens` is authenticated token-management API.
 - `/admin/*` requires authenticated admin role.
 - `/user/*`, `/cash/*`, `/category/*`, and `/statistic/*` are authenticated user-scoped APIs.
