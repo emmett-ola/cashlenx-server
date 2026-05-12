@@ -454,6 +454,7 @@ Repo scripts include:
 - `scripts/start.ps1`, `scripts/start.sh`
 - `scripts/interactive.ps1`, `scripts/interactive.sh`
 - `scripts/generate-docs.ps1`, `scripts/generate-docs.sh`
+- `scripts/smoke-api.sh`
 
 ### CI
 
@@ -540,6 +541,9 @@ go build -o cashlenx main.go
 
 # Run all tests
 go test ./...
+
+# Run API smoke flow against a running local server
+BASE_URL=http://localhost:8080/api/v0 scripts/smoke-api.sh
 ```
 
 ## Guidelines For Future Changes

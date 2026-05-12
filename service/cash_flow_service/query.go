@@ -51,6 +51,10 @@ func IsQueryFieldsConflicted(plainId, belongsDate, exactDescription, fuzzyDescri
 }
 
 func QueryById(plainId string) (model.CashFlowEntity, error) {
+	if err := validation.ValidateID(plainId); err != nil {
+		return model.CashFlowEntity{}, err
+	}
+
 	cashFlowEntity := cash_flow_mapper.INSTANCE.GetCashFlowByObjectId(plainId)
 	if cashFlowEntity.IsEmpty() {
 		return model.CashFlowEntity{}, myErrors.NewNotFoundError("cash_flow not found")
@@ -213,22 +217,16 @@ func QueryByDateForUser(belongsDate string, userId string) ([]model.CashFlowEnti
 
 // QueryByDateRangeForUser retrieves cash flows within a date range for the user
 func QueryByDateRangeForUser(fromDateStr, toDateStr string, userId string) ([]model.CashFlowEntity, error) {
+	fromDate, toDate, err := validateDateRange(fromDateStr, toDateStr)
+	if err != nil {
+		return []model.CashFlowEntity{}, err
+	}
+
 	// Validate and convert userId
 	userObjectId := util.Convert2ObjectId(userId)
 	if userObjectId == primitive.NilObjectID {
 		util.Logger.Warnf("Invalid user ID format: '%s'", userId)
 		return []model.CashFlowEntity{}, errors.New("invalid user ID")
-	}
-
-	// Parse date strings
-	fromDate, err := util.ParseDate(fromDateStr)
-	if err != nil {
-		return []model.CashFlowEntity{}, errors.New("from_date error, try format like 19700101, 1970-01-01, or 1970/01/01")
-	}
-
-	toDate, err := util.ParseDate(toDateStr)
-	if err != nil {
-		return []model.CashFlowEntity{}, errors.New("to_date error, try format like 19700101, 1970-01-01, or 1970/01/01")
 	}
 
 	// Use UTC time
@@ -251,6 +249,28 @@ func QueryByDateRangeForUser(fromDateStr, toDateStr string, userId string) ([]mo
 	populateCategoryInfo(matchedCashFlowList)
 
 	return matchedCashFlowList, nil
+}
+
+func validateDateRange(fromDateStr, toDateStr string) (time.Time, time.Time, error) {
+	if fromDateStr == "" || toDateStr == "" {
+		return time.Time{}, time.Time{}, errors.New("from_date and to_date are required")
+	}
+
+	fromDate, err := util.ParseDate(fromDateStr)
+	if err != nil {
+		return time.Time{}, time.Time{}, errors.New("from_date error, try format like 19700101, 1970-01-01, or 1970/01/01")
+	}
+
+	toDate, err := util.ParseDate(toDateStr)
+	if err != nil {
+		return time.Time{}, time.Time{}, errors.New("to_date error, try format like 19700101, 1970-01-01, or 1970/01/01")
+	}
+
+	if fromDate.After(toDate) {
+		return time.Time{}, time.Time{}, errors.New("from_date should be before or equal to to_date")
+	}
+
+	return fromDate, toDate, nil
 }
 
 // Helper function to populate category info
