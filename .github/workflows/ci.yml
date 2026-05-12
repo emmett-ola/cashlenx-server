@@ -41,14 +41,6 @@ jobs:
         fail_ci_if_error: false
         token: ${{ secrets.CODECOV_TOKEN }}
 
-    - name: Lint (if golangci-lint is installed)
-      run: |
-        if command -v golangci-lint &> /dev/null; then
-          golangci-lint run
-        else
-          echo "golangci-lint not found, skipping lint step"
-        fi
-
   docker-build:
     name: Build Docker Image
     runs-on: ubuntu-latest

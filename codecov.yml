@@ -24,12 +24,6 @@ flags:
   github-actions:
     paths:
       - .
-  travis:
-    paths:
-      - .
-  circleci:
-    paths:
-      - .
 
 ignore:
   - "docs/**"

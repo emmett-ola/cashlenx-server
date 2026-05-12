@@ -460,16 +460,15 @@ Repo scripts include:
 ### CI
 
 GitHub Actions workflow: `.github/workflows/ci.yml`
-Travis CI workflow: `.travis.yml`
-CircleCI workflow: `.circleci/config.yml`
 Codecov configuration: `codecov.yml`
+DeepSource configuration: `.deepsource.toml`
 
 Current CI behavior:
 
 - builds the repo
 - runs `scripts/ci-test.sh`, which executes `go test -v -race -covermode=atomic -coverprofile=coverage.out ./...`
-- uploads coverage to Codecov from GitHub Actions, Travis CI, and CircleCI when provider credentials/network are available
-- optionally runs `golangci-lint` if installed
+- uploads coverage to Codecov from GitHub Actions when provider credentials/network are available
+- uses DeepSource for repository code analysis
 - builds Docker image
 - generates Swagger UI HTML docs from `docs/openapi.yaml`
 

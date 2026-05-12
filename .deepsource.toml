@@ -1,14 +1,30 @@
 version = 1
 
+test_patterns = [
+  "**/*_test.go"
+]
+
+exclude_patterns = [
+  ".github/**",
+  "docs/**",
+  "docker/**",
+  "migrations/**"
+]
+
 [[analyzers]]
 name = "docker"
+enabled = true
 
 [[analyzers]]
 name = "go"
+enabled = true
 
   [analyzers.meta]
   import_root = "github.com/macar-x/cashlenx-server"
-  dependencies_vendored = true
+  dependencies_vendored = false
+  cgo_enabled = false
+  cyclomatic_complexity_threshold = "high"
 
 [[code_formatters]]
 name = "gofumpt"
+enabled = true

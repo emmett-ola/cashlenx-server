@@ -114,7 +114,7 @@ go test ./...
 scripts/ci-test.sh
 ```
 
-Test coverage is still uneven while the project is under development. CI uses `scripts/ci-test.sh` to run the full Go test suite with race detection and `coverage.out` generation for Codecov.
+Test coverage is still uneven while the project is under development. GitHub Actions uses `scripts/ci-test.sh` to run the full Go test suite with race detection and `coverage.out` generation for Codecov. DeepSource handles code analysis.
 
 ## Technology
 
