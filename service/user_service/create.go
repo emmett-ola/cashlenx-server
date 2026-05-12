@@ -4,9 +4,7 @@ import (
 	std_errors "errors"
 
 	"github.com/macar-x/cashlenx-server/errors"
-	"github.com/macar-x/cashlenx-server/mapper/user_mapper"
 	"github.com/macar-x/cashlenx-server/model"
-	"github.com/macar-x/cashlenx-server/service/category_service"
 	"github.com/macar-x/cashlenx-server/util"
 	"github.com/macar-x/cashlenx-server/validation"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -23,7 +21,7 @@ func CreateService(requestBody model.UserDTO, creatorId *string) (string, error)
 	}
 
 	// Check if username is already taken (including deleted users)
-	existingUser := user_mapper.INSTANCE.GetUserByUsernameIncludeDeleted(requestBody.Username)
+	existingUser := userRepo.GetUserByUsernameIncludeDeleted(requestBody.Username)
 	if !existingUser.Id.IsZero() {
 		return "", errors.NewFieldAlreadyExistsError("username", "username is already taken")
 	}
@@ -75,13 +73,13 @@ func CreateService(requestBody model.UserDTO, creatorId *string) (string, error)
 	}
 
 	// Insert the user into the database
-	userId := user_mapper.INSTANCE.InsertUserByEntity(userEntity)
+	userId := userRepo.InsertUserByEntity(userEntity)
 	if userId == "" {
 		return "", std_errors.New("failed to create user")
 	}
 
 	// Initialize default categories for the new user
-	if err := category_service.InitializeDefaultCategoriesForUser(userId); err != nil {
+	if err := initializeDefaultCategoriesForUser(userId); err != nil {
 		util.Logger.Warnw("Failed to initialize default categories for new user",
 			"userId", userId,
 			"error", err)

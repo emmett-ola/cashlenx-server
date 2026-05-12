@@ -508,8 +508,17 @@ Observed test locations include:
 - `service/manage_service/*_test.go`
 - `service/refresh_token_service/refresh_token_test.go`
 - `service/statistic_service/*_test.go`
+- `service/user_service/*_test.go`
+- `service/verification_service/*_test.go`
 
 Before relying on a refactor, check whether the affected path is covered. In many areas, manual verification is still necessary.
+
+Unit test guidance:
+
+- Unit tests should be deterministic and should not create, delete, or mutate real files or database data
+- Prefer in-memory fakes/stubs and package-local dependency seams for mapper, email, token, time, randomness, and other side effects
+- If code structure blocks practical unit testing, refactor the source code to expose a small testable seam while preserving business logic, API contracts, persistence behavior, and error semantics
+- Keep live database and filesystem verification in integration/smoke checks, not unit tests
 
 CLI statistic import/export note: `cmd/statistic_cmd/export.go` and `cmd/statistic_cmd/import.go` accept `--user`, but currently fall back to `user_service.GetDefaultAdminUserId()` when it is omitted. Treat this as a development convenience, not a finished multi-user CLI auth story.
 

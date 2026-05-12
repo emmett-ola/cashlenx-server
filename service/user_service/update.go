@@ -4,9 +4,7 @@ import (
 	std_errors "errors"
 
 	"github.com/macar-x/cashlenx-server/errors"
-	"github.com/macar-x/cashlenx-server/mapper/user_mapper"
 	"github.com/macar-x/cashlenx-server/model"
-	"github.com/macar-x/cashlenx-server/service/refresh_token_service"
 	"github.com/macar-x/cashlenx-server/util"
 	"github.com/macar-x/cashlenx-server/validation"
 	"golang.org/x/crypto/bcrypt"
@@ -15,7 +13,7 @@ import (
 // UpdateService updates an existing user
 func UpdateService(plainId string, requestBody model.UserDTO) (model.UserEntity, error) {
 	// Get existing user
-	existingUser := user_mapper.INSTANCE.GetUserByObjectId(plainId)
+	existingUser := userRepo.GetUserByObjectId(plainId)
 	if existingUser.Id.IsZero() {
 		return model.UserEntity{}, errors.NewNotFoundError("user not found")
 	}
@@ -23,7 +21,7 @@ func UpdateService(plainId string, requestBody model.UserDTO) (model.UserEntity,
 	// Update fields if provided
 	if requestBody.Username != "" {
 		// Check if username is already taken by another user
-		checkUser := user_mapper.INSTANCE.GetUserByUsername(requestBody.Username)
+		checkUser := userRepo.GetUserByUsername(requestBody.Username)
 		if !checkUser.Id.IsZero() && checkUser.Id.Hex() != plainId {
 			return model.UserEntity{}, errors.NewFieldAlreadyExistsError("username", "username is already taken")
 		}
@@ -66,7 +64,7 @@ func UpdateService(plainId string, requestBody model.UserDTO) (model.UserEntity,
 		existingUser.PasswordHash = string(hashedPassword)
 
 		// Revoke all refresh tokens when password changes
-		if err := refresh_token_service.RevokeAllRefreshTokens(plainId); err != nil {
+		if err := revokeAllRefreshTokens(plainId); err != nil {
 			util.Logger.Warnw("Failed to revoke refresh tokens after password change", "userId", plainId, "error", err)
 		}
 	}
@@ -75,7 +73,7 @@ func UpdateService(plainId string, requestBody model.UserDTO) (model.UserEntity,
 	existingUser.UpdateTime = util.GetCurrentTime()
 
 	// Update user in database
-	updatedUser := user_mapper.INSTANCE.UpdateUserByEntity(plainId, existingUser)
+	updatedUser := userRepo.UpdateUserByEntity(plainId, existingUser)
 	if updatedUser.Id.IsZero() {
 		return model.UserEntity{}, std_errors.New("failed to update user")
 	}
@@ -92,7 +90,7 @@ func SetPasswordService(plainId string, password string) (model.UserEntity, erro
 	}
 
 	// Get existing user
-	existingUser := user_mapper.INSTANCE.GetUserByObjectId(plainId)
+	existingUser := userRepo.GetUserByObjectId(plainId)
 	if existingUser.Id.IsZero() {
 		return model.UserEntity{}, errors.NewNotFoundError("user not found")
 	}
@@ -108,12 +106,12 @@ func SetPasswordService(plainId string, password string) (model.UserEntity, erro
 	existingUser.UpdateTime = util.GetCurrentTime()
 
 	// Revoke all refresh tokens when password changes
-	if err := refresh_token_service.RevokeAllRefreshTokens(plainId); err != nil {
+	if err := revokeAllRefreshTokens(plainId); err != nil {
 		util.Logger.Warnw("Failed to revoke refresh tokens after password change", "userId", plainId, "error", err)
 	}
 
 	// Update user in database
-	updatedUser := user_mapper.INSTANCE.UpdateUserByEntity(plainId, existingUser)
+	updatedUser := userRepo.UpdateUserByEntity(plainId, existingUser)
 	if updatedUser.Id.IsZero() {
 		return model.UserEntity{}, std_errors.New("failed to update password")
 	}
@@ -125,18 +123,18 @@ func SetPasswordService(plainId string, password string) (model.UserEntity, erro
 // Note: Email updates are handled separately via email verification
 func UpdateProfileService(plainId string, requestBody model.UserProfileUpdateRequest) (model.UserEntity, error) {
 	// Get existing user
-	existingUser := user_mapper.INSTANCE.GetUserByObjectId(plainId)
+	existingUser := userRepo.GetUserByObjectId(plainId)
 	if existingUser.Id.IsZero() {
 		return model.UserEntity{}, errors.NewNotFoundError("user not found")
 	}
 
 	// Update profile fields if provided
-	// We allow updating to empty strings if that's what user wants? 
+	// We allow updating to empty strings if that's what user wants?
 	// Or only if not empty? The DTO structure usually implies optional fields.
 	// Let's assume non-empty updates for now, or use pointers in struct to distinguish nil vs empty.
 	// Given the struct has string types, empty string is the zero value.
 	// But nickname/avatar/gender can be updated.
-	
+
 	if requestBody.Nickname != "" {
 		existingUser.Nickname = requestBody.Nickname
 	}
@@ -155,7 +153,7 @@ func UpdateProfileService(plainId string, requestBody model.UserProfileUpdateReq
 	existingUser.UpdateUserId = existingUser.Id
 
 	// Update user in database
-	updatedUser := user_mapper.INSTANCE.UpdateUserByEntity(plainId, existingUser)
+	updatedUser := userRepo.UpdateUserByEntity(plainId, existingUser)
 	if updatedUser.Id.IsZero() {
 		return model.UserEntity{}, std_errors.New("failed to update profile")
 	}
@@ -171,7 +169,7 @@ func ChangePasswordService(plainId string, oldPassword, newPassword string) erro
 	}
 
 	// Get existing user
-	user := user_mapper.INSTANCE.GetUserByObjectId(plainId)
+	user := userRepo.GetUserByObjectId(plainId)
 	if user.Id.IsZero() {
 		return errors.NewNotFoundError("user not found")
 	}
@@ -192,13 +190,13 @@ func ChangePasswordService(plainId string, oldPassword, newPassword string) erro
 	user.UpdateTime = util.GetCurrentTime()
 	user.UpdateUserId = user.Id
 
-	updatedUser := user_mapper.INSTANCE.UpdateUserByEntity(plainId, user)
+	updatedUser := userRepo.UpdateUserByEntity(plainId, user)
 	if updatedUser.Id.IsZero() {
 		return errors.NewInternalError("failed to update password", nil)
 	}
 
 	// Revoke all refresh tokens for security
-	if err := refresh_token_service.RevokeAllRefreshTokens(plainId); err != nil {
+	if err := revokeAllRefreshTokens(plainId); err != nil {
 		util.Logger.Warnw("Failed to revoke tokens after password change", "userId", plainId, "error", err)
 	}
 
