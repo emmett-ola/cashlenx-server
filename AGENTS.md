@@ -33,9 +33,9 @@ These are collaboration defaults provided by the project owner and should be tre
 - Default development database is MongoDB
 - Users may still choose MongoDB or MySQL when bootstrapping their environment
 - This is an under-development project, so use practical baseline validation effort rather than assuming strict release-grade test gates
-- We are currently developing on the `dev/v0.5.0` branch line
+- We are currently developing on the `dev/v0.6.0` branch line
 - The branch line maps to the feature/version batch currently in progress
-- Once planned work for `v0.5.0` is complete, it is intended to be merged/promoted to `main`, then development moves to the next branch line such as `dev/v0.6.0`
+- Once planned work for `v0.6.0` is complete, it is intended to be merged/promoted to `main`, then development moves to the next branch line such as `dev/v0.7.0`
 - API versioning stays under `/api/v0` during active development
 - A stable release is expected to introduce `/api/v1` alongside a stable application version such as `v1.0.0`
 - User-facing feature/function completion takes priority over enhancement work such as observability, performance, migration tooling, cloud hardening, and release automation

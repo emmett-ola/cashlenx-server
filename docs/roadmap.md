@@ -4,10 +4,10 @@ This roadmap tracks backend work by versioned milestones. During the `v0.x` phas
 
 ## Current Direction
 
-- Active branch line: `dev/v0.5.0`
+- Active branch line: `dev/v0.6.0`
 - Active API path version: `/api/v0`
-- Current roadmap milestone: `v0.5.0` core user-facing feature completion
-- Next enhancement milestone: `v0.6.0` observability
+- Current roadmap milestone: `v0.6.0` beta readiness and service testability
+- Next enhancement milestone: `v0.7.0` observability
 
 ## Versioning Policy
 
@@ -109,37 +109,46 @@ Cleanup notes:
 
 - `README.md` now describes implemented auth, account, cash, category, statistics, import/export, admin, Docker, and OpenAPI capabilities.
 - Current local server command is documented as `go run main.go open start -p 8080`.
-- `model/version.go` and OpenAPI `info.version` now report `0.5.0` while API routes remain under `/api/v0`.
+- `model/version.go` and OpenAPI `info.version` now report `0.6.0` while API routes remain under `/api/v0`.
 - OpenAPI now covers the registered auth/token/password-reset, category tree, and statistic/dashboard/chart routes from `controller/server.go`.
 - Cash/category enum examples use lowercase `income` and `expense`, matching `model/constants.go`.
 - `/open/auth/logout` is mounted under `/open` as a public idempotent endpoint; it returns OK without credentials and revokes sessions only when a valid refresh token or bearer access token is supplied. `/auth/tokens` is documented as an authenticated token-management endpoint.
-- Flutter-facing backend validation for `v0.4.0` found no new code task beyond completing and verifying the documented API surface; deeper client smoke testing belongs in `v0.5.0`.
+- Flutter-facing backend validation for `v0.4.0` found no new code task beyond completing and verifying the documented API surface; deeper client smoke testing belongs in active beta readiness work.
 
-## Active Milestone
+## Completed Milestone
 
 ### v0.5.0 - Core User-Facing Feature Completion
 
 - [x] Reconcile token expiration defaults: access tokens use `JWT_EXPIRATION_MINUTES` / `auth.jwt.expiration_minutes` with a 30-minute default, and refresh tokens use `REFRESH_TOKEN_EXPIRATION_DAYS` / `auth.refresh_token.expiration_days` with a 14-day default #security #api
-- [ ] Complete or explicitly disable unfinished email-dependent flows until SMTP/provider configuration is production-usable #api #security
-- [ ] Run beta smoke checks against `/api/v0` for registration, login, token refresh, logout, profile, password change, cash flow, category, statistics, import/export, admin bootstrap, and admin APIs #api #security
 - [x] Decide beta support stance: MongoDB is the supported beta deployment backend, while MySQL should remain build-compatible and avoid known mapper gaps in touched code #data #security
-- [ ] Run Flutter-client smoke checks against `/api/v0` for login, registration, logout, token refresh, profile, cash flow, category, statistics, import/export, and admin flows #flutter #api
-- [ ] Fix behavior gaps discovered by Flutter-client smoke checks and manual API verification #flutter #api
 - [x] Normalize response and error behavior across auth, account, cash flow, category, statistic, import/export, and admin APIs #api
 - [x] Add practical targeted tests for corrected user-facing flows, prioritizing paths touched by fixes #api
-- [ ] Preserve MongoDB as the default development path while keeping MySQL behavior compatible for touched persistence code #data
 - [x] Align CI Go version and branch coverage with `go.mod` and the active `dev/*` branch line before beta tagging #devops
-- [ ] Update `docs/openapi.yaml`, `README.md`, `AGENTS.md`, and implementation docs whenever a user-facing API contract changes #docs
+- [x] Update `docs/openapi.yaml`, `README.md`, `AGENTS.md`, and implementation docs whenever a user-facing API contract changes #docs
+
+## Active Milestone
+
+### v0.6.0 - Beta Readiness and Service Testability
+
+- [x] Move category, cash flow, and statistic services to constructor-based mapper dependency injection while preserving package-level compatibility functions #api #dx
+- [x] Keep service unit tests database-free with in-memory mapper fakes for category, cash flow, statistic, user, and verification flows #api #dx
+- [x] Enforce admin role lifecycle: only startup bootstrap creates admin accounts, generic creation creates users, role updates are rejected, and admin deletion is blocked #security #api
+- [x] Align displayed implementation version and active branch metadata to `0.6.0` while API routes remain under `/api/v0` #docs #devops
+- [ ] Complete or explicitly disable unfinished email-dependent flows until SMTP/provider configuration is production-usable #api #security
+- [ ] Run MongoDB-backed beta smoke checks against `/api/v0` for registration, login, token refresh, logout, profile, password change, cash flow, category, statistics, import/export, admin bootstrap, and admin APIs #api #security
+- [ ] Run Flutter-client smoke checks against `/api/v0` for login, registration, logout, token refresh, profile, cash flow, category, statistics, import/export, and admin flows #flutter #api
+- [ ] Fix behavior gaps discovered by beta API smoke checks, Flutter-client smoke checks, and manual API verification #flutter #api
+- [ ] Confirm MongoDB default development path from a fresh Docker volume while keeping MySQL build compatibility for touched persistence code #data
 
 ## Later Enhancement Milestones
 
-### v0.6.0 - Observability
+### v0.7.0 - Observability
 
 - [x] Request ID propagation and structured request/error logging #observability
 - [ ] `/metrics` endpoint with Prometheus counters/histograms #observability #devops
 - [ ] Enable `pprof` in development #observability
 
-### v0.7.0 - Migration Tooling
+### v0.8.0 - Migration Tooling
 
 - [ ] Introduce MySQL migration tooling and track schema changes #data #devops
 - [ ] Validate MongoDB indexes at startup and apply scripts #data
@@ -147,7 +156,7 @@ Cleanup notes:
 - [ ] Integration tests via Docker Compose for MongoDB/MySQL #data #devops
 - [ ] Add rollback functionality for failed database operations #data #security
 
-### v0.8.0 - Performance and Caching
+### v0.9.0 - Performance and Caching
 
 - [ ] Extend category cache and add invalidation on writes #performance
 - [ ] Optional read-through cache for recent queries #performance
@@ -156,7 +165,7 @@ Cleanup notes:
 - [ ] Implement efficient category-name fetch mapper support #performance
 - [ ] Review and fix SQL injection risks in MySQL mappers #security
 
-### v0.9.0 - Cloud and Self-Hosted Hardening
+### v0.10.0 - Cloud and Self-Hosted Hardening
 
 - [ ] Docker Compose profiles for single-tenant and multi-tenant deployments #devops
 - [ ] Helm chart draft for cloud deployments, if needed #devops

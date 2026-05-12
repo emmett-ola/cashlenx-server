@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: CashLenX API
   description: Personal finance management API
-  version: 0.5.0
+  version: 0.6.0
   contact:
     name: CashLenX Team
     email: support@cashlenx.com
