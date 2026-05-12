@@ -3,8 +3,6 @@ package category_service
 import (
 	"errors"
 
-	"github.com/macar-x/cashlenx-server/mapper/cash_flow_mapper"
-	"github.com/macar-x/cashlenx-server/mapper/category_mapper"
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/util"
 	"github.com/macar-x/cashlenx-server/validation"
@@ -13,6 +11,10 @@ import (
 
 // DeleteByIdForUser deletes a category by ID, ensuring it belongs to the user
 func DeleteByIdForUser(plainId string, userId string, force bool) (model.CategoryEntity, error) {
+	return defaultCategoryService().DeleteByIdForUser(plainId, userId, force)
+}
+
+func (s *CategoryService) DeleteByIdForUser(plainId string, userId string, force bool) (model.CategoryEntity, error) {
 	// Validate ID
 	if err := validation.ValidateID(plainId); err != nil {
 		return model.CategoryEntity{}, err
@@ -25,7 +27,7 @@ func DeleteByIdForUser(plainId string, userId string, force bool) (model.Categor
 	}
 
 	// Check if it exists and belongs to user
-	existCategoryEntity := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(plainId, userObjectId)
+	existCategoryEntity := s.categoryMapper.GetCategoryByObjectIdAndUser(plainId, userObjectId)
 	if existCategoryEntity.IsEmpty() {
 		return model.CategoryEntity{}, errors.New("category not found or access denied")
 	}
@@ -38,18 +40,18 @@ func DeleteByIdForUser(plainId string, userId string, force bool) (model.Categor
 	// Optimization: If list is large, count is better.
 	// But we just added DeleteCashFlowsByCategoryIdAndUser to interface, let's assume we can also add Count.
 	// For now, let's use GetCashFlowsByCategoryIdAndUser to check existence.
-	relatedFlows := cash_flow_mapper.INSTANCE.GetCashFlowsByCategoryIdAndUser(plainId, userObjectId)
+	relatedFlows := s.cashFlowMapper.GetCashFlowsByCategoryIdAndUser(plainId, userObjectId)
 	if len(relatedFlows) > 0 {
 		if !force {
 			return model.CategoryEntity{}, errors.New("cannot delete category: associated cash flows exist. use force=true to delete them first")
 		}
 
 		// Force delete: delete associated cash flows first
-		cash_flow_mapper.INSTANCE.DeleteCashFlowsByCategoryIdAndUser(plainId, userObjectId)
+		s.cashFlowMapper.DeleteCashFlowsByCategoryIdAndUser(plainId, userObjectId)
 	}
 
 	// Delete it
-	deletedEntity := category_mapper.INSTANCE.DeleteCategoryByObjectIdAndUser(plainId, userObjectId)
+	deletedEntity := s.categoryMapper.DeleteCategoryByObjectIdAndUser(plainId, userObjectId)
 	if deletedEntity.IsEmpty() {
 		return model.CategoryEntity{}, errors.New("category delete failed")
 	}

@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/macar-x/cashlenx-server/mapper/category_mapper"
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/util"
 	"github.com/macar-x/cashlenx-server/validation"
@@ -14,6 +13,10 @@ import (
 
 // UpdateByIdForUser updates a category record by ID, ensuring it belongs to the user
 func UpdateByIdForUser(plainId, name, categoryType, remark string, parentId string, userId string) (model.CategoryEntity, error) {
+	return defaultCategoryService().UpdateByIdForUser(plainId, name, categoryType, remark, parentId, userId)
+}
+
+func (s *CategoryService) UpdateByIdForUser(plainId, name, categoryType, remark string, parentId string, userId string) (model.CategoryEntity, error) {
 	// Validate ID
 	if err := validation.ValidateID(plainId); err != nil {
 		return model.CategoryEntity{}, err
@@ -40,7 +43,7 @@ func UpdateByIdForUser(plainId, name, categoryType, remark string, parentId stri
 	}
 
 	// Query existing record - ensure it belongs to the user
-	existingEntity := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(plainId, userObjectId)
+	existingEntity := s.categoryMapper.GetCategoryByObjectIdAndUser(plainId, userObjectId)
 	if existingEntity.IsEmpty() {
 		return model.CategoryEntity{}, errors.New("category not found or access denied")
 	}
@@ -63,7 +66,7 @@ func UpdateByIdForUser(plainId, name, categoryType, remark string, parentId stri
 				}
 			}
 
-			conflictCategory := category_mapper.INSTANCE.GetCategoryByNameUserTypeAndParent(name, userObjectId, existingEntity.Type, checkParentId)
+			conflictCategory := s.categoryMapper.GetCategoryByNameUserTypeAndParent(name, userObjectId, existingEntity.Type, checkParentId)
 			if !conflictCategory.IsEmpty() {
 				return model.CategoryEntity{}, errors.New("category with this name already exists for this user and type under this parent")
 			}
@@ -79,7 +82,7 @@ func UpdateByIdForUser(plainId, name, categoryType, remark string, parentId stri
 		parentObjectId := util.Convert2ObjectId(parentId)
 		if parentObjectId != primitive.NilObjectID {
 			// Verify parent category belongs to same user
-			parentEntity := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(parentId, userObjectId)
+			parentEntity := s.categoryMapper.GetCategoryByObjectIdAndUser(parentId, userObjectId)
 			if parentEntity.IsEmpty() {
 				return model.CategoryEntity{}, errors.New("parent category not found or access denied")
 			}
@@ -96,7 +99,7 @@ func UpdateByIdForUser(plainId, name, categoryType, remark string, parentId stri
 	existingEntity.UpdateUserId = userObjectId
 
 	// Call mapper to update the record
-	updatedEntity := category_mapper.INSTANCE.UpdateCategoryByEntityAndUser(plainId, existingEntity, userObjectId)
+	updatedEntity := s.categoryMapper.UpdateCategoryByEntityAndUser(plainId, existingEntity, userObjectId)
 	if updatedEntity.IsEmpty() {
 		return model.CategoryEntity{}, errors.New("failed to update category")
 	}

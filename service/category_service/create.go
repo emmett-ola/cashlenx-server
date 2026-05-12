@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/macar-x/cashlenx-server/errors"
-	"github.com/macar-x/cashlenx-server/mapper/category_mapper"
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/util"
 	"github.com/macar-x/cashlenx-server/validation"
@@ -14,6 +13,10 @@ import (
 
 // CreateForUser creates a new category for a specific user
 func CreateForUser(name, categoryType, remark string, parentId string, userId string) (model.CategoryEntity, error) {
+	return defaultCategoryService().CreateForUser(name, categoryType, remark, parentId, userId)
+}
+
+func (s *CategoryService) CreateForUser(name, categoryType, remark string, parentId string, userId string) (model.CategoryEntity, error) {
 	// Validate required fields
 	if err := validation.ValidateCategoryName(name); err != nil {
 		return model.CategoryEntity{}, err
@@ -39,7 +42,7 @@ func CreateForUser(name, categoryType, remark string, parentId string, userId st
 		parentObjId = primitive.NilObjectID
 	}
 
-	existingCategory := category_mapper.INSTANCE.GetCategoryByNameUserTypeAndParent(name, userObjectId, categoryType, parentObjId)
+	existingCategory := s.categoryMapper.GetCategoryByNameUserTypeAndParent(name, userObjectId, categoryType, parentObjId)
 	if !existingCategory.IsEmpty() {
 		return model.CategoryEntity{}, errors.NewAlreadyExistsError("category with this name already exists for this user and type under this parent")
 	}
@@ -67,7 +70,7 @@ func CreateForUser(name, categoryType, remark string, parentId string, userId st
 		parentObjectId := util.Convert2ObjectId(parentId)
 		if parentObjectId != primitive.NilObjectID {
 			// Verify parent category belongs to same user
-			parentEntity := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(parentId, userObjectId)
+			parentEntity := s.categoryMapper.GetCategoryByObjectIdAndUser(parentId, userObjectId)
 			if parentEntity.IsEmpty() {
 				return model.CategoryEntity{}, errors.NewNotFoundError("parent category not found or access denied")
 			}
@@ -80,12 +83,12 @@ func CreateForUser(name, categoryType, remark string, parentId string, userId st
 	}
 
 	// Insert the category
-	insertedId := category_mapper.INSTANCE.InsertCategoryByEntity(newEntity)
+	insertedId := s.categoryMapper.InsertCategoryByEntity(newEntity)
 	if insertedId == "" {
 		return model.CategoryEntity{}, errors.NewInternalError("failed to create category", nil)
 	}
 
 	// Retrieve and return the created category using the pre-generated ID
-	createdEntity := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(newId.Hex(), userObjectId)
+	createdEntity := s.categoryMapper.GetCategoryByObjectIdAndUser(newId.Hex(), userObjectId)
 	return createdEntity, nil
 }

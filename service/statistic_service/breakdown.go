@@ -5,8 +5,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/macar-x/cashlenx-server/mapper/cash_flow_mapper"
-	"github.com/macar-x/cashlenx-server/mapper/category_mapper"
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/util"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -15,6 +13,10 @@ import (
 // GetBreakdownForUser gets category breakdown for the specified period
 // Only includes transactions belonging to the specified user
 func GetBreakdownForUser(period, date, userId string) (*Breakdown, error) {
+	return defaultStatisticService().GetBreakdownForUser(period, date, userId)
+}
+
+func (s *StatisticService) GetBreakdownForUser(period, date, userId string) (*Breakdown, error) {
 	// Convert userId string to ObjectID
 	userObjectId, err := primitive.ObjectIDFromHex(userId)
 	if err != nil {
@@ -36,16 +38,20 @@ func GetBreakdownForUser(period, date, userId string) (*Breakdown, error) {
 	fromDate, toDate := getDateRange(period, baseDate)
 
 	// Get all cash flows for user in this period
-	cashFlows := cash_flow_mapper.INSTANCE.GetCashFlowsByDateRangeAndUser(fromDate, toDate, userObjectId)
+	cashFlows := s.cashFlowMapper.GetCashFlowsByDateRangeAndUser(fromDate, toDate, userObjectId)
 
 	// Calculate breakdown
-	breakdown := calculateBreakdown(date, cashFlows, userObjectId)
+	breakdown := s.calculateBreakdown(date, cashFlows, userObjectId)
 
 	return breakdown, nil
 }
 
 // calculateBreakdown groups cash flows by category and calculates percentages
 func calculateBreakdown(period string, cashFlows []model.CashFlowEntity, userId primitive.ObjectID) *Breakdown {
+	return defaultStatisticService().calculateBreakdown(period, cashFlows, userId)
+}
+
+func (s *StatisticService) calculateBreakdown(period string, cashFlows []model.CashFlowEntity, userId primitive.ObjectID) *Breakdown {
 	breakdown := &Breakdown{
 		Period:            period,
 		ExpenseCategories: []CategoryBreakdownItem{},
@@ -58,7 +64,7 @@ func calculateBreakdown(period string, cashFlows []model.CashFlowEntity, userId 
 
 	for _, flow := range cashFlows {
 		// Get category for grouping and type determination
-		category := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(flow.CategoryId.Hex(), userId)
+		category := s.categoryMapper.GetCategoryByObjectIdAndUser(flow.CategoryId.Hex(), userId)
 		categoryName := "Unknown"
 		categoryType := ""
 		if !category.IsEmpty() {

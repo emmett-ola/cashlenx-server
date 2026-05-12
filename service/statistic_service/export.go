@@ -6,8 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/macar-x/cashlenx-server/mapper/cash_flow_mapper"
-	"github.com/macar-x/cashlenx-server/mapper/category_mapper"
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/util"
 	"github.com/xuri/excelize/v2"
@@ -22,6 +20,10 @@ var (
 // ExportForUser exports the user's cash flow data to Excel
 // Only exports data belonging to the specified user
 func ExportForUser(fromDateInString, toDateInString, filePath, userId string) error {
+	return defaultStatisticService().ExportForUser(fromDateInString, toDateInString, filePath, userId)
+}
+
+func (s *StatisticService) ExportForUser(fromDateInString, toDateInString, filePath, userId string) error {
 	if filePath == "" {
 		filePath = "./export.xlsx"
 	}
@@ -39,7 +41,7 @@ func ExportForUser(fromDateInString, toDateInString, filePath, userId string) er
 	}
 
 	file := createExcelFile()
-	exportDataForUser(file, fromDateInString, toDateInString, userObjectId)
+	s.exportDataForUser(file, fromDateInString, toDateInString, userObjectId)
 	saveExcelFile(file, filePath)
 	return nil
 }
@@ -79,6 +81,10 @@ func saveExcelFile(file *excelize.File, filePath string) {
 }
 
 func exportDataForUser(file *excelize.File, fromDateInString, toDateInString string, userId primitive.ObjectID) {
+	defaultStatisticService().exportDataForUser(file, fromDateInString, toDateInString, userId)
+}
+
+func (s *StatisticService) exportDataForUser(file *excelize.File, fromDateInString, toDateInString string, userId primitive.ObjectID) {
 	cashFlowRowIndex := 1
 
 	// Determine if we're exporting all data or a date range
@@ -96,7 +102,7 @@ func exportDataForUser(file *excelize.File, fromDateInString, toDateInString str
 		offset := 0
 
 		for {
-			cashFlows := cash_flow_mapper.INSTANCE.GetAllCashFlowsByUser(userId, limit, offset)
+			cashFlows := s.cashFlowMapper.GetAllCashFlowsByUser(userId, limit, offset)
 			if len(cashFlows) == 0 {
 				break // No more records
 			}
@@ -134,7 +140,7 @@ func exportDataForUser(file *excelize.File, fromDateInString, toDateInString str
 				writeExcelRow(file, yearMonth, "B"+cashFlowIndexInString, cashFlow.CategoryId.Hex())
 
 				// Get category name with user context
-				categoryEntity := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(cashFlow.CategoryId.Hex(), userId)
+				categoryEntity := s.categoryMapper.GetCategoryByObjectIdAndUser(cashFlow.CategoryId.Hex(), userId)
 				categoryName := "Unknown"
 				categoryType := ""
 				if !categoryEntity.IsEmpty() {
@@ -157,7 +163,7 @@ func exportDataForUser(file *excelize.File, fromDateInString, toDateInString str
 		currentYearAndMonth := "nil"
 
 		for queryDateEnded.After(queryDateCurrent) {
-			cashFlowArray := cash_flow_mapper.INSTANCE.GetCashFlowsByBelongsDateAndUser(queryDateCurrent, userId)
+			cashFlowArray := s.cashFlowMapper.GetCashFlowsByBelongsDateAndUser(queryDateCurrent, userId)
 			if len(cashFlowArray) == 0 {
 				util.Logger.Debugf("%s's flow is empty.\n", util.FormatDateToStringWithoutDash(queryDateCurrent))
 				queryDateCurrent = queryDateCurrent.AddDate(0, 0, 1)
@@ -192,7 +198,7 @@ func exportDataForUser(file *excelize.File, fromDateInString, toDateInString str
 				writeExcelRow(file, currentYearAndMonth, "B"+cashFlowIndexInString, cashFlow.CategoryId.Hex())
 
 				// Get category name with user context
-				categoryEntity := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(cashFlow.CategoryId.Hex(), userId)
+				categoryEntity := s.categoryMapper.GetCategoryByObjectIdAndUser(cashFlow.CategoryId.Hex(), userId)
 				categoryName := "Unknown"
 				categoryType := ""
 				if !categoryEntity.IsEmpty() {

@@ -5,8 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/macar-x/cashlenx-server/mapper/cash_flow_mapper"
-	"github.com/macar-x/cashlenx-server/mapper/category_mapper"
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/util"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -23,6 +21,10 @@ type Summary struct {
 
 // GetSummary returns financial summary for a given period
 func GetSummary(period, date string) (*Summary, error) {
+	return defaultCashFlowService().GetSummary(period, date)
+}
+
+func (s *CashFlowService) GetSummary(period, date string) (*Summary, error) {
 	validPeriods := map[string]bool{
 		"daily":   true,
 		"monthly": true,
@@ -72,13 +74,13 @@ func GetSummary(period, date string) (*Summary, error) {
 
 	currentDate := fromDate
 	for !currentDate.After(toDate) {
-		dayResults := cash_flow_mapper.INSTANCE.GetCashFlowsByBelongsDate(currentDate)
+		dayResults := s.cashFlowMapper.GetCashFlowsByBelongsDate(currentDate)
 
 		for _, cashFlow := range dayResults {
 			summary.TransactionCount++
 
 			// Get category to determine true type
-			category := category_mapper.INSTANCE.GetCategoryByObjectId(cashFlow.CategoryId.Hex())
+			category := s.categoryMapper.GetCategoryByObjectId(cashFlow.CategoryId.Hex())
 
 			isIncome := false
 			if !category.IsEmpty() {
@@ -128,6 +130,10 @@ func GetSummary(period, date string) (*Summary, error) {
 
 // GetSummaryForUser returns financial summary for a given period for a specific user
 func GetSummaryForUser(period, date string, userId string) (*Summary, error) {
+	return defaultCashFlowService().GetSummaryForUser(period, date, userId)
+}
+
+func (s *CashFlowService) GetSummaryForUser(period, date string, userId string) (*Summary, error) {
 	validPeriods := map[string]bool{
 		"daily":   true,
 		"monthly": true,
@@ -188,13 +194,13 @@ func GetSummaryForUser(period, date string, userId string) (*Summary, error) {
 	}
 
 	// Use date range query for efficiency instead of iterating day by day
-	cashFlows := cash_flow_mapper.INSTANCE.GetCashFlowsByDateRangeAndUser(fromDate, toDate, userObjectId)
+	cashFlows := s.cashFlowMapper.GetCashFlowsByDateRangeAndUser(fromDate, toDate, userObjectId)
 
 	for _, cashFlow := range cashFlows {
 		summary.TransactionCount++
 
 		// Get category to determine true type
-		category := category_mapper.INSTANCE.GetCategoryByObjectId(cashFlow.CategoryId.Hex())
+		category := s.categoryMapper.GetCategoryByObjectId(cashFlow.CategoryId.Hex())
 
 		isIncome := false
 		if !category.IsEmpty() {

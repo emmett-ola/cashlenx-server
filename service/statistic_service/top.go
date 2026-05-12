@@ -5,8 +5,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/macar-x/cashlenx-server/mapper/cash_flow_mapper"
-	"github.com/macar-x/cashlenx-server/mapper/category_mapper"
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/util"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -15,6 +13,10 @@ import (
 // GetTopExpensesForUser gets top N expenses for the specified period
 // Only includes transactions belonging to the specified user
 func GetTopExpensesForUser(limit int, period, date, userId string) (*TopExpenses, error) {
+	return defaultStatisticService().GetTopExpensesForUser(limit, period, date, userId)
+}
+
+func (s *StatisticService) GetTopExpensesForUser(limit int, period, date, userId string) (*TopExpenses, error) {
 	// Convert userId string to ObjectID
 	userObjectId, err := primitive.ObjectIDFromHex(userId)
 	if err != nil {
@@ -41,16 +43,20 @@ func GetTopExpensesForUser(limit int, period, date, userId string) (*TopExpenses
 	fromDate, toDate := getDateRange(period, baseDate)
 
 	// Get all cash flows for user in this period
-	cashFlows := cash_flow_mapper.INSTANCE.GetCashFlowsByDateRangeAndUser(fromDate, toDate, userObjectId)
+	cashFlows := s.cashFlowMapper.GetCashFlowsByDateRangeAndUser(fromDate, toDate, userObjectId)
 
 	// Calculate top expenses
-	topExpenses := calculateTopExpenses(date, limit, cashFlows, userObjectId)
+	topExpenses := s.calculateTopExpenses(date, limit, cashFlows, userObjectId)
 
 	return topExpenses, nil
 }
 
 // calculateTopExpenses finds the top N expenses and calculates percentages
 func calculateTopExpenses(period string, limit int, cashFlows []model.CashFlowEntity, userId primitive.ObjectID) *TopExpenses {
+	return defaultStatisticService().calculateTopExpenses(period, limit, cashFlows, userId)
+}
+
+func (s *StatisticService) calculateTopExpenses(period string, limit int, cashFlows []model.CashFlowEntity, userId primitive.ObjectID) *TopExpenses {
 	topExpenses := &TopExpenses{
 		Period:   period,
 		Limit:    limit,
@@ -61,7 +67,7 @@ func calculateTopExpenses(period string, limit int, cashFlows []model.CashFlowEn
 	var expenses []TopExpense
 	for _, flow := range cashFlows {
 		// Get category type
-		category := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(flow.CategoryId.Hex(), userId)
+		category := s.categoryMapper.GetCategoryByObjectIdAndUser(flow.CategoryId.Hex(), userId)
 		categoryName := "Unknown"
 		categoryType := ""
 		if !category.IsEmpty() {

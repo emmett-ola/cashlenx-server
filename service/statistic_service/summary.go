@@ -5,8 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/macar-x/cashlenx-server/mapper/cash_flow_mapper"
-	"github.com/macar-x/cashlenx-server/mapper/category_mapper"
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/util"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -15,6 +13,10 @@ import (
 // GetSummaryForUser gets financial summary for the specified period
 // Only includes transactions belonging to the specified user
 func GetSummaryForUser(period, date, userId string) (*Summary, error) {
+	return defaultStatisticService().GetSummaryForUser(period, date, userId)
+}
+
+func (s *StatisticService) GetSummaryForUser(period, date, userId string) (*Summary, error) {
 	// Convert userId string to ObjectID
 	userObjectId, err := primitive.ObjectIDFromHex(userId)
 	if err != nil {
@@ -36,10 +38,10 @@ func GetSummaryForUser(period, date, userId string) (*Summary, error) {
 	fromDate, toDate := getDateRange(period, baseDate)
 
 	// Get all cash flows for user in this period
-	cashFlows := cash_flow_mapper.INSTANCE.GetCashFlowsByDateRangeAndUser(fromDate, toDate, userObjectId)
+	cashFlows := s.cashFlowMapper.GetCashFlowsByDateRangeAndUser(fromDate, toDate, userObjectId)
 
 	// Calculate summary statistics
-	summary := calculateSummary(period, date, cashFlows, userObjectId)
+	summary := s.calculateSummary(period, date, cashFlows, userObjectId)
 
 	return summary, nil
 }
@@ -74,6 +76,10 @@ func getDateRange(period string, baseDate time.Time) (time.Time, time.Time) {
 
 // calculateSummary computes all summary statistics from cash flows
 func calculateSummary(period, date string, cashFlows []model.CashFlowEntity, userId primitive.ObjectID) *Summary {
+	return defaultStatisticService().calculateSummary(period, date, cashFlows, userId)
+}
+
+func (s *StatisticService) calculateSummary(period, date string, cashFlows []model.CashFlowEntity, userId primitive.ObjectID) *Summary {
 	summary := &Summary{
 		Period:     date,
 		PeriodType: period,
@@ -91,7 +97,7 @@ func calculateSummary(period, date string, cashFlows []model.CashFlowEntity, use
 		summary.TransactionCount++
 
 		// Get category for grouping and type determination
-		category := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(flow.CategoryId.Hex(), userId)
+		category := s.categoryMapper.GetCategoryByObjectIdAndUser(flow.CategoryId.Hex(), userId)
 		categoryName := "Unknown"
 		categoryType := ""
 		if !category.IsEmpty() {
@@ -110,7 +116,7 @@ func calculateSummary(period, date string, cashFlows []model.CashFlowEntity, use
 			// Track expense by category (positive for display)
 			summary.Categories[categoryName] += flow.Amount
 		}
-		
+
 		totalAmount += flow.Amount
 	}
 
@@ -132,4 +138,3 @@ func calculateSummary(period, date string, cashFlows []model.CashFlowEntity, use
 
 	return summary
 }
-

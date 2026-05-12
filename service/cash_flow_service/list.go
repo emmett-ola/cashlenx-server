@@ -5,8 +5,6 @@ import (
 	"time"
 
 	myErrors "github.com/macar-x/cashlenx-server/errors"
-	"github.com/macar-x/cashlenx-server/mapper/cash_flow_mapper"
-	"github.com/macar-x/cashlenx-server/mapper/category_mapper"
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/util"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -23,11 +21,24 @@ func QueryAll(
 	limit int,
 	offset int,
 ) ([]*model.CashFlowEntity, int64, error) {
+	return defaultCashFlowService().QueryAll(cashType, categoryId, description, exactDescription, fromDateStr, toDateStr, limit, offset)
+}
+
+func (s *CashFlowService) QueryAll(
+	cashType string,
+	categoryId string,
+	description string,
+	exactDescription string,
+	fromDateStr string,
+	toDateStr string,
+	limit int,
+	offset int,
+) ([]*model.CashFlowEntity, int64, error) {
 	// Get total count (we'll filter this later if needed)
-	totalCount := cash_flow_mapper.INSTANCE.CountAllCashFlows()
+	totalCount := s.cashFlowMapper.CountAllCashFlows()
 
 	// Get paginated results
-	cashFlows := cash_flow_mapper.INSTANCE.GetAllCashFlows(limit, offset)
+	cashFlows := s.cashFlowMapper.GetAllCashFlows(limit, offset)
 
 	// Parse date filters if provided
 	var fromDate, toDate time.Time
@@ -57,7 +68,7 @@ func QueryAll(
 		entity := cashFlows[i]
 
 		// Populate category info
-		category := category_mapper.INSTANCE.GetCategoryByObjectId(entity.CategoryId.Hex())
+		category := s.categoryMapper.GetCategoryByObjectId(entity.CategoryId.Hex())
 		if !category.IsEmpty() {
 			entity.CategoryName = category.Name
 			entity.CategoryType = category.Type
@@ -119,6 +130,20 @@ func QueryAllForUser(
 	limit int,
 	offset int,
 ) ([]*model.CashFlowEntity, int64, error) {
+	return defaultCashFlowService().QueryAllForUser(userId, cashType, categoryId, description, exactDescription, fromDateStr, toDateStr, limit, offset)
+}
+
+func (s *CashFlowService) QueryAllForUser(
+	userId string,
+	cashType string,
+	categoryId string,
+	description string,
+	exactDescription string,
+	fromDateStr string,
+	toDateStr string,
+	limit int,
+	offset int,
+) ([]*model.CashFlowEntity, int64, error) {
 	// Validate and convert userId
 	userObjectId := util.Convert2ObjectId(userId)
 	if userObjectId == primitive.NilObjectID {
@@ -153,13 +178,13 @@ func QueryAllForUser(
 	}
 
 	// Get filtered count
-	totalCount, err := cash_flow_mapper.INSTANCE.CountCashFlowsByFilter(filter)
+	totalCount, err := s.cashFlowMapper.CountCashFlowsByFilter(filter)
 	if err != nil {
 		return nil, 0, err
 	}
 
 	// Get filtered results
-	cashFlows, err := cash_flow_mapper.INSTANCE.GetCashFlowsByFilter(filter)
+	cashFlows, err := s.cashFlowMapper.GetCashFlowsByFilter(filter)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -170,7 +195,7 @@ func QueryAllForUser(
 		entity := cashFlows[i]
 
 		// Populate category info
-		category := category_mapper.INSTANCE.GetCategoryByObjectId(entity.CategoryId.Hex())
+		category := s.categoryMapper.GetCategoryByObjectId(entity.CategoryId.Hex())
 		if !category.IsEmpty() {
 			entity.CategoryName = category.Name
 			entity.CategoryType = category.Type
@@ -198,18 +223,18 @@ func QueryAllForUser(
 		// Since we can't easily count by type in DB without join, we might need to accept this limitation
 		// or fetch all matches without limit to count them? No, that's bad for performance.
 		// BETTER APPROACH: Use GetCategoriesByUserAndType to get valid CategoryIDs, then filter by those IDs in DB.
-		
+
 		// 1. Get valid category IDs for this type
-		categories, _ := category_mapper.INSTANCE.GetCategoriesByUserAndType(userObjectId, cashType, 0, 0)
+		categories, _ := s.categoryMapper.GetCategoriesByUserAndType(userObjectId, cashType, 0, 0)
 		validCategoryIds := make([]primitive.ObjectID, len(categories))
 		for i, c := range categories {
 			validCategoryIds[i] = c.Id
 		}
-		
+
 		// This requires updating mapper to support "CategoryId IN [...]".
 		// Given time constraints, let's stick to the current implementation but warn about Type filtering.
 		// Actually, let's correct the totalCount at least for the items we returned? No, totalCount must be total matches in DB.
-		
+
 		// For now, let's return what we have. The user asked to fix total_count respecting filters.
 		// The current DB filter supports dates, description, category_id.
 		// It does NOT support CashType (which depends on Category table).

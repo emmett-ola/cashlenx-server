@@ -3,16 +3,15 @@ package category_service
 import (
 	"testing"
 
-	"github.com/macar-x/cashlenx-server/mapper/category_mapper"
 	"github.com/macar-x/cashlenx-server/model"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func TestCreateForUserCreatesRootCategory(t *testing.T) {
-	stub := installCategoryMapperStub(t)
+	service, stub := newCategoryServiceStub()
 	userID := primitive.NewObjectID()
 
-	created, err := CreateForUser("Salary", "INCOME", "monthly pay", "", userID.Hex())
+	created, err := service.CreateForUser("Salary", "INCOME", "monthly pay", "", userID.Hex())
 	if err != nil {
 		t.Fatalf("CreateForUser returned error: %v", err)
 	}
@@ -35,7 +34,7 @@ func TestCreateForUserCreatesRootCategory(t *testing.T) {
 }
 
 func TestCreateForUserRejectsDuplicateUnderSameParent(t *testing.T) {
-	stub := installCategoryMapperStub(t)
+	service, stub := newCategoryServiceStub()
 	userID := primitive.NewObjectID()
 	parentID := primitive.NewObjectID()
 	stub.categories[parentID] = model.CategoryEntity{
@@ -52,7 +51,7 @@ func TestCreateForUserRejectsDuplicateUnderSameParent(t *testing.T) {
 		Type:          "expense",
 	}
 
-	_, err := CreateForUser("Lunch", "expense", "", parentID.Hex(), userID.Hex())
+	_, err := service.CreateForUser("Lunch", "expense", "", parentID.Hex(), userID.Hex())
 	if err == nil {
 		t.Fatal("expected duplicate category error")
 	}
@@ -62,7 +61,7 @@ func TestCreateForUserRejectsDuplicateUnderSameParent(t *testing.T) {
 }
 
 func TestCreateForUserRejectsParentTypeMismatch(t *testing.T) {
-	stub := installCategoryMapperStub(t)
+	service, stub := newCategoryServiceStub()
 	userID := primitive.NewObjectID()
 	parentID := primitive.NewObjectID()
 	stub.categories[parentID] = model.CategoryEntity{
@@ -72,7 +71,7 @@ func TestCreateForUserRejectsParentTypeMismatch(t *testing.T) {
 		Type:          "income",
 	}
 
-	_, err := CreateForUser("Lunch", "expense", "", parentID.Hex(), userID.Hex())
+	_, err := service.CreateForUser("Lunch", "expense", "", parentID.Hex(), userID.Hex())
 	if err == nil {
 		t.Fatal("expected parent type mismatch error")
 	}
@@ -82,7 +81,7 @@ func TestCreateForUserRejectsParentTypeMismatch(t *testing.T) {
 }
 
 func TestGetCategoryTreeByUserBuildsFilteredTree(t *testing.T) {
-	stub := installCategoryMapperStub(t)
+	service, stub := newCategoryServiceStub()
 	userID := primitive.NewObjectID()
 	rootID := primitive.NewObjectID()
 	childID := primitive.NewObjectID()
@@ -107,7 +106,7 @@ func TestGetCategoryTreeByUserBuildsFilteredTree(t *testing.T) {
 		Type:          "income",
 	}
 
-	tree, err := GetCategoryTreeByUser(userID.Hex(), "expense")
+	tree, err := service.GetCategoryTreeByUser(userID.Hex(), "expense")
 	if err != nil {
 		t.Fatalf("GetCategoryTreeByUser returned error: %v", err)
 	}
@@ -125,16 +124,9 @@ func TestGetCategoryTreeByUserBuildsFilteredTree(t *testing.T) {
 	}
 }
 
-func installCategoryMapperStub(t *testing.T) *categoryMapperStub {
-	t.Helper()
-
-	original := category_mapper.INSTANCE
+func newCategoryServiceStub() (*CategoryService, *categoryMapperStub) {
 	stub := &categoryMapperStub{categories: map[primitive.ObjectID]model.CategoryEntity{}}
-	category_mapper.INSTANCE = stub
-	t.Cleanup(func() {
-		category_mapper.INSTANCE = original
-	})
-	return stub
+	return NewCategoryService(stub, nil), stub
 }
 
 type categoryMapperStub struct {

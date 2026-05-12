@@ -526,6 +526,10 @@ Unit test guidance:
 - Prefer in-memory fakes/stubs and package-local dependency seams for mapper, email, token, time, randomness, and other side effects
 - If code structure blocks practical unit testing, refactor the source code to expose a small testable seam while preserving business logic, API contracts, persistence behavior, and error semantics
 - Keep live database and filesystem verification in integration/smoke checks, not unit tests
+- Service-layer code should use constructor-based dependency injection for mappers; package-level functions may remain for compatibility, but should delegate to default service instances
+- Service unit tests should instantiate service structs with in-memory fake mapper implementations instead of overriding mapper globals
+- Mapper integration tests should be isolated from normal unit tests, use explicit integration naming/build tags or scripts, and run only against disposable test databases
+- API integration tests should exercise controller-to-database behavior separately from `go test ./...`, for example through the smoke script against Docker-backed services
 
 CLI statistic import/export note: `cmd/statistic_cmd/export.go` and `cmd/statistic_cmd/import.go` accept `--user`, but currently fall back to `user_service.GetDefaultAdminUserId()` when it is omitted. Treat this as a development convenience, not a finished multi-user CLI auth story.
 
