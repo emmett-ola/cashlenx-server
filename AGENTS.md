@@ -504,7 +504,10 @@ Observed test locations include:
 - `util/date_util_test.go`
 - `util/http_util_test.go`
 - `service/cash_flow_service/*_test.go`
+- `service/category_service/*_test.go`
 - `service/manage_service/*_test.go`
+- `service/refresh_token_service/refresh_token_test.go`
+- `service/statistic_service/*_test.go`
 
 Before relying on a refactor, check whether the affected path is covered. In many areas, manual verification is still necessary.
 
