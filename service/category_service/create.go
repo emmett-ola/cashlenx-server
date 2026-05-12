@@ -1,10 +1,10 @@
 package category_service
 
 import (
-	"errors"
 	"strings"
 	"time"
 
+	"github.com/macar-x/cashlenx-server/errors"
 	"github.com/macar-x/cashlenx-server/mapper/category_mapper"
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/util"
@@ -28,7 +28,7 @@ func CreateForUser(name, categoryType, remark string, parentId string, userId st
 	// Validate and convert userId
 	userObjectId := util.Convert2ObjectId(userId)
 	if userObjectId == primitive.NilObjectID {
-		return model.CategoryEntity{}, errors.New("invalid user ID")
+		return model.CategoryEntity{}, errors.NewInvalidInputError("invalid user ID")
 	}
 
 	// Check if category with same name already exists for this user and type under the same parent
@@ -41,7 +41,7 @@ func CreateForUser(name, categoryType, remark string, parentId string, userId st
 
 	existingCategory := category_mapper.INSTANCE.GetCategoryByNameUserTypeAndParent(name, userObjectId, categoryType, parentObjId)
 	if !existingCategory.IsEmpty() {
-		return model.CategoryEntity{}, errors.New("category with this name already exists for this user and type under this parent")
+		return model.CategoryEntity{}, errors.NewAlreadyExistsError("category with this name already exists for this user and type under this parent")
 	}
 
 	// Pre-generate ID before insertion
@@ -69,11 +69,11 @@ func CreateForUser(name, categoryType, remark string, parentId string, userId st
 			// Verify parent category belongs to same user
 			parentEntity := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(parentId, userObjectId)
 			if parentEntity.IsEmpty() {
-				return model.CategoryEntity{}, errors.New("parent category not found or access denied")
+				return model.CategoryEntity{}, errors.NewNotFoundError("parent category not found or access denied")
 			}
 			// Validate parent type matches new category type
 			if parentEntity.Type != categoryType {
-				return model.CategoryEntity{}, errors.New("child category type must match parent category type")
+				return model.CategoryEntity{}, errors.NewInvalidInputError("child category type must match parent category type")
 			}
 			newEntity.ParentId = parentObjectId
 		}
@@ -82,7 +82,7 @@ func CreateForUser(name, categoryType, remark string, parentId string, userId st
 	// Insert the category
 	insertedId := category_mapper.INSTANCE.InsertCategoryByEntity(newEntity)
 	if insertedId == "" {
-		return model.CategoryEntity{}, errors.New("failed to create category")
+		return model.CategoryEntity{}, errors.NewInternalError("failed to create category", nil)
 	}
 
 	// Retrieve and return the created category using the pre-generated ID

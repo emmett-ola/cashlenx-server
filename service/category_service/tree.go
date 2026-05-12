@@ -2,7 +2,7 @@ package category_service
 
 import (
 	"fmt"
-
+	"github.com/macar-x/cashlenx-server/errors"
 	"github.com/macar-x/cashlenx-server/mapper/category_mapper"
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/util"
@@ -14,12 +14,12 @@ func GetCategoryTreeByUser(userId, categoryType string) ([]model.CategoryTree, e
 	// Validate user ID
 	userObjectId := util.Convert2ObjectId(userId)
 	if userObjectId == primitive.NilObjectID {
-		return nil, fmt.Errorf("invalid user ID")
+		return nil, errors.NewInvalidInputError("invalid user ID")
 	}
 
 	// Validate category type
 	if categoryType != "income" && categoryType != "expense" && categoryType != "" {
-		return nil, fmt.Errorf("category type must be 'income', 'expense', or empty")
+		return nil, errors.NewInvalidInputError("category type must be 'income', 'expense', or empty")
 	}
 
 	// Get root categories with user ID and type filter

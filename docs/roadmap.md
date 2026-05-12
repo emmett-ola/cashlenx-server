@@ -125,7 +125,7 @@ Cleanup notes:
 - [x] Decide beta support stance: MongoDB is the supported beta deployment backend, while MySQL should remain build-compatible and avoid known mapper gaps in touched code #data #security
 - [ ] Run Flutter-client smoke checks against `/api/v0` for login, registration, logout, token refresh, profile, cash flow, category, statistics, import/export, and admin flows #flutter #api
 - [ ] Fix behavior gaps discovered by Flutter-client smoke checks and manual API verification #flutter #api
-- [ ] Normalize response and error behavior across auth, account, cash flow, category, statistic, import/export, and admin APIs #api
+- [x] Normalize response and error behavior across auth, account, cash flow, category, statistic, import/export, and admin APIs #api
 - [ ] Add practical targeted tests for corrected user-facing flows, prioritizing paths touched by fixes #api
 - [ ] Preserve MongoDB as the default development path while keeping MySQL behavior compatible for touched persistence code #data
 - [x] Align CI Go version and branch coverage with `go.mod` and the active `dev/*` branch line before beta tagging #devops

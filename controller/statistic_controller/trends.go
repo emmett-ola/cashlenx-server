@@ -28,7 +28,7 @@ func GetDailyTrends(w http.ResponseWriter, r *http.Request) {
 
 	trends, err := statistic_service.GetTrendsForUser("daily", date, userId)
 	if err != nil {
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, errors.NewInternalError(err.Error(), err))
+		util.ComposeErrorResponse(w, err)
 		return
 	}
 
@@ -54,7 +54,7 @@ func GetMonthlyTrends(w http.ResponseWriter, r *http.Request) {
 
 	trends, err := statistic_service.GetTrendsForUser("monthly", month, userId)
 	if err != nil {
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, errors.NewInternalError(err.Error(), err))
+		util.ComposeErrorResponse(w, err)
 		return
 	}
 
@@ -80,7 +80,7 @@ func GetYearlyTrends(w http.ResponseWriter, r *http.Request) {
 
 	trends, err := statistic_service.GetTrendsForUser("yearly", year, userId)
 	if err != nil {
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, errors.NewInternalError(err.Error(), err))
+		util.ComposeErrorResponse(w, err)
 		return
 	}
 

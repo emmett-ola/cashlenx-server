@@ -1,9 +1,9 @@
 package manage_controller
 
 import (
+	"fmt"
 	"net/http"
 	"os"
-	"fmt"
 
 	"github.com/macar-x/cashlenx-server/errors"
 	"github.com/macar-x/cashlenx-server/service/manage_service"
@@ -20,7 +20,7 @@ func DumpDatabase(w http.ResponseWriter, r *http.Request) {
 	// Create the dump
 	_, err := manage_service.AdminDumpDatabase(filePath)
 	if err != nil {
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, err)
+		util.ComposeErrorResponse(w, err)
 		return
 	}
 
@@ -58,7 +58,7 @@ func ExportUserData(w http.ResponseWriter, r *http.Request) {
 	// Create the dump
 	_, err := manage_service.UserExportData(userId, filePath)
 	if err != nil {
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, err)
+		util.ComposeErrorResponse(w, err)
 		return
 	}
 

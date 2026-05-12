@@ -38,7 +38,7 @@ func GetDailyTopExpenses(w http.ResponseWriter, r *http.Request) {
 
 	topExpenses, err := statistic_service.GetTopExpensesForUser(limit, "daily", date, userId)
 	if err != nil {
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, errors.NewInternalError(err.Error(), err))
+		util.ComposeErrorResponse(w, err)
 		return
 	}
 
@@ -73,7 +73,7 @@ func GetMonthlyTopExpenses(w http.ResponseWriter, r *http.Request) {
 
 	topExpenses, err := statistic_service.GetTopExpensesForUser(limit, "monthly", month, userId)
 	if err != nil {
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, errors.NewInternalError(err.Error(), err))
+		util.ComposeErrorResponse(w, err)
 		return
 	}
 
@@ -108,7 +108,7 @@ func GetYearlyTopExpenses(w http.ResponseWriter, r *http.Request) {
 
 	topExpenses, err := statistic_service.GetTopExpensesForUser(limit, "yearly", year, userId)
 	if err != nil {
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, errors.NewInternalError(err.Error(), err))
+		util.ComposeErrorResponse(w, err)
 		return
 	}
 

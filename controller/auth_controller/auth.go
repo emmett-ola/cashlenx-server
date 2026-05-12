@@ -64,8 +64,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	util.ComposeJSONResponse(w, http.StatusOK, response)
 }
 
-
-
 // Register handles user registration requests
 func Register(w http.ResponseWriter, r *http.Request) {
 	// Check if registration is enabled
@@ -114,7 +112,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	// Pass nil as creatorId to indicate self-registration
 	userId, err := user_service.CreateService(userDTO, nil)
 	if err != nil {
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, err)
+		util.ComposeErrorResponse(w, err)
 		return
 	}
 

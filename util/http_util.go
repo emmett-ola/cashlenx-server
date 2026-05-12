@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/macar-x/cashlenx-server/errors"
+	appErrors "github.com/macar-x/cashlenx-server/errors"
 )
 
 // ResponseError sends an error response using Gin context
@@ -66,7 +66,7 @@ func ComposeJSONResponse(w http.ResponseWriter, statusCode int, data interface{}
 	// Check if data is an error
 	if err, ok := data.(error); ok {
 		// Check if it's an AppError from errors package
-		if appErr, ok := err.(*errors.AppError); ok {
+		if appErr, ok := err.(*appErrors.AppError); ok {
 			// Set error code and message
 			response.Code = string(appErr.Code)
 			response.Message = appErr.Message
@@ -103,21 +103,80 @@ func ComposeJSONResponse(w http.ResponseWriter, statusCode int, data interface{}
 func defaultCodeForStatus(statusCode int) string {
 	switch statusCode {
 	case http.StatusBadRequest:
-		return string(errors.ErrInvalidInput)
+		return string(appErrors.ErrInvalidInput)
 	case http.StatusUnauthorized:
-		return string(errors.ErrUnauthorized)
+		return string(appErrors.ErrUnauthorized)
 	case http.StatusForbidden:
-		return string(errors.ErrForbidden)
+		return string(appErrors.ErrForbidden)
 	case http.StatusNotFound:
-		return string(errors.ErrNotFound)
+		return string(appErrors.ErrNotFound)
 	case http.StatusConflict:
-		return string(errors.ErrAlreadyExists)
+		return string(appErrors.ErrAlreadyExists)
 	default:
 		if statusCode >= 500 {
-			return string(errors.ErrInternal)
+			return string(appErrors.ErrInternal)
 		}
-		return string(errors.ErrInternal)
+		return string(appErrors.ErrInternal)
 	}
+}
+
+// StatusCodeForError maps application errors and common validation messages to HTTP status codes.
+func StatusCodeForError(err error) int {
+	if err == nil {
+		return http.StatusOK
+	}
+
+	if appErr, ok := err.(*appErrors.AppError); ok {
+		switch appErr.Code {
+		case appErrors.ErrInvalidInput, appErrors.ErrValidation:
+			return http.StatusBadRequest
+		case appErrors.ErrUnauthorized:
+			return http.StatusUnauthorized
+		case appErrors.ErrForbidden:
+			return http.StatusForbidden
+		case appErrors.ErrNotFound:
+			return http.StatusNotFound
+		case appErrors.ErrAlreadyExists:
+			return http.StatusConflict
+		case appErrors.ErrDatabase, appErrors.ErrConnectionFailed, appErrors.ErrInternal:
+			return http.StatusInternalServerError
+		}
+	}
+
+	message := strings.ToLower(err.Error())
+	switch {
+	case strings.Contains(message, "already exists"),
+		strings.Contains(message, "already taken"),
+		strings.Contains(message, "already in use"):
+		return http.StatusConflict
+	case strings.Contains(message, "not authenticated"),
+		strings.Contains(message, "unauthorized"),
+		strings.Contains(message, "invalid old password"),
+		strings.Contains(message, "invalid refresh token"),
+		strings.Contains(message, "expired refresh token"):
+		return http.StatusUnauthorized
+	case strings.Contains(message, "forbidden"),
+		strings.Contains(message, "admin role required"):
+		return http.StatusForbidden
+	case strings.Contains(message, "not found"),
+		strings.Contains(message, "access denied"):
+		return http.StatusNotFound
+	case strings.Contains(message, "invalid"),
+		strings.Contains(message, "required"),
+		strings.Contains(message, "must be"),
+		strings.Contains(message, "format"),
+		strings.Contains(message, "mismatch"),
+		strings.Contains(message, "cannot"),
+		strings.Contains(message, "should be"):
+		return http.StatusBadRequest
+	default:
+		return http.StatusInternalServerError
+	}
+}
+
+// ComposeErrorResponse writes an error response with a consistent status and response shape.
+func ComposeErrorResponse(w http.ResponseWriter, err error) {
+	ComposeJSONResponse(w, StatusCodeForError(err), err)
 }
 
 func applyMapPayload(response *Response, statusCode int, payload map[string]interface{}) {
@@ -248,7 +307,7 @@ func SendFile(w http.ResponseWriter, file io.Reader) {
 	if _, err := io.Copy(w, file); err != nil {
 		// If there's an error while sending the file, return a 500 error
 		w.WriteHeader(http.StatusInternalServerError)
-		ComposeJSONResponse(w, http.StatusInternalServerError, errors.NewInternalError("Failed to send file", err))
+		ComposeJSONResponse(w, http.StatusInternalServerError, appErrors.NewInternalError("Failed to send file", err))
 	}
 }
 

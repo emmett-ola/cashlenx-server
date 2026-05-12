@@ -29,7 +29,7 @@ func QueryByDateRange(w http.ResponseWriter, r *http.Request) {
 	// Call user-specific service to get records in range
 	cashFlowEntities, err := cash_flow_service.QueryByDateRangeForUser(fromDate, toDate, userId)
 	if err != nil {
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, err)
+		util.ComposeErrorResponse(w, err)
 		return
 	}
 

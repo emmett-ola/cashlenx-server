@@ -54,7 +54,7 @@ func UpdateById(w http.ResponseWriter, r *http.Request) {
 		if err.Error() == "cash_flow not found or access denied" {
 			util.ComposeJSONResponse(w, http.StatusNotFound, errors.NewNotFoundError(err.Error()))
 		} else {
-			util.ComposeJSONResponse(w, http.StatusInternalServerError, err)
+			util.ComposeErrorResponse(w, err)
 		}
 		return
 	}

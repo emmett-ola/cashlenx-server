@@ -66,7 +66,7 @@ func ExportData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, errors.NewInternalError(err.Error(), err))
+		util.ComposeErrorResponse(w, err)
 		return
 	}
 

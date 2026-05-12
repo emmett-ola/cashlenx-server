@@ -1,8 +1,7 @@
 package category_service
 
 import (
-	"errors"
-
+	"github.com/macar-x/cashlenx-server/errors"
 	"github.com/macar-x/cashlenx-server/mapper/category_mapper"
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/util"
@@ -14,7 +13,7 @@ func QueryAllForUser(userId string, categoryType string, limit int, offset int) 
 	// Validate and convert userId
 	userObjectId := util.Convert2ObjectId(userId)
 	if userObjectId == primitive.NilObjectID {
-		return nil, 0, errors.New("invalid user ID")
+		return nil, 0, errors.NewInvalidInputError("invalid user ID")
 	}
 
 	// Get total count for this user

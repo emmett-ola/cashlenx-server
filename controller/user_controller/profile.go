@@ -46,7 +46,7 @@ func UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	// Update profile
 	updatedUser, err := user_service.UpdateProfileService(userID, requestBody)
 	if err != nil {
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, err)
+		util.ComposeErrorResponse(w, err)
 		return
 	}
 
@@ -98,7 +98,7 @@ func ChangePassword(w http.ResponseWriter, r *http.Request) {
 			util.ComposeJSONResponse(w, http.StatusBadRequest, err)
 			return
 		}
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, err)
+		util.ComposeErrorResponse(w, err)
 		return
 	}
 
@@ -119,11 +119,7 @@ func DeleteAccount(w http.ResponseWriter, r *http.Request) {
 	// Delete account
 	err := user_service.DeleteService(userID)
 	if err != nil {
-		if errors.IsForbiddenError(err) {
-			util.ComposeJSONResponse(w, http.StatusForbidden, err)
-			return
-		}
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, err)
+		util.ComposeErrorResponse(w, err)
 		return
 	}
 
