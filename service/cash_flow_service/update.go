@@ -81,13 +81,7 @@ func (s *CashFlowService) UpdateById(plainId, belongsDate, categoryName string, 
 		existingEntity.Description = description
 	}
 
-	// Update modify time
-	existingEntity.UpdateTime = time.Now().UTC() // Store in UTC
-
-	// Call mapper to update the record
-	// Update audit fields
 	existingEntity.UpdateTime = time.Now().UTC()
-	// existingEntity.UpdateUserId = userObjectId // Undefined here
 
 	updatedEntity := s.cashFlowMapper.UpdateCashFlowByEntity(plainId, existingEntity)
 	if updatedEntity.IsEmpty() {
@@ -164,10 +158,9 @@ func (s *CashFlowService) UpdateByIdForUser(plainId, belongsDate, categoryName s
 	}
 
 	if categoryName != "" {
-		// Note: Category lookup should also be user-specific once categories have user isolation
-		categoryEntity := s.categoryMapper.GetCategoryByName(categoryName)
+		categoryEntity := s.categoryMapper.GetCategoryByNameAndUser(categoryName, userObjectId)
 		if categoryEntity.IsEmpty() {
-			return model.CashFlowEntity{}, errors.New("category does not exist")
+			return model.CashFlowEntity{}, errors.New("category does not exist or access denied")
 		}
 		existingEntity.CategoryId = categoryEntity.Id
 	}
@@ -186,9 +179,7 @@ func (s *CashFlowService) UpdateByIdForUser(plainId, belongsDate, categoryName s
 	existingEntity.UpdateTime = time.Now().UTC()
 	existingEntity.UpdateUserId = userObjectId
 
-	// Call mapper to update the record
-	// Note: Using the regular UpdateCashFlowByEntity because we already verified ownership
-	updatedEntity := s.cashFlowMapper.UpdateCashFlowByEntity(plainId, existingEntity)
+	updatedEntity := s.cashFlowMapper.UpdateCashFlowByEntityAndUser(plainId, existingEntity, userObjectId)
 	if updatedEntity.IsEmpty() {
 		return model.CashFlowEntity{}, errors.New("failed to update cash_flow")
 	}

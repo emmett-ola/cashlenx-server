@@ -89,14 +89,49 @@ func TestCashFlowServiceQueryAllForUserEnrichesAndFiltersByType(t *testing.T) {
 	if err != nil {
 		t.Fatalf("QueryAllForUser returned error: %v", err)
 	}
-	if total != 2 {
-		t.Fatalf("total = %d, want underlying filter count 2", total)
+	if total != 1 {
+		t.Fatalf("total = %d, want type-filtered count 1", total)
 	}
 	if len(results) != 1 {
 		t.Fatalf("results length = %d, want 1", len(results))
 	}
 	if results[0].CategoryName != "Food" || results[0].CategoryType != model.FlowTypeExpense {
 		t.Fatalf("category enrichment = %q/%q", results[0].CategoryName, results[0].CategoryType)
+	}
+}
+
+func TestCashFlowServiceUpdateByIdForUserUsesUserScopedCategory(t *testing.T) {
+	cashMapper := newCashFlowMapperFake()
+	categoryMapper := newCashFlowCategoryMapperFake()
+	userID := primitive.NewObjectID()
+	otherUserID := primitive.NewObjectID()
+	foodID := primitive.NewObjectID()
+	travelID := primitive.NewObjectID()
+	otherTravelID := primitive.NewObjectID()
+	flowID := primitive.NewObjectID()
+	categoryMapper.categories[foodID] = model.CategoryEntity{Id: foodID, BelongsUserId: userID, Name: "Food", Type: model.FlowTypeExpense}
+	categoryMapper.categories[travelID] = model.CategoryEntity{Id: travelID, BelongsUserId: userID, Name: "Travel", Type: model.FlowTypeExpense}
+	categoryMapper.categories[otherTravelID] = model.CategoryEntity{Id: otherTravelID, BelongsUserId: otherUserID, Name: "Travel", Type: model.FlowTypeExpense}
+	cashMapper.flows[flowID.Hex()] = model.CashFlowEntity{
+		Id:            flowID,
+		BelongsUserId: userID,
+		CategoryId:    foodID,
+		BelongsDate:   time.Date(2026, time.May, 12, 0, 0, 0, 0, time.UTC),
+		Amount:        25,
+		Description:   "dinner",
+	}
+	service := NewCashFlowService(cashMapper, categoryMapper)
+
+	updated, err := service.UpdateByIdForUser(flowID.Hex(), "", "Travel", 0, "", userID.Hex())
+	if err != nil {
+		t.Fatalf("UpdateByIdForUser returned error: %v", err)
+	}
+
+	if updated.CategoryId != travelID {
+		t.Fatalf("CategoryId = %s, want user's Travel category %s", updated.CategoryId.Hex(), travelID.Hex())
+	}
+	if updated.UpdateUserId != userID {
+		t.Fatalf("UpdateUserId = %s, want %s", updated.UpdateUserId.Hex(), userID.Hex())
 	}
 }
 
