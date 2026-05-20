@@ -2,6 +2,7 @@ package cash_flow_cmd
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/service/cash_flow_service"
@@ -33,9 +34,9 @@ Use --type to filter by income/expense, --limit for pagination.`,
 		var totalIncome, totalExpense float64
 		for index, cashFlowEntity := range cashFlowEntityList {
 			fmt.Println("cash_flow", index+offset, ":", cashFlowEntity.ToString())
-			if cashFlowEntity.FlowType == model.FlowTypeIncome {
+			if strings.EqualFold(cashFlowEntity.CategoryType, model.FlowTypeIncome) {
 				totalIncome += cashFlowEntity.Amount
-			} else {
+			} else if strings.EqualFold(cashFlowEntity.CategoryType, model.FlowTypeExpense) {
 				totalExpense += cashFlowEntity.Amount
 			}
 		}

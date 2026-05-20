@@ -96,6 +96,16 @@ func ValidateDateRange(fromStr, toStr string) error {
 	return nil
 }
 
+// ValidateGender validates user gender
+func ValidateGender(gender string) error {
+	switch gender {
+	case "male", "female", "others", "":
+		return nil
+	default:
+		return NewValidationError("gender", "must be 'male', 'female', 'others' or empty")
+	}
+}
+
 // ValidateAmount validates monetary amount (must be positive)
 func ValidateAmount(amount float64) error {
 	if amount <= 0 {

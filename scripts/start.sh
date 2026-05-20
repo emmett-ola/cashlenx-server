@@ -115,7 +115,7 @@ get_services() {
             5)
                 services="backend"
                 print_warning "Backend only mode requires an external database!" >&2
-                print_info "Make sure DB_TYPE and corresponding DB_URI are configured in .env" >&2
+                print_info "Make sure DB_TYPE and the matching MONGO_DB_URI or MYSQL_DB_URI are configured in .env" >&2
                 ;;
             6)
                 echo ""
@@ -201,7 +201,8 @@ show_info() {
 
     if [[ "$ENABLE_SERVICES" == *"backend"* ]] || [[ "$1" == *"backend"* ]]; then
         local port=${SERVER_PORT:-8080}
-        echo -e "Backend API: ${GREEN}http://localhost:$port${NC}"
+        local api_version=${API_VERSION:-v0}
+        echo -e "Backend API: ${GREEN}http://localhost:$port/api/$api_version${NC}"
     fi
 
     if [[ "$ENABLE_SERVICES" == *"mongodb"* ]] || [[ "$1" == *"mongodb"* ]]; then

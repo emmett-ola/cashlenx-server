@@ -145,7 +145,7 @@ function Get-Services {
             "5" {
                 $services = "backend"
                 Print-Warning "Backend only mode requires an external database!" >&2
-                Print-Info "Make sure DB_TYPE and corresponding DB_URI are configured in .env" >&2
+                Print-Info "Make sure DB_TYPE and the matching MONGO_DB_URI or MYSQL_DB_URI are configured in .env" >&2
             }
             "6" {
                 Write-Output ""
@@ -224,7 +224,8 @@ function Show-Info {
 
     if ($env:ENABLE_SERVICES -like "*backend*" -or $services -like "*backend*") {
         $port = if (-not [string]::IsNullOrEmpty($env:SERVER_PORT)) { $env:SERVER_PORT } else { "8080" }
-        Write-Output "Backend API: ${GREEN}http://localhost:$port${NC}"
+        $apiVersion = if (-not [string]::IsNullOrEmpty($env:API_VERSION)) { $env:API_VERSION } else { "v0" }
+        Write-Output "Backend API: ${GREEN}http://localhost:$port/api/$apiVersion${NC}"
     }
 
     if ($env:ENABLE_SERVICES -like "*mongodb*" -or $services -like "*mongodb*") {

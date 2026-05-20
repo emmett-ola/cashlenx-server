@@ -7,6 +7,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	force bool
+)
+
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "delete category data",
@@ -16,7 +20,7 @@ var deleteCmd = &cobra.Command{
 		}
 
 		if plainId != "" {
-			_, err := category_service.DeleteByIdForUser(plainId, userId)
+			_, err := category_service.DeleteByIdForUser(plainId, userId, force)
 			return err
 		}
 
@@ -26,7 +30,7 @@ var deleteCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			_, err = category_service.DeleteByIdForUser(category.Id.Hex(), userId)
+			_, err = category_service.DeleteByIdForUser(category.Id.Hex(), userId, force)
 			return err
 		}
 
@@ -39,5 +43,7 @@ func init() {
 		&plainId, "id", "i", "", "delete by id")
 	deleteCmd.Flags().StringVarP(
 		&categoryName, "name", "n", "", "delete by name")
+	deleteCmd.Flags().BoolVarP(
+		&force, "force", "f", false, "force delete even if category has associated cash flows")
 	CategoryCmd.AddCommand(deleteCmd)
 }

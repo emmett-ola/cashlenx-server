@@ -4,112 +4,72 @@
 
 print('Starting MongoDB initialization for CashLenX...');
 
-// Switch to cashlenx database
-db = db.getSiblingDB('cashlenx');
+// Resolve database name from the Mongo container initialization environment.
+// In compose.yml, MONGO_INITDB_DATABASE is sourced from DB_NAME, so DB_NAME remains
+// the single user-facing configuration field in .env.
+const dbName = process.env.MONGO_INITDB_DATABASE || 'cashlenx';
+
+// Switch to target database
+db = db.getSiblingDB(dbName);
 
 // Create collections
+db.createCollection('users');
+db.createCollection('refresh_tokens');
+db.createCollection('operation_confirm_codes');
 db.createCollection('cash_flows');
 db.createCollection('categories');
 
 print('Collections created successfully');
 
-// Insert basic default categories (auto-loaded on init)
-// Aligned with Go CategoryEntity model:
-// - _id: MongoDB ObjectId
-// - parent_id: for hierarchical categories (optional)
-// - name: category name
-// - remark: additional notes
-// - create_time: creation timestamp
-// - modify_time: last modification timestamp
-const categories = [
-  {
-    _id: ObjectId(),
-    name: 'Salary',
-    remark: 'Income from employment',
-    create_time: new Date(),
-    modify_time: new Date()
-  },
-  {
-    _id: ObjectId(),
-    name: 'Freelance',
-    remark: 'Income from freelance work',
-    create_time: new Date(),
-    modify_time: new Date()
-  },
-  {
-    _id: ObjectId(),
-    name: 'Investment',
-    remark: 'Income from investments and dividends',
-    create_time: new Date(),
-    modify_time: new Date()
-  },
-  {
-    _id: ObjectId(),
-    name: 'Other Income',
-    remark: 'Other income sources',
-    create_time: new Date(),
-    modify_time: new Date()
-  },
-  {
-    _id: ObjectId(),
-    name: 'Food & Dining',
-    remark: 'Restaurants, groceries, food delivery',
-    create_time: new Date(),
-    modify_time: new Date()
-  },
-  {
-    _id: ObjectId(),
-    name: 'Transportation',
-    remark: 'Gas, public transport, car maintenance',
-    create_time: new Date(),
-    modify_time: new Date()
-  },
-  {
-    _id: ObjectId(),
-    name: 'Shopping',
-    remark: 'Retail purchases, online shopping',
-    create_time: new Date(),
-    modify_time: new Date()
-  },
-  {
-    _id: ObjectId(),
-    name: 'Entertainment',
-    remark: 'Movies, games, hobbies',
-    create_time: new Date(),
-    modify_time: new Date()
-  },
-  {
-    _id: ObjectId(),
-    name: 'Healthcare',
-    remark: 'Medical expenses, pharmacy, fitness',
-    create_time: new Date(),
-    modify_time: new Date()
-  },
-  {
-    _id: ObjectId(),
-    name: 'Utilities',
-    remark: 'Electricity, water, internet, phone',
-    create_time: new Date(),
-    modify_time: new Date()
-  }
-];
-
-db.categories.insertMany(categories);
-print(`Inserted ${categories.length} default categories`);
+// Note: Default categories are automatically created for each user when they register
+// See config/default_categories.json for the list of default categories
 
 // Create indexes for better query performance
+// Users indexes
+db.users.createIndex({ username: 1 }, { unique: true });
+db.users.createIndex({ role: 1 });
+db.users.createIndex({ is_delete: 1 });
+
+// Refresh token indexes
+db.refresh_tokens.createIndex({ token: 1 }, { unique: true });
+db.refresh_tokens.createIndex({ user_id: 1 });
+db.refresh_tokens.createIndex({ expires_at: 1 });
+db.refresh_tokens.createIndex({ is_delete: 1 });
+db.refresh_tokens.createIndex({ create_time: 1 });
+
+// Operation confirmation code indexes
+db.operation_confirm_codes.createIndex({ code: 1 }, { unique: true });
+db.operation_confirm_codes.createIndex({ user_id: 1 });
+db.operation_confirm_codes.createIndex({ operation_type: 1 });
+db.operation_confirm_codes.createIndex({ expires_time: 1 });
+db.operation_confirm_codes.createIndex({ is_delete: 1 });
+db.operation_confirm_codes.createIndex({ create_time: 1 });
+
+// Cash flows indexes
 db.cash_flows.createIndex({ belongs_date: -1 });
 db.cash_flows.createIndex({ category_id: 1 });
 db.cash_flows.createIndex({ flow_type: 1 });
 db.cash_flows.createIndex({ belongs_date: -1, flow_type: 1 });
+db.cash_flows.createIndex({ belongs_user_id: 1 });
+
+// Categories indexes
+db.categories.createIndex({ belongs_user_id: 1 });
+db.categories.createIndex({ belongs_user_id: 1, name: 1 }, { unique: true });
 
 print('Indexes created successfully');
 
 // Print initialization summary
 print('\n=== CashLenX MongoDB Initialized ===');
+print(`Database: ${dbName}`);
+print(`Users: ${db.users.countDocuments()}`);
+print(`Refresh Tokens: ${db.refresh_tokens.countDocuments()}`);
+print(`Operation Confirm Codes: ${db.operation_confirm_codes.countDocuments()}`);
 print(`Categories: ${db.categories.countDocuments()}`);
 print(`Cash Flows: ${db.cash_flows.countDocuments()}`);
+print('');
 print('Schema only - no demo data loaded');
+print('Admin user will be auto-created on first server start');
+print('Default categories will be auto-created for each new user');
 print('Load demo data via: cashlenx manage import -i demo-data.xlsx');
 print('=====================================\n');
 

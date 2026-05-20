@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -51,10 +52,12 @@ func initDefaultValues() {
 	configurationMap["db.type"] = dbType
 
 	// MongoDB URI format: mongodb+srv://username:password@host/database
-	configurationMap["db.mongodb.url"] = os.Getenv("MONGO_DB_URI")
+	mongoDbURI := os.Getenv("MONGO_DB_URI")
+	configurationMap["db.mongodb.url"] = mongoDbURI
 
 	// MySQL URI format: username:password@tcp(host:port)/database
-	configurationMap["db.mysql.url"] = os.Getenv("MYSQL_DB_URI")
+	mySQLURI := os.Getenv("MYSQL_DB_URI")
+	configurationMap["db.mysql.url"] = mySQLURI
 
 	// OpenAPI schema validation: true/false
 	schemaValidation := os.Getenv("SCHEMA_VALIDATION")
@@ -74,6 +77,20 @@ func initDefaultValues() {
 		jwtSecret = "your-secret-key-here-change-in-production" // Default secret (change in production!)
 	}
 	configurationMap["auth.jwt.secret"] = jwtSecret
+
+	// JWT access token expiration time in minutes
+	jwtExpirationMinutes := os.Getenv("JWT_EXPIRATION_MINUTES")
+	if jwtExpirationMinutes == "" {
+		jwtExpirationMinutes = "30"
+	}
+	configurationMap["auth.jwt.expiration_minutes"] = jwtExpirationMinutes
+
+	// Refresh token expiration time in days
+	refreshTokenExpirationDays := os.Getenv("REFRESH_TOKEN_EXPIRATION_DAYS")
+	if refreshTokenExpirationDays == "" {
+		refreshTokenExpirationDays = "14"
+	}
+	configurationMap["auth.refresh_token.expiration_days"] = refreshTokenExpirationDays
 
 	// Registration enabled
 	registerEnabled := os.Getenv("AUTH_REGISTRATION_ENABLED")
@@ -95,9 +112,6 @@ func initDefaultValues() {
 	}
 	configurationMap["admin.password"] = adminPassword
 
-	// Admin token for sensitive operations
-	configurationMap["ADMIN_TOKEN"] = os.Getenv("ADMIN_TOKEN")
-
 	// CORS origins
 	corsOrigins := os.Getenv("CORS_ORIGINS")
 	configurationMap["cors.origins"] = corsOrigins
@@ -110,6 +124,44 @@ func initDefaultValues() {
 	configurationMap["server.port"] = os.Getenv("SERVER_PORT")
 	configurationMap["server.host"] = os.Getenv("SERVER_HOST")
 	configurationMap["timezone"] = os.Getenv("TIMEZONE")
+
+	// API Version
+	apiVersion := os.Getenv("API_VERSION")
+	if apiVersion == "" {
+		apiVersion = "v0"
+	}
+	configurationMap["api.version"] = apiVersion
+
+	// Snowflake ID generator worker ID
+	snowflakeWorkerID := os.Getenv("SNOWFLAKE_WORKER_ID")
+	if snowflakeWorkerID == "" {
+		snowflakeWorkerID = "0" // Default to worker ID 0
+	}
+	configurationMap["snowflake.worker_id"] = snowflakeWorkerID
+
+	// Default categories path
+	defaultCategoriesPath := os.Getenv("DEFAULT_CATEGORIES_PATH")
+	if defaultCategoriesPath == "" {
+		defaultCategoriesPath = "config/default_categories.json"
+	}
+	configurationMap["default_categories.path"] = defaultCategoriesPath
+
+	// Verification Code expiration time (in minutes)
+	verificationCodeExpire := os.Getenv("VERIFICATION_CODE_EXPIRE_MINUTES")
+	if verificationCodeExpire == "" {
+		verificationCodeExpire = "30" // Default to 30 minutes
+	}
+	configurationMap["verification.code.expire_minutes"] = verificationCodeExpire
+
+	// SMTP email delivery configuration
+	configurationMap["smtp.host"] = os.Getenv("SMTP_HOST")
+	configurationMap["smtp.port"] = os.Getenv("SMTP_PORT")
+	configurationMap["smtp.username"] = os.Getenv("SMTP_USERNAME")
+	configurationMap["smtp.password"] = os.Getenv("SMTP_PASSWORD")
+	configurationMap["smtp.from_address"] = os.Getenv("SMTP_FROM_ADDRESS")
+	configurationMap["smtp.from_name"] = os.Getenv("SMTP_FROM_NAME")
+	configurationMap["smtp.max_retries"] = os.Getenv("SMTP_MAX_RETRIES")
+	configurationMap["smtp.retry_interval"] = os.Getenv("SMTP_RETRY_INTERVAL")
 }
 
 func GetConfigByKey(configKey string) string {
@@ -119,6 +171,22 @@ func GetConfigByKey(configKey string) string {
 	} else {
 		return ""
 	}
+}
+
+func GetConfigInt(configKey string, defaultValue int64) int64 {
+	configValue := GetConfigByKey(configKey)
+	if configValue == "" {
+		return defaultValue
+	}
+
+	// Parse string to int64
+	var result int64
+	_, err := fmt.Sscanf(configValue, "%d", &result)
+	if err != nil {
+		Logger.Warnw("Failed to parse config value as int, using default", "key", configKey, "value", configValue, "default", defaultValue)
+		return defaultValue
+	}
+	return result
 }
 
 func SetConfigByKey(configKey, configValue string) {

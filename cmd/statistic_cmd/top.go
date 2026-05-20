@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/macar-x/cashlenx-server/service/statistic_service"
+	"github.com/macar-x/cashlenx-server/service/user_service"
 	"github.com/spf13/cobra"
 )
 
@@ -23,7 +24,11 @@ Only includes your own transactions.`,
   cashlenx statistic top -n 20 -p year -d 2024 -u <userId>`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if topUserId == "" {
-			return fmt.Errorf("user ID is required (use --user flag)")
+			var err error
+			topUserId, err = user_service.GetDefaultAdminUserId()
+			if err != nil {
+				return err
+			}
 		}
 
 		topExpenses, err := statistic_service.GetTopExpensesForUser(topLimit, topPeriod, topDate, topUserId)
@@ -60,5 +65,4 @@ func init() {
 	topCmd.Flags().StringVarP(&topDate, "date", "d", "", "date (YYYY-MM for month, YYYY for year) (required)")
 	topCmd.Flags().StringVarP(&topUserId, "user", "u", "", "user ID (required)")
 	topCmd.MarkFlagRequired("date")
-	topCmd.MarkFlagRequired("user")
 }

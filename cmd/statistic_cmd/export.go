@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/macar-x/cashlenx-server/service/statistic_service"
+	"github.com/macar-x/cashlenx-server/service/user_service"
 	"github.com/spf13/cobra"
 )
 
@@ -23,7 +24,11 @@ Only exports data that belongs to your account.`,
 		// TODO: Get userId from authentication/config
 		// For now, require userId as parameter
 		if exportUserId == "" {
-			return fmt.Errorf("user ID is required (use --user flag)")
+			var err error
+			exportUserId, err = user_service.GetDefaultAdminUserId()
+			if err != nil {
+				return err
+			}
 		}
 
 		err := statistic_service.ExportForUser(exportFromDate, exportToDate, exportFilePath, exportUserId)
@@ -42,5 +47,4 @@ func init() {
 	exportCmd.Flags().StringVarP(&exportToDate, "to", "t", "", "to date (include), e.g. 20241231")
 	exportCmd.Flags().StringVarP(&exportFilePath, "output", "o", "./export.xlsx", "output path (default: ./export.xlsx)")
 	exportCmd.Flags().StringVarP(&exportUserId, "user", "u", "", "user ID (required)")
-	exportCmd.MarkFlagRequired("user")
 }

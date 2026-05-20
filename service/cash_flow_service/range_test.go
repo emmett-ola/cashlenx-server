@@ -2,13 +2,9 @@ package cash_flow_service
 
 import (
 	"testing"
-
-	"github.com/macar-x/cashlenx-server/util"
 )
 
-func TestQueryByDateRange_Validation(t *testing.T) {
-	dbConfigured := util.GetConfigByKey("db.mongodb.url") != "" || util.GetConfigByKey("db.mysql.url") != ""
-
+func TestValidateDateRange(t *testing.T) {
 	tests := []struct {
 		name     string
 		fromDate string
@@ -67,12 +63,9 @@ func TestQueryByDateRange_Validation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if !dbConfigured && !tt.wantErr {
-				t.Skip("database not configured")
-			}
-			_, err := QueryByDateRange(tt.fromDate, tt.toDate)
+			_, _, err := validateDateRange(tt.fromDate, tt.toDate)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("QueryByDateRange() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("validateDateRange() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

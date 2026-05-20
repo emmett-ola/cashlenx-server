@@ -22,18 +22,12 @@ func Delete(w http.ResponseWriter, r *http.Request) {
 
 	// Delete user via service
 	if err := user_service.DeleteService(userId); err != nil {
-		if err.Error() == "user not found" {
-			util.ComposeJSONResponse(w, http.StatusNotFound, errors.NewNotFoundError(err.Error()))
-			return
-		}
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, errors.NewInternalError(err.Error(), nil))
+		util.ComposeErrorResponse(w, r, err)
 		return
 	}
 
 	// Return success response
-	response := map[string]interface{}{
-		"message": "user deleted successfully",
-		"userId":  userId,
-	}
-	util.ComposeJSONResponse(w, http.StatusOK, response)
+	util.ComposeJSONResponse(w, http.StatusOK, map[string]string{
+		"message": "User deleted successfully",
+	})
 }

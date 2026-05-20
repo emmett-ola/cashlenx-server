@@ -26,7 +26,7 @@ func TestConnection() (*ConnectionInfo, error) {
 	// Get host from connection string
 	switch info.Type {
 	case "mongodb":
-		uri := util.GetConfigByKey("mongodb.uri")
+		uri := util.GetConfigByKey("db.mongodb.url")
 		// Extract host from MongoDB URI (simplified)
 		if strings.Contains(uri, "@") {
 			parts := strings.Split(uri, "@")
@@ -42,7 +42,7 @@ func TestConnection() (*ConnectionInfo, error) {
 		info.Status = "connected"
 
 	case "mysql":
-		uri := util.GetConfigByKey("mysql.uri")
+		uri := util.GetConfigByKey("db.mysql.url")
 		// Extract host from MySQL URI (simplified)
 		if strings.Contains(uri, "@tcp(") {
 			parts := strings.Split(uri, "@tcp(")

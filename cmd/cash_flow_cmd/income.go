@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/macar-x/cashlenx-server/service/cash_flow_service"
+	"github.com/macar-x/cashlenx-server/service/user_service"
 	"github.com/spf13/cobra"
 )
 
@@ -12,12 +13,19 @@ var incomeCmd = &cobra.Command{
 	Use:   "income",
 	Short: "add new income cash_flow",
 	RunE: func(cmd *cobra.Command, args []string) error {
-	belongsDate, _ := cmd.Flags().GetString("date")
-  categoryName, _ := cmd.Flags().GetString("category")
-  amount, _ := cmd.Flags().GetFloat64("amount")
-  descriptionExact, _ := cmd.Flags().GetString("description")
-incomeUserId, err := cmd.Flags().GetString("user")
-		
+		belongsDate, _ := cmd.Flags().GetString("date")
+		categoryName, _ := cmd.Flags().GetString("category")
+		amount, _ := cmd.Flags().GetFloat64("amount")
+		descriptionExact, _ := cmd.Flags().GetString("description")
+		incomeUserId, _ := cmd.Flags().GetString("user")
+
+		if incomeUserId == "" {
+			var err error
+			incomeUserId, err = user_service.GetDefaultAdminUserId()
+			if err != nil {
+				return err
+			}
+		}
 
 		if !cash_flow_service.IsIncomeRequiredFiledSatisfied(categoryName, amount) {
 			return errors.New("some required fields are empty")
@@ -41,6 +49,5 @@ func init() {
 	// Mark required flags
 	_ = incomeCmd.MarkFlagRequired("category")
 	_ = incomeCmd.MarkFlagRequired("amount")
-	_ = incomeCmd.MarkFlagRequired("user")
 	CashCmd.AddCommand(incomeCmd)
 }

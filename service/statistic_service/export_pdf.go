@@ -3,10 +3,9 @@ package statistic_service
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/jung-kurt/gofpdf"
-	"github.com/macar-x/cashlenx-server/mapper/cash_flow_mapper"
-	"github.com/macar-x/cashlenx-server/mapper/category_mapper"
 	"github.com/macar-x/cashlenx-server/util"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -14,6 +13,10 @@ import (
 // ExportToPDFForUser exports the user's cash flow data to PDF file
 // Only exports data belonging to the specified user
 func ExportToPDFForUser(fromDateInString, toDateInString, filePath, userId string) error {
+	return defaultStatisticService().ExportToPDFForUser(fromDateInString, toDateInString, filePath, userId)
+}
+
+func (s *StatisticService) ExportToPDFForUser(fromDateInString, toDateInString, filePath, userId string) error {
 	if filePath == "" {
 		filePath = "./export.pdf"
 	}
@@ -72,7 +75,7 @@ func ExportToPDFForUser(fromDateInString, toDateInString, filePath, userId strin
 		offset := 0
 
 		for {
-			cashFlows := cash_flow_mapper.INSTANCE.GetAllCashFlowsByUser(userObjectId, limit, offset)
+			cashFlows := s.cashFlowMapper.GetAllCashFlowsByUser(userObjectId, limit, offset)
 			if len(cashFlows) == 0 {
 				break
 			}
@@ -92,9 +95,11 @@ func ExportToPDFForUser(fromDateInString, toDateInString, filePath, userId strin
 				}
 
 				categoryName := "Unknown"
-				categoryEntity := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(cashFlow.CategoryId.Hex(), userObjectId)
+				categoryType := ""
+				categoryEntity := s.categoryMapper.GetCategoryByObjectIdAndUser(cashFlow.CategoryId.Hex(), userObjectId)
 				if !categoryEntity.IsEmpty() {
 					categoryName = categoryEntity.Name
+					categoryType = categoryEntity.Type
 				}
 
 				dateStr := util.FormatDateToStringWithDash(cashFlow.BelongsDate)
@@ -111,16 +116,16 @@ func ExportToPDFForUser(fromDateInString, toDateInString, filePath, userId strin
 
 				pdf.CellFormat(colWidths[0], 6, dateStr, "1", 0, "L", false, 0, "")
 				pdf.CellFormat(colWidths[1], 6, categoryName, "1", 0, "L", false, 0, "")
-				pdf.CellFormat(colWidths[2], 6, cashFlow.FlowType, "1", 0, "C", false, 0, "")
+				pdf.CellFormat(colWidths[2], 6, categoryType, "1", 0, "C", false, 0, "")
 				pdf.CellFormat(colWidths[3], 6, amountStr, "1", 0, "R", false, 0, "")
 				pdf.CellFormat(colWidths[4], 6, cashFlow.Id.Hex()[:8]+"...", "1", 0, "L", false, 0, "")
 				pdf.CellFormat(colWidths[5], 6, cashFlow.CategoryId.Hex()[:8]+"...", "1", 0, "L", false, 0, "")
 				pdf.CellFormat(colWidths[6], 6, desc, "1", 0, "L", false, 0, "")
 				pdf.Ln(-1)
 
-				if cashFlow.FlowType == "income" {
+				if strings.EqualFold(categoryType, "income") {
 					totalIncome += cashFlow.Amount
-				} else if cashFlow.FlowType == "expense" {
+				} else if strings.EqualFold(categoryType, "expense") {
 					totalExpense += cashFlow.Amount
 				}
 
@@ -135,7 +140,7 @@ func ExportToPDFForUser(fromDateInString, toDateInString, filePath, userId strin
 		queryDateEnded := util.FormatDateFromStringWithoutDash(toDateInString).AddDate(0, 0, 1)
 
 		for queryDateEnded.After(queryDateCurrent) {
-			cashFlowArray := cash_flow_mapper.INSTANCE.GetCashFlowsByBelongsDateAndUser(queryDateCurrent, userObjectId)
+			cashFlowArray := s.cashFlowMapper.GetCashFlowsByBelongsDateAndUser(queryDateCurrent, userObjectId)
 
 			for _, cashFlow := range cashFlowArray {
 				// Create new page if needed
@@ -152,9 +157,11 @@ func ExportToPDFForUser(fromDateInString, toDateInString, filePath, userId strin
 				}
 
 				categoryName := "Unknown"
-				categoryEntity := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(cashFlow.CategoryId.Hex(), userObjectId)
+				categoryType := ""
+				categoryEntity := s.categoryMapper.GetCategoryByObjectIdAndUser(cashFlow.CategoryId.Hex(), userObjectId)
 				if !categoryEntity.IsEmpty() {
 					categoryName = categoryEntity.Name
+					categoryType = categoryEntity.Type
 				}
 
 				dateStr := util.FormatDateToStringWithDash(queryDateCurrent)
@@ -171,16 +178,16 @@ func ExportToPDFForUser(fromDateInString, toDateInString, filePath, userId strin
 
 				pdf.CellFormat(colWidths[0], 6, dateStr, "1", 0, "L", false, 0, "")
 				pdf.CellFormat(colWidths[1], 6, categoryName, "1", 0, "L", false, 0, "")
-				pdf.CellFormat(colWidths[2], 6, cashFlow.FlowType, "1", 0, "C", false, 0, "")
+				pdf.CellFormat(colWidths[2], 6, categoryType, "1", 0, "C", false, 0, "")
 				pdf.CellFormat(colWidths[3], 6, amountStr, "1", 0, "R", false, 0, "")
 				pdf.CellFormat(colWidths[4], 6, cashFlow.Id.Hex()[:8]+"...", "1", 0, "L", false, 0, "")
 				pdf.CellFormat(colWidths[5], 6, cashFlow.CategoryId.Hex()[:8]+"...", "1", 0, "L", false, 0, "")
 				pdf.CellFormat(colWidths[6], 6, desc, "1", 0, "L", false, 0, "")
 				pdf.Ln(-1)
 
-				if cashFlow.FlowType == "income" {
+				if strings.EqualFold(categoryType, "income") {
 					totalIncome += cashFlow.Amount
-				} else if cashFlow.FlowType == "expense" {
+				} else if strings.EqualFold(categoryType, "expense") {
 					totalExpense += cashFlow.Amount
 				}
 

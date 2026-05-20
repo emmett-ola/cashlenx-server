@@ -40,7 +40,7 @@ WARNING: This will replace all existing data unless --merge is used.`,
 			}
 		}
 
-		stats, err := manage_service.RestoreBackup(restorePath)
+		stats, err := manage_service.AdminRestoreDatabase(restorePath)
 		if err != nil {
 			return err
 		}

@@ -3,7 +3,6 @@ package category_service
 import (
 	"errors"
 
-	"github.com/macar-x/cashlenx-server/mapper/category_mapper"
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/util"
 	"github.com/macar-x/cashlenx-server/validation"
@@ -12,6 +11,10 @@ import (
 
 // QueryByIdForUser retrieves a category by ID, ensuring it belongs to the user
 func QueryByIdForUser(plainId string, userId string) (model.CategoryEntity, error) {
+	return defaultCategoryService().QueryByIdForUser(plainId, userId)
+}
+
+func (s *CategoryService) QueryByIdForUser(plainId string, userId string) (model.CategoryEntity, error) {
 	// Validate ID
 	if err := validation.ValidateID(plainId); err != nil {
 		return model.CategoryEntity{}, err
@@ -23,7 +26,7 @@ func QueryByIdForUser(plainId string, userId string) (model.CategoryEntity, erro
 		return model.CategoryEntity{}, errors.New("invalid user ID")
 	}
 
-	categoryEntity := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(plainId, userObjectId)
+	categoryEntity := s.categoryMapper.GetCategoryByObjectIdAndUser(plainId, userObjectId)
 	if categoryEntity.IsEmpty() {
 		return model.CategoryEntity{}, errors.New("category not found or access denied")
 	}
@@ -32,6 +35,10 @@ func QueryByIdForUser(plainId string, userId string) (model.CategoryEntity, erro
 
 // QueryByNameForUser retrieves a category by name, ensuring it belongs to the user
 func QueryByNameForUser(categoryName string, userId string) (model.CategoryEntity, error) {
+	return defaultCategoryService().QueryByNameForUser(categoryName, userId)
+}
+
+func (s *CategoryService) QueryByNameForUser(categoryName string, userId string) (model.CategoryEntity, error) {
 	// Validate category name
 	if err := validation.ValidateCategoryName(categoryName); err != nil {
 		return model.CategoryEntity{}, err
@@ -43,7 +50,7 @@ func QueryByNameForUser(categoryName string, userId string) (model.CategoryEntit
 		return model.CategoryEntity{}, errors.New("invalid user ID")
 	}
 
-	categoryEntity := category_mapper.INSTANCE.GetCategoryByNameAndUser(categoryName, userObjectId)
+	categoryEntity := s.categoryMapper.GetCategoryByNameAndUser(categoryName, userObjectId)
 	if categoryEntity.IsEmpty() {
 		return model.CategoryEntity{}, errors.New("category not found or access denied")
 	}
@@ -52,6 +59,10 @@ func QueryByNameForUser(categoryName string, userId string) (model.CategoryEntit
 
 // GetRootCategoriesForUser retrieves root categories (no parent) for a specific user
 func GetRootCategoriesForUser(userId string, categoryType string) ([]model.CategoryEntity, error) {
+	return defaultCategoryService().GetRootCategoriesForUser(userId, categoryType)
+}
+
+func (s *CategoryService) GetRootCategoriesForUser(userId string, categoryType string) ([]model.CategoryEntity, error) {
 	// Validate and convert userId
 	userObjectId := util.Convert2ObjectId(userId)
 	if userObjectId == primitive.NilObjectID {
@@ -62,9 +73,9 @@ func GetRootCategoriesForUser(userId string, categoryType string) ([]model.Categ
 	var err error
 
 	if categoryType != "" {
-		categories, err = category_mapper.INSTANCE.GetRootCategoriesByUserAndType(userObjectId, categoryType)
+		categories, err = s.categoryMapper.GetRootCategoriesByUserAndType(userObjectId, categoryType)
 	} else {
-		categories, err = category_mapper.INSTANCE.GetRootCategoriesByUser(userObjectId)
+		categories, err = s.categoryMapper.GetRootCategoriesByUser(userObjectId)
 	}
 
 	if err != nil {
@@ -76,6 +87,10 @@ func GetRootCategoriesForUser(userId string, categoryType string) ([]model.Categ
 
 // GetChildCategoriesForUser retrieves child categories of a parent for a specific user
 func GetChildCategoriesForUser(parentId string, userId string, categoryType string) ([]model.CategoryEntity, error) {
+	return defaultCategoryService().GetChildCategoriesForUser(parentId, userId, categoryType)
+}
+
+func (s *CategoryService) GetChildCategoriesForUser(parentId string, userId string, categoryType string) ([]model.CategoryEntity, error) {
 	// Validate parent ID
 	if err := validation.ValidateID(parentId); err != nil {
 		return nil, err
@@ -90,11 +105,12 @@ func GetChildCategoriesForUser(parentId string, userId string, categoryType stri
 	// Convert parent ID
 	parentObjectId := util.Convert2ObjectId(parentId)
 	if parentObjectId == primitive.NilObjectID {
-		return nil, errors.New("invalid parent ID")
+		// If parent ID is nil (000000000000000000000000), return root categories
+		return s.GetRootCategoriesForUser(userId, categoryType)
 	}
 
 	// Verify parent category belongs to user
-	parentEntity := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(parentId, userObjectId)
+	parentEntity := s.categoryMapper.GetCategoryByObjectIdAndUser(parentId, userObjectId)
 	if parentEntity.IsEmpty() {
 		return nil, errors.New("parent category not found or access denied")
 	}
@@ -103,9 +119,9 @@ func GetChildCategoriesForUser(parentId string, userId string, categoryType stri
 	var err error
 
 	if categoryType != "" {
-		categories, err = category_mapper.INSTANCE.GetCategoriesByParentIdUserAndType(parentObjectId, userObjectId, categoryType)
+		categories, err = s.categoryMapper.GetCategoriesByParentIdUserAndType(parentObjectId, userObjectId, categoryType)
 	} else {
-		categories, err = category_mapper.INSTANCE.GetCategoriesByParentIdAndUser(parentObjectId, userObjectId)
+		categories, err = s.categoryMapper.GetCategoriesByParentIdAndUser(parentObjectId, userObjectId)
 	}
 
 	if err != nil {

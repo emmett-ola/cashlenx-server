@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/macar-x/cashlenx-server/service/statistic_service"
+	"github.com/macar-x/cashlenx-server/service/user_service"
 	"github.com/spf13/cobra"
 )
 
@@ -22,7 +23,11 @@ Only includes your own transactions.`,
   cashlenx statistic breakdown -p year -d 2024 -u <userId>`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if breakdownUserId == "" {
-			return fmt.Errorf("user ID is required (use --user flag)")
+			var err error
+			breakdownUserId, err = user_service.GetDefaultAdminUserId()
+			if err != nil {
+				return err
+			}
 		}
 
 		breakdown, err := statistic_service.GetBreakdownForUser(breakdownPeriod, breakdownDate, breakdownUserId)
@@ -60,5 +65,4 @@ func init() {
 	breakdownCmd.Flags().StringVarP(&breakdownDate, "date", "d", "", "date (YYYY-MM for month, YYYY for year) (required)")
 	breakdownCmd.Flags().StringVarP(&breakdownUserId, "user", "u", "", "user ID (required)")
 	breakdownCmd.MarkFlagRequired("date")
-	breakdownCmd.MarkFlagRequired("user")
 }

@@ -14,6 +14,12 @@ type UserMapper interface {
 	
 	// GetUserByUsername retrieves a user by their username
 	GetUserByUsername(username string) model.UserEntity
+
+	// GetUserByUsernameIncludeDeleted retrieves a user by their username including deleted ones
+	GetUserByUsernameIncludeDeleted(username string) model.UserEntity
+
+	// GetUserByEmail retrieves a user by their email address
+	GetUserByEmail(email string) model.UserEntity
 	
 	// InsertUserByEntity inserts a new user entity into the database
 	InsertUserByEntity(newEntity model.UserEntity) string
@@ -23,6 +29,9 @@ type UserMapper interface {
 	
 	// GetAllUsers retrieves all users with pagination
 	GetAllUsers(limit, offset int) []model.UserEntity
+
+	// GetAllUsersIncludeDeleted retrieves all users including deleted ones with pagination
+	GetAllUsersIncludeDeleted(limit, offset int) []model.UserEntity
 	
 	// GetUsersByRole retrieves all users with a specific role
 	GetUsersByRole(role string) []model.UserEntity

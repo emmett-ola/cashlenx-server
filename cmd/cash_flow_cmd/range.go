@@ -3,15 +3,18 @@ package cash_flow_cmd
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/service/cash_flow_service"
+	"github.com/macar-x/cashlenx-server/service/user_service"
 	"github.com/spf13/cobra"
 )
 
 var (
 	fromDate string
 	toDate   string
+	rangeUserId string
 )
 
 var rangeCmd = &cobra.Command{
@@ -24,7 +27,15 @@ Displays all transactions between from-date and to-date (inclusive).`,
 			return errors.New("both from-date and to-date are required")
 		}
 
-		cashFlowEntityList, err := cash_flow_service.QueryByDateRange(fromDate, toDate)
+		if rangeUserId == "" {
+			var err error
+			rangeUserId, err = user_service.GetDefaultAdminUserId()
+			if err != nil {
+				return err
+			}
+		}
+
+		cashFlowEntityList, err := cash_flow_service.QueryByDateRangeForUser(fromDate, toDate, rangeUserId)
 		if err != nil {
 			return err
 		}
@@ -37,9 +48,9 @@ Displays all transactions between from-date and to-date (inclusive).`,
 		var totalIncome, totalExpense float64
 		for index, cashFlowEntity := range cashFlowEntityList {
 			fmt.Println("cash_flow", index, ":", cashFlowEntity.ToString())
-			if cashFlowEntity.FlowType == model.FlowTypeIncome {
+			if strings.EqualFold(cashFlowEntity.CategoryType, model.FlowTypeIncome) {
 				totalIncome += cashFlowEntity.Amount
-			} else {
+			} else if strings.EqualFold(cashFlowEntity.CategoryType, model.FlowTypeExpense) {
 				totalExpense += cashFlowEntity.Amount
 			}
 		}
@@ -60,6 +71,8 @@ func init() {
 		&fromDate, "from", "f", "", "start date (YYYY-MM-DD) (required)")
 	rangeCmd.Flags().StringVarP(
 		&toDate, "to", "t", "", "end date (YYYY-MM-DD) (required)")
+	rangeCmd.Flags().StringVarP(
+		&rangeUserId, "user", "u", "", "user ID (optional)")
 
 	rangeCmd.MarkFlagRequired("from")
 	rangeCmd.MarkFlagRequired("to")

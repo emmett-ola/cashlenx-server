@@ -57,7 +57,7 @@ func (CategoryMongoDbMapper) GetCategoryByName(categoryName string) model.Catego
 
 func (CategoryMongoDbMapper) GetCategoriesByUserAndType(userObjectId primitive.ObjectID, categoryType string, page, pageSize int) ([]model.CategoryEntity, error) {
 	filter := bson.D{
-		primitive.E{Key: "user_id", Value: userObjectId},
+		primitive.E{Key: "belongs_user_id", Value: userObjectId},
 		primitive.E{Key: "type", Value: categoryType},
 	}
 
@@ -99,13 +99,13 @@ func (CategoryMongoDbMapper) GetCategoryByParentId(parentPlainId string) []model
 }
 
 func (CategoryMongoDbMapper) InsertCategoryByEntity(newEntity model.CategoryEntity) string {
-	// Only set CreateTime and ModifyTime if they're not already set (e.g., during restoration)
+	// Only set CreateTime and UpdateTime if they're not already set (e.g., during restoration)
 	operatingTime := time.Now().UTC() // Store in UTC
 	if newEntity.CreateTime.IsZero() {
 		newEntity.CreateTime = operatingTime
 	}
-	if newEntity.ModifyTime.IsZero() {
-		newEntity.ModifyTime = operatingTime
+	if newEntity.UpdateTime.IsZero() {
+		newEntity.UpdateTime = operatingTime
 	}
 
 	database.OpenMongoDbConnection(database.CategoryTableName)
@@ -142,7 +142,7 @@ func (CategoryMongoDbMapper) UpdateCategoryByEntity(plainId string, updatedEntit
 	// Update fields from updatedEntity while preserving ID and CreateTime
 	updatedEntity.Id = targetEntity.Id
 	updatedEntity.CreateTime = targetEntity.CreateTime
-	updatedEntity.ModifyTime = time.Now().UTC() // Store in UTC
+	updatedEntity.UpdateTime = time.Now().UTC() // Store in UTC
 
 	rowsAffected := database.UpdateManyInMongoDB(filter, convertCategoryEntity2BsonD(updatedEntity))
 	if rowsAffected != 1 {
@@ -183,7 +183,13 @@ func (CategoryMongoDbMapper) DeleteCategoryByObjectId(plainId string) model.Cate
 		return model.CategoryEntity{}
 	}
 
-	rowsAffected := database.DeleteManyInMongoDB(filter)
+	// Soft delete: Update is_delete to true
+	update := bson.D{
+		primitive.E{Key: "is_delete", Value: true},
+		primitive.E{Key: "delete_time", Value: time.Now()},
+	}
+
+	rowsAffected := database.UpdateManyInMongoDB(filter, update)
 	if rowsAffected != 1 {
 		// fixme: maybe we should have a rollback here.
 		util.Logger.Errorw("delete failed", "rows_affected", rowsAffected)
@@ -200,37 +206,28 @@ func (CategoryMongoDbMapper) GetAllCategories(limit, offset int) []model.Categor
 	database.OpenMongoDbConnection(database.CategoryTableName)
 	defer database.CloseMongoDbConnection()
 
-	collection := database.GetMongoCollection(database.CategoryTableName)
-
-	// Empty filter to get all documents, with pagination
+	// Filter out deleted records (handled by utility)
 	filter := bson.D{}
 
-	ctx := context.TODO()
-	findOptions := options.Find()
-	if limit > 0 {
-		findOptions.SetLimit(int64(limit))
+	var targetEntityList []model.CategoryEntity
+	queryResultList := database.GetManyInMongoDBWithPagination(filter, int64(limit), int64(offset))
+	for _, queryResult := range queryResultList {
+		targetEntityList = append(targetEntityList, convertBsonM2CategoryEntity(queryResult))
 	}
-	if offset > 0 {
-		findOptions.SetSkip(int64(offset))
-	}
-	// Sort by name ascending
-	findOptions.SetSort(bson.D{primitive.E{Key: "name", Value: 1}})
 
-	cursor, err := collection.Find(ctx, filter, findOptions)
-	if err != nil {
-		util.Logger.Errorw("query all categories failed", "error", err)
-		return []model.CategoryEntity{}
-	}
-	defer cursor.Close(ctx)
+	return targetEntityList
+}
+
+func (CategoryMongoDbMapper) GetAllCategoriesIncludeDeleted(limit, offset int) []model.CategoryEntity {
+	database.OpenMongoDbConnection(database.CategoryTableName)
+	defer database.CloseMongoDbConnection()
+
+	filter := bson.D{}
 
 	var targetEntityList []model.CategoryEntity
-	for cursor.Next(ctx) {
-		var bsonM bson.M
-		if err := cursor.Decode(&bsonM); err != nil {
-			util.Logger.Errorw("decode failed", "error", err)
-			continue
-		}
-		targetEntityList = append(targetEntityList, convertBsonM2CategoryEntity(bsonM))
+	queryResultList := database.GetManyInMongoDBWithPaginationIncludeDeleted(filter, int64(limit), int64(offset))
+	for _, queryResult := range queryResultList {
+		targetEntityList = append(targetEntityList, convertBsonM2CategoryEntity(queryResult))
 	}
 
 	return targetEntityList
@@ -248,7 +245,7 @@ func (CategoryMongoDbMapper) CountAllCategories() int64 {
 // CountCategoriesByUserAndType counts categories filtered by user ID and type
 func (CategoryMongoDbMapper) CountCategoriesByUserAndType(userObjectId primitive.ObjectID, categoryType string) (int64, error) {
 	filter := bson.D{
-		primitive.E{Key: "user_id", Value: userObjectId},
+		primitive.E{Key: "belongs_user_id", Value: userObjectId},
 		primitive.E{Key: "type", Value: categoryType},
 	}
 
@@ -265,8 +262,11 @@ func (CategoryMongoDbMapper) CountCategoriesByUserAndType(userObjectId primitive
 
 func (CategoryMongoDbMapper) GetRootCategoriesByUser(userId primitive.ObjectID) ([]model.CategoryEntity, error) {
 	filter := bson.D{
-		primitive.E{Key: "user_id", Value: userId},
-		primitive.E{Key: "parent_id", Value: bson.M{"$exists": false}},
+		primitive.E{Key: "belongs_user_id", Value: userId},
+		primitive.E{Key: "$or", Value: bson.A{
+			bson.D{{Key: "parent_id", Value: bson.M{"$exists": false}}},
+			bson.D{{Key: "parent_id", Value: primitive.NilObjectID}},
+		}},
 	}
 
 	database.OpenMongoDbConnection(database.CategoryTableName)
@@ -284,9 +284,12 @@ func (CategoryMongoDbMapper) GetRootCategoriesByUser(userId primitive.ObjectID) 
 
 func (CategoryMongoDbMapper) GetRootCategoriesByUserAndType(userId primitive.ObjectID, categoryType string) ([]model.CategoryEntity, error) {
 	filter := bson.D{
-		primitive.E{Key: "user_id", Value: userId},
+		primitive.E{Key: "belongs_user_id", Value: userId},
 		primitive.E{Key: "type", Value: categoryType},
-		primitive.E{Key: "parent_id", Value: bson.M{"$exists": false}},
+		primitive.E{Key: "$or", Value: bson.A{
+			bson.D{{Key: "parent_id", Value: bson.M{"$exists": false}}},
+			bson.D{{Key: "parent_id", Value: primitive.NilObjectID}},
+		}},
 	}
 
 	database.OpenMongoDbConnection(database.CategoryTableName)
@@ -305,7 +308,7 @@ func (CategoryMongoDbMapper) GetRootCategoriesByUserAndType(userId primitive.Obj
 func (CategoryMongoDbMapper) GetCategoriesByParentIdAndUser(parentId primitive.ObjectID, userId primitive.ObjectID) ([]model.CategoryEntity, error) {
 	filter := bson.D{
 		primitive.E{Key: "parent_id", Value: parentId},
-		primitive.E{Key: "user_id", Value: userId},
+		primitive.E{Key: "belongs_user_id", Value: userId},
 	}
 
 	database.OpenMongoDbConnection(database.CategoryTableName)
@@ -324,7 +327,7 @@ func (CategoryMongoDbMapper) GetCategoriesByParentIdAndUser(parentId primitive.O
 func (CategoryMongoDbMapper) GetCategoriesByParentIdUserAndType(parentId primitive.ObjectID, userId primitive.ObjectID, categoryType string) ([]model.CategoryEntity, error) {
 	filter := bson.D{
 		primitive.E{Key: "parent_id", Value: parentId},
-		primitive.E{Key: "user_id", Value: userId},
+		primitive.E{Key: "belongs_user_id", Value: userId},
 		primitive.E{Key: "type", Value: categoryType},
 	}
 
@@ -350,7 +353,7 @@ func (CategoryMongoDbMapper) TruncateCategories() error {
 	filter := bson.D{}
 
 	// Delete all documents
-	deletedCount := database.DeleteManyInMongoDB(filter)
+	deletedCount := database.DeleteManyInMongoDBIncludeDeleted(filter)
 
 	// Clear cache after truncate
 	cache.GetCategoryCache().Clear()
@@ -369,7 +372,8 @@ func (CategoryMongoDbMapper) GetCategoryByObjectIdAndUser(plainId string, userId
 
 	filter := bson.D{
 		primitive.E{Key: "_id", Value: objectId},
-		primitive.E{Key: "user_id", Value: userId},
+		primitive.E{Key: "belongs_user_id", Value: userId},
+		primitive.E{Key: "is_delete", Value: false},
 	}
 
 	database.OpenMongoDbConnection(database.CategoryTableName)
@@ -381,7 +385,8 @@ func (CategoryMongoDbMapper) GetCategoryByObjectIdAndUser(plainId string, userId
 func (CategoryMongoDbMapper) GetCategoryByNameAndUser(categoryName string, userId primitive.ObjectID) model.CategoryEntity {
 	filter := bson.D{
 		primitive.E{Key: "name", Value: categoryName},
-		primitive.E{Key: "user_id", Value: userId},
+		primitive.E{Key: "belongs_user_id", Value: userId},
+		primitive.E{Key: "is_delete", Value: false},
 	}
 
 	database.OpenMongoDbConnection(database.CategoryTableName)
@@ -393,8 +398,9 @@ func (CategoryMongoDbMapper) GetCategoryByNameAndUser(categoryName string, userI
 func (CategoryMongoDbMapper) GetCategoryByNameUserAndType(categoryName string, userId primitive.ObjectID, categoryType string) model.CategoryEntity {
 	filter := bson.D{
 		primitive.E{Key: "name", Value: categoryName},
-		primitive.E{Key: "user_id", Value: userId},
+		primitive.E{Key: "belongs_user_id", Value: userId},
 		primitive.E{Key: "type", Value: categoryType},
+		primitive.E{Key: "is_delete", Value: false},
 	}
 
 	database.OpenMongoDbConnection(database.CategoryTableName)
@@ -406,15 +412,19 @@ func (CategoryMongoDbMapper) GetCategoryByNameUserAndType(categoryName string, u
 func (CategoryMongoDbMapper) GetCategoryByNameUserTypeAndParent(categoryName string, userId primitive.ObjectID, categoryType string, parentId primitive.ObjectID) model.CategoryEntity {
 	filter := bson.D{
 		primitive.E{Key: "name", Value: categoryName},
-		primitive.E{Key: "user_id", Value: userId},
+		primitive.E{Key: "belongs_user_id", Value: userId},
 		primitive.E{Key: "type", Value: categoryType},
+		primitive.E{Key: "is_delete", Value: false},
 	}
 
 	if parentId != primitive.NilObjectID {
 		filter = append(filter, primitive.E{Key: "parent_id", Value: parentId})
 	} else {
 		// Explicitly check for null or non-existent parent_id for root categories
-		filter = append(filter, primitive.E{Key: "parent_id", Value: bson.M{"$exists": false}})
+		filter = append(filter, primitive.E{Key: "$or", Value: bson.A{
+			bson.D{{Key: "parent_id", Value: bson.M{"$exists": false}}},
+			bson.D{{Key: "parent_id", Value: primitive.NilObjectID}},
+		}})
 	}
 
 	database.OpenMongoDbConnection(database.CategoryTableName)
@@ -432,7 +442,8 @@ func (CategoryMongoDbMapper) DeleteCategoryByObjectIdAndUser(plainId string, use
 
 	filter := bson.D{
 		primitive.E{Key: "_id", Value: objectId},
-		primitive.E{Key: "user_id", Value: userId},
+		primitive.E{Key: "belongs_user_id", Value: userId},
+		primitive.E{Key: "is_delete", Value: false},
 	}
 
 	database.OpenMongoDbConnection(database.CategoryTableName)
@@ -451,7 +462,15 @@ func (CategoryMongoDbMapper) DeleteCategoryByObjectIdAndUser(plainId string, use
 		return model.CategoryEntity{}
 	}
 
-	rowsAffected := database.DeleteManyInMongoDB(filter)
+	// Soft delete: Update is_delete to true
+	now := time.Now()
+	update := bson.D{
+		primitive.E{Key: "is_delete", Value: true},
+		primitive.E{Key: "delete_time", Value: now},
+		primitive.E{Key: "delete_user_id", Value: userId},
+	}
+
+	rowsAffected := database.UpdateManyInMongoDB(filter, update)
 	if rowsAffected != 1 {
 		util.Logger.Errorw("delete failed", "rows_affected", rowsAffected)
 		return model.CategoryEntity{}
@@ -459,7 +478,10 @@ func (CategoryMongoDbMapper) DeleteCategoryByObjectIdAndUser(plainId string, use
 
 	// Invalidate cache on delete
 	cache.GetCategoryCache().Clear()
-
+	
+	targetEntity.IsDelete = true
+	targetEntity.DeleteTime = &now
+	targetEntity.DeleteUserId = &userId
 	return targetEntity
 }
 
@@ -473,7 +495,8 @@ func (CategoryMongoDbMapper) UpdateCategoryByEntityAndUser(plainId string, updat
 
 	filter := bson.D{
 		primitive.E{Key: "_id", Value: objectId},
-		primitive.E{Key: "user_id", Value: userId},
+		primitive.E{Key: "belongs_user_id", Value: userId},
+		primitive.E{Key: "is_delete", Value: false},
 	}
 
 	database.OpenMongoDbConnection(database.CategoryTableName)
@@ -487,9 +510,9 @@ func (CategoryMongoDbMapper) UpdateCategoryByEntityAndUser(plainId string, updat
 
 	// Update fields from updatedEntity while preserving ID, UserId, and CreateTime
 	updatedEntity.Id = targetEntity.Id
-	updatedEntity.UserId = userId
+	updatedEntity.BelongsUserId = userId
 	updatedEntity.CreateTime = targetEntity.CreateTime
-	updatedEntity.ModifyTime = time.Now().UTC()
+	updatedEntity.UpdateTime = time.Now().UTC()
 
 	rowsAffected := database.UpdateManyInMongoDB(filter, convertCategoryEntity2BsonD(updatedEntity))
 	if rowsAffected != 1 {
@@ -511,7 +534,8 @@ func (CategoryMongoDbMapper) GetAllCategoriesByUser(userId primitive.ObjectID, l
 	collection := database.GetMongoCollection(database.CategoryTableName)
 
 	filter := bson.D{
-		primitive.E{Key: "user_id", Value: userId},
+		primitive.E{Key: "belongs_user_id", Value: userId},
+		primitive.E{Key: "is_delete", Value: false},
 	}
 
 	ctx := context.TODO()
@@ -548,13 +572,42 @@ func (CategoryMongoDbMapper) GetAllCategoriesByUser(userId primitive.ObjectID, l
 // CountAllCategoriesByUser counts all categories for a specific user
 func (CategoryMongoDbMapper) CountAllCategoriesByUser(userId primitive.ObjectID) int64 {
 	filter := bson.D{
-		primitive.E{Key: "user_id", Value: userId},
+		primitive.E{Key: "belongs_user_id", Value: userId},
+		primitive.E{Key: "is_delete", Value: false},
 	}
 
 	database.OpenMongoDbConnection(database.CategoryTableName)
 	defer database.CloseMongoDbConnection()
 
 	return database.CountInMongoDB(filter)
+}
+
+func (CategoryMongoDbMapper) GetAllCategoriesByUserIncludeDeleted(userId primitive.ObjectID) []model.CategoryEntity {
+	database.OpenMongoDbConnection(database.CategoryTableName)
+	defer database.CloseMongoDbConnection()
+
+	filter := bson.D{
+		primitive.E{Key: "belongs_user_id", Value: userId},
+	}
+
+	var targetEntityList []model.CategoryEntity
+	queryResultList := database.GetManyInMongoDBWithPaginationIncludeDeleted(filter, 0, 0)
+	for _, queryResult := range queryResultList {
+		targetEntityList = append(targetEntityList, convertBsonM2CategoryEntity(queryResult))
+	}
+
+	return targetEntityList
+}
+
+func (CategoryMongoDbMapper) DeleteAllCategoriesByUser(userId primitive.ObjectID) (int64, error) {
+	database.OpenMongoDbConnection(database.CategoryTableName)
+	defer database.CloseMongoDbConnection()
+
+	filter := bson.D{
+		primitive.E{Key: "belongs_user_id", Value: userId},
+	}
+
+	return database.DeleteManyInMongoDBIncludeDeleted(filter), nil
 }
 
 func convertCategoryEntity2BsonD(entity model.CategoryEntity) bson.D {
@@ -568,19 +621,33 @@ func convertCategoryEntity2BsonD(entity model.CategoryEntity) bson.D {
 		primitive.E{Key: "parent_id", Value: entity.ParentId},
 		primitive.E{Key: "name", Value: entity.Name},
 		primitive.E{Key: "type", Value: entity.Type},
-		primitive.E{Key: "user_id", Value: entity.UserId},
+		primitive.E{Key: "belongs_user_id", Value: entity.BelongsUserId},
 		primitive.E{Key: "remark", Value: entity.Remark},
+		primitive.E{Key: "create_user_id", Value: entity.CreateUserId},
 		primitive.E{Key: "create_time", Value: entity.CreateTime},
-		primitive.E{Key: "modify_time", Value: entity.ModifyTime},
+		primitive.E{Key: "update_user_id", Value: entity.UpdateUserId},
+		primitive.E{Key: "update_time", Value: entity.UpdateTime},
+		primitive.E{Key: "delete_user_id", Value: entity.DeleteUserId},
+		primitive.E{Key: "delete_time", Value: entity.DeleteTime},
+		primitive.E{Key: "is_delete", Value: entity.IsDelete},
 	}
 }
 
 func convertBsonM2CategoryEntity(bsonM bson.M) model.CategoryEntity {
 	var newEntity model.CategoryEntity
-	bsonBytes, _ := bson.Marshal(bsonM)
-	err := bson.Unmarshal(bsonBytes, &newEntity)
+	bsonBytes, err := bson.Marshal(bsonM)
 	if err != nil {
+		util.Logger.Errorln(err)
 		panic(err)
 	}
+	if err = bson.Unmarshal(bsonBytes, &newEntity); err != nil {
+		util.Logger.Errorln(err)
+		panic(err)
+	}
+	
+	// Manually map fields that might not be automatically mapped due to struct embedding differences or bson tags
+	// Note: BaseEntity fields should be mapped by bson tags in the struct if bson.Unmarshal works correctly with inline
+	// But let's be safe and check if we need manual mapping for older data or specific cases
+	
 	return newEntity
 }

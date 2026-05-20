@@ -5,8 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/macar-x/cashlenx-server/mapper/cash_flow_mapper"
-	"github.com/macar-x/cashlenx-server/mapper/category_mapper"
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/util"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -23,6 +21,10 @@ type Summary struct {
 
 // GetSummary returns financial summary for a given period
 func GetSummary(period, date string) (*Summary, error) {
+	return defaultCashFlowService().GetSummary(period, date)
+}
+
+func (s *CashFlowService) GetSummary(period, date string) (*Summary, error) {
 	validPeriods := map[string]bool{
 		"daily":   true,
 		"monthly": true,
@@ -72,21 +74,41 @@ func GetSummary(period, date string) (*Summary, error) {
 
 	currentDate := fromDate
 	for !currentDate.After(toDate) {
-		dayResults := cash_flow_mapper.INSTANCE.GetCashFlowsByBelongsDate(currentDate)
+		dayResults := s.cashFlowMapper.GetCashFlowsByBelongsDate(currentDate)
 
 		for _, cashFlow := range dayResults {
 			summary.TransactionCount++
 
-			if cashFlow.FlowType == model.FlowTypeIncome {
+			// Get category to determine true type
+			category := s.categoryMapper.GetCategoryByObjectId(cashFlow.CategoryId.Hex())
+
+			isIncome := false
+			if !category.IsEmpty() {
+				if strings.EqualFold(category.Type, model.FlowTypeIncome) {
+					isIncome = true
+				} else if strings.EqualFold(category.Type, model.FlowTypeExpense) {
+					isIncome = false
+				}
+			} else {
+				// Fallback if category is missing: default to expense or skip?
+				// Since we can't access FlowType anymore, we have to guess or assume expense.
+				// Let's assume expense for safety (or income? Expense is more common to track).
+				// Or log a warning.
+				// For now, let's treat it as expense to be safe, or maybe skip?
+				// If we treat as expense, it might skew expense.
+				// Let's default to Expense as false.
+				isIncome = false
+			}
+
+			if isIncome {
 				summary.TotalIncome += cashFlow.Amount
 			} else {
 				summary.TotalExpense += cashFlow.Amount
-			}
-
-			// Get category name for breakdown
-			category := category_mapper.INSTANCE.GetCategoryByObjectId(cashFlow.CategoryId.Hex())
-			if !category.IsEmpty() {
-				summary.CategoryBreakdown[category.Name] += cashFlow.Amount
+				if !category.IsEmpty() {
+					summary.CategoryBreakdown[category.Name] += cashFlow.Amount
+				} else {
+					summary.CategoryBreakdown["Unknown"] += cashFlow.Amount
+				}
 			}
 		}
 
@@ -95,11 +117,23 @@ func GetSummary(period, date string) (*Summary, error) {
 
 	summary.Balance = summary.TotalIncome - summary.TotalExpense
 
+	// Format float precision to 2 decimal places
+	summary.TotalIncome = util.RoundFloat(summary.TotalIncome, 2)
+	summary.TotalExpense = util.RoundFloat(summary.TotalExpense, 2)
+	summary.Balance = util.RoundFloat(summary.Balance, 2)
+	for k, v := range summary.CategoryBreakdown {
+		summary.CategoryBreakdown[k] = util.RoundFloat(v, 2)
+	}
+
 	return summary, nil
 }
 
 // GetSummaryForUser returns financial summary for a given period for a specific user
 func GetSummaryForUser(period, date string, userId string) (*Summary, error) {
+	return defaultCashFlowService().GetSummaryForUser(period, date, userId)
+}
+
+func (s *CashFlowService) GetSummaryForUser(period, date string, userId string) (*Summary, error) {
 	validPeriods := map[string]bool{
 		"daily":   true,
 		"monthly": true,
@@ -160,25 +194,46 @@ func GetSummaryForUser(period, date string, userId string) (*Summary, error) {
 	}
 
 	// Use date range query for efficiency instead of iterating day by day
-	cashFlows := cash_flow_mapper.INSTANCE.GetCashFlowsByDateRangeAndUser(fromDate, toDate, userObjectId)
+	cashFlows := s.cashFlowMapper.GetCashFlowsByDateRangeAndUser(fromDate, toDate, userObjectId)
 
 	for _, cashFlow := range cashFlows {
 		summary.TransactionCount++
 
-		if cashFlow.FlowType == model.FlowTypeIncome {
+		// Get category to determine true type
+		category := s.categoryMapper.GetCategoryByObjectId(cashFlow.CategoryId.Hex())
+
+		isIncome := false
+		if !category.IsEmpty() {
+			if strings.EqualFold(category.Type, model.FlowTypeIncome) {
+				isIncome = true
+			} else if strings.EqualFold(category.Type, model.FlowTypeExpense) {
+				isIncome = false
+			}
+		} else {
+			isIncome = false
+		}
+
+		if isIncome {
 			summary.TotalIncome += cashFlow.Amount
 		} else {
 			summary.TotalExpense += cashFlow.Amount
-		}
-
-		// Get category name for breakdown
-		category := category_mapper.INSTANCE.GetCategoryByObjectId(cashFlow.CategoryId.Hex())
-		if !category.IsEmpty() {
-			summary.CategoryBreakdown[category.Name] += cashFlow.Amount
+			if !category.IsEmpty() {
+				summary.CategoryBreakdown[category.Name] += cashFlow.Amount
+			} else {
+				summary.CategoryBreakdown["Unknown"] += cashFlow.Amount
+			}
 		}
 	}
 
 	summary.Balance = summary.TotalIncome - summary.TotalExpense
+
+	// Format float precision to 2 decimal places
+	summary.TotalIncome = util.RoundFloat(summary.TotalIncome, 2)
+	summary.TotalExpense = util.RoundFloat(summary.TotalExpense, 2)
+	summary.Balance = util.RoundFloat(summary.Balance, 2)
+	for k, v := range summary.CategoryBreakdown {
+		summary.CategoryBreakdown[k] = util.RoundFloat(v, 2)
+	}
 
 	return summary, nil
 }

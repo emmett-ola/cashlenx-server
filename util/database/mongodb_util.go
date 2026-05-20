@@ -101,6 +101,12 @@ func ShutdownMongoDbConnection() {
 }
 
 func GetOneInMongoDB(filter bson.D) bson.M {
+	// Append is_delete: false
+	filter = append(filter, primitive.E{Key: "is_delete", Value: false})
+	return GetOneInMongoDBIncludeDeleted(filter)
+}
+
+func GetOneInMongoDBIncludeDeleted(filter bson.D) bson.M {
 	checkDbConnection()
 
 	var resultInBson bson.M
@@ -117,6 +123,12 @@ func GetOneInMongoDB(filter bson.D) bson.M {
 }
 
 func GetManyInMongoDB(filter bson.D) []bson.M {
+	// Append is_delete: false
+	filter = append(filter, primitive.E{Key: "is_delete", Value: false})
+	return GetManyInMongoDBIncludeDeleted(filter)
+}
+
+func GetManyInMongoDBIncludeDeleted(filter bson.D) []bson.M {
 	checkDbConnection()
 
 	var resultInBsonArray []bson.M
@@ -138,6 +150,12 @@ func GetManyInMongoDB(filter bson.D) []bson.M {
 
 // GetManyInMongoDBWithPagination retrieves multiple documents with pagination support
 func GetManyInMongoDBWithPagination(filter bson.D, limit int64, offset int64) []bson.M {
+	// Append is_delete: false
+	filter = append(filter, primitive.E{Key: "is_delete", Value: false})
+	return GetManyInMongoDBWithPaginationIncludeDeleted(filter, limit, offset)
+}
+
+func GetManyInMongoDBWithPaginationIncludeDeleted(filter bson.D, limit int64, offset int64) []bson.M {
 	checkDbConnection()
 
 	var resultInBsonArray []bson.M
@@ -159,6 +177,12 @@ func GetManyInMongoDBWithPagination(filter bson.D, limit int64, offset int64) []
 }
 
 func CountInMongoDB(filter bson.D) int64 {
+	// Append is_delete: false
+	filter = append(filter, primitive.E{Key: "is_delete", Value: false})
+	return CountInMongoDBIncludeDeleted(filter)
+}
+
+func CountInMongoDBIncludeDeleted(filter bson.D) int64 {
 	checkDbConnection()
 
 	result, err := collection.CountDocuments(context.TODO(), filter)
@@ -170,6 +194,12 @@ func CountInMongoDB(filter bson.D) int64 {
 }
 
 func CountInMongoDBWithError(filter bson.D) (int64, error) {
+	// Append is_delete: false
+	filter = append(filter, primitive.E{Key: "is_delete", Value: false})
+	return CountInMongoDBWithErrorIncludeDeleted(filter)
+}
+
+func CountInMongoDBWithErrorIncludeDeleted(filter bson.D) (int64, error) {
 	checkDbConnection()
 
 	result, err := collection.CountDocuments(context.TODO(), filter)
@@ -201,6 +231,12 @@ func InsertOneInMongoDB(data bson.D) primitive.ObjectID {
 }
 
 func UpdateManyInMongoDB(filter, data bson.D) int64 {
+	// Append is_delete: false
+	filter = append(filter, primitive.E{Key: "is_delete", Value: false})
+	return UpdateManyInMongoDBIncludeDeleted(filter, data)
+}
+
+func UpdateManyInMongoDBIncludeDeleted(filter, data bson.D) int64 {
 	checkDbConnection()
 
 	updateData := bson.D{
@@ -216,6 +252,12 @@ func UpdateManyInMongoDB(filter, data bson.D) int64 {
 }
 
 func DeleteManyInMongoDB(filter bson.D) int64 {
+	// Append is_delete: false
+	filter = append(filter, primitive.E{Key: "is_delete", Value: false})
+	return DeleteManyInMongoDBIncludeDeleted(filter)
+}
+
+func DeleteManyInMongoDBIncludeDeleted(filter bson.D) int64 {
 	checkDbConnection()
 
 	result, err := collection.DeleteMany(context.TODO(), filter)

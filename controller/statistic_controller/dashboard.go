@@ -29,7 +29,7 @@ func GetDashboardOverview(w http.ResponseWriter, r *http.Request) {
 
 	dashboard, err := statistic_service.GetDashboardOverviewForUser(period, date, userId)
 	if err != nil {
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, errors.NewInternalError(err.Error(), err))
+		util.ComposeErrorResponse(w, r, err)
 		return
 	}
 
@@ -56,7 +56,7 @@ func GetIncomeExpenseChartData(w http.ResponseWriter, r *http.Request) {
 
 	chartData, err := statistic_service.GetIncomeExpenseChartDataForUser(period, date, userId)
 	if err != nil {
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, errors.NewInternalError(err.Error(), err))
+		util.ComposeErrorResponse(w, r, err)
 		return
 	}
 
@@ -89,7 +89,7 @@ func GetCategoryDistributionData(w http.ResponseWriter, r *http.Request) {
 
 	distributionData, err := statistic_service.GetCategoryDistributionForUser(period, date, flowType, userId)
 	if err != nil {
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, errors.NewInternalError(err.Error(), err))
+		util.ComposeErrorResponse(w, r, err)
 		return
 	}
 
@@ -115,7 +115,7 @@ func GetMonthlyComparisonData(w http.ResponseWriter, r *http.Request) {
 
 	comparisonData, err := statistic_service.GetMonthlyComparisonForUser(year, userId)
 	if err != nil {
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, errors.NewInternalError(err.Error(), err))
+		util.ComposeErrorResponse(w, r, err)
 		return
 	}
 
@@ -141,7 +141,7 @@ func GetSpendingHeatmapData(w http.ResponseWriter, r *http.Request) {
 
 	heatmapData, err := statistic_service.GetSpendingHeatmapForUser(year, userId)
 	if err != nil {
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, errors.NewInternalError(err.Error(), err))
+		util.ComposeErrorResponse(w, r, err)
 		return
 	}
 

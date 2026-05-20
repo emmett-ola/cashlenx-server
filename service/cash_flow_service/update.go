@@ -2,11 +2,8 @@ package cash_flow_service
 
 import (
 	"errors"
-	"strings"
 	"time"
 
-	"github.com/macar-x/cashlenx-server/mapper/cash_flow_mapper"
-	"github.com/macar-x/cashlenx-server/mapper/category_mapper"
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/util"
 	"github.com/macar-x/cashlenx-server/validation"
@@ -16,6 +13,10 @@ import (
 
 // UpdateById updates a cash flow record by ID
 func UpdateById(plainId, belongsDate, categoryName string, amount float64, description string) (model.CashFlowEntity, error) {
+	return defaultCashFlowService().UpdateById(plainId, belongsDate, categoryName, amount, description)
+}
+
+func (s *CashFlowService) UpdateById(plainId, belongsDate, categoryName string, amount float64, description string) (model.CashFlowEntity, error) {
 	// Validate ID
 	if err := validation.ValidateID(plainId); err != nil {
 		return model.CashFlowEntity{}, err
@@ -47,7 +48,7 @@ func UpdateById(plainId, belongsDate, categoryName string, amount float64, descr
 	}
 
 	// Query existing record
-	existingEntity := cash_flow_mapper.INSTANCE.GetCashFlowByObjectId(plainId)
+	existingEntity := s.cashFlowMapper.GetCashFlowByObjectId(plainId)
 	if existingEntity.IsEmpty() {
 		return model.CashFlowEntity{}, errors.New("cash_flow not found")
 	}
@@ -62,14 +63,9 @@ func UpdateById(plainId, belongsDate, categoryName string, amount float64, descr
 	}
 
 	if categoryName != "" {
-		categoryEntity := category_mapper.INSTANCE.GetCategoryByNameAndUser(categoryName, existingEntity.UserId)
+		categoryEntity := s.categoryMapper.GetCategoryByNameAndUser(categoryName, existingEntity.BelongsUserId)
 		if categoryEntity.IsEmpty() {
 			return model.CashFlowEntity{}, errors.New("category does not exist or access denied")
-		}
-
-		// Validate category type matches cash flow type
-		if !strings.EqualFold(categoryEntity.Type, existingEntity.FlowType) {
-			return model.CashFlowEntity{}, errors.New("category type mismatch: category type must match cash flow type")
 		}
 
 		existingEntity.CategoryId = categoryEntity.Id
@@ -85,13 +81,20 @@ func UpdateById(plainId, belongsDate, categoryName string, amount float64, descr
 		existingEntity.Description = description
 	}
 
-	// Update modify time
-	existingEntity.ModifyTime = time.Now().UTC() // Store in UTC
+	existingEntity.UpdateTime = time.Now().UTC()
 
-	// Call mapper to update the record
-	updatedEntity := cash_flow_mapper.INSTANCE.UpdateCashFlowByEntity(plainId, existingEntity)
+	updatedEntity := s.cashFlowMapper.UpdateCashFlowByEntity(plainId, existingEntity)
 	if updatedEntity.IsEmpty() {
 		return model.CashFlowEntity{}, errors.New("failed to update cash_flow")
+	}
+
+	// Populate category info
+	category := s.categoryMapper.GetCategoryByObjectId(updatedEntity.CategoryId.Hex())
+	if !category.IsEmpty() {
+		updatedEntity.CategoryName = category.Name
+		updatedEntity.CategoryType = category.Type
+	} else {
+		updatedEntity.CategoryName = "Unknown"
 	}
 
 	return updatedEntity, nil
@@ -99,6 +102,10 @@ func UpdateById(plainId, belongsDate, categoryName string, amount float64, descr
 
 // UpdateByIdForUser updates a cash flow record by ID, ensuring it belongs to the user
 func UpdateByIdForUser(plainId, belongsDate, categoryName string, amount float64, description string, userId string) (model.CashFlowEntity, error) {
+	return defaultCashFlowService().UpdateByIdForUser(plainId, belongsDate, categoryName, amount, description, userId)
+}
+
+func (s *CashFlowService) UpdateByIdForUser(plainId, belongsDate, categoryName string, amount float64, description string, userId string) (model.CashFlowEntity, error) {
 	// Validate ID
 	if err := validation.ValidateID(plainId); err != nil {
 		return model.CashFlowEntity{}, err
@@ -136,7 +143,7 @@ func UpdateByIdForUser(plainId, belongsDate, categoryName string, amount float64
 	}
 
 	// Query existing record - ensure it belongs to the user
-	existingEntity := cash_flow_mapper.INSTANCE.GetCashFlowByObjectIdAndUser(plainId, userObjectId)
+	existingEntity := s.cashFlowMapper.GetCashFlowByObjectIdAndUser(plainId, userObjectId)
 	if existingEntity.IsEmpty() {
 		return model.CashFlowEntity{}, errors.New("cash_flow not found or access denied")
 	}
@@ -151,10 +158,9 @@ func UpdateByIdForUser(plainId, belongsDate, categoryName string, amount float64
 	}
 
 	if categoryName != "" {
-		// Note: Category lookup should also be user-specific once categories have user isolation
-		categoryEntity := category_mapper.INSTANCE.GetCategoryByName(categoryName)
+		categoryEntity := s.categoryMapper.GetCategoryByNameAndUser(categoryName, userObjectId)
 		if categoryEntity.IsEmpty() {
-			return model.CashFlowEntity{}, errors.New("category does not exist")
+			return model.CashFlowEntity{}, errors.New("category does not exist or access denied")
 		}
 		existingEntity.CategoryId = categoryEntity.Id
 	}
@@ -170,13 +176,21 @@ func UpdateByIdForUser(plainId, belongsDate, categoryName string, amount float64
 	}
 
 	// Update modify time
-	existingEntity.ModifyTime = time.Now().UTC()
+	existingEntity.UpdateTime = time.Now().UTC()
+	existingEntity.UpdateUserId = userObjectId
 
-	// Call mapper to update the record
-	// Note: Using the regular UpdateCashFlowByEntity because we already verified ownership
-	updatedEntity := cash_flow_mapper.INSTANCE.UpdateCashFlowByEntity(plainId, existingEntity)
+	updatedEntity := s.cashFlowMapper.UpdateCashFlowByEntityAndUser(plainId, existingEntity, userObjectId)
 	if updatedEntity.IsEmpty() {
 		return model.CashFlowEntity{}, errors.New("failed to update cash_flow")
+	}
+
+	// Populate category info
+	category := s.categoryMapper.GetCategoryByObjectId(updatedEntity.CategoryId.Hex())
+	if !category.IsEmpty() {
+		updatedEntity.CategoryName = category.Name
+		updatedEntity.CategoryType = category.Type
+	} else {
+		updatedEntity.CategoryName = "Unknown"
 	}
 
 	return updatedEntity, nil

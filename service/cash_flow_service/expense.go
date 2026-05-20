@@ -5,8 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/macar-x/cashlenx-server/mapper/cash_flow_mapper"
-	"github.com/macar-x/cashlenx-server/mapper/category_mapper"
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/util"
 	"github.com/macar-x/cashlenx-server/validation"
@@ -15,6 +13,10 @@ import (
 )
 
 func SaveExpense(belongsDate, categoryName string, amount float64, description string, userId string) (model.CashFlowEntity, error) {
+	return defaultCashFlowService().SaveExpense(belongsDate, categoryName, amount, description, userId)
+}
+
+func (s *CashFlowService) SaveExpense(belongsDate, categoryName string, amount float64, description string, userId string) (model.CashFlowEntity, error) {
 	// Validate inputs
 	if err := validation.ValidateCategoryName(categoryName); err != nil {
 		return model.CashFlowEntity{}, err
@@ -49,7 +51,7 @@ func SaveExpense(belongsDate, categoryName string, amount float64, description s
 	amount, _ = decimal.NewFromFloat(amount).Round(2).Float64()
 
 	// Required parameter: category
-	categoryEntity := category_mapper.INSTANCE.GetCategoryByNameAndUser(categoryName, userObjectId)
+	categoryEntity := s.categoryMapper.GetCategoryByNameAndUser(categoryName, userObjectId)
 	if categoryEntity.IsEmpty() {
 		return model.CashFlowEntity{}, errors.New("category does not exist or access denied")
 	}
@@ -75,19 +77,30 @@ func SaveExpense(belongsDate, categoryName string, amount float64, description s
 		date = time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, time.UTC)
 	}
 
-	newCashFlowId := cash_flow_mapper.INSTANCE.InsertCashFlowByEntity(model.CashFlowEntity{
-		CategoryId:  categoryEntity.Id,
-		BelongsDate: date,
-		FlowType:    model.FlowTypeExpense,
-		Amount:      amount,
-		Description: description,
-		UserId:      userObjectId,
+	// Pre-generate ID before insertion
+	newId := primitive.NewObjectID()
+
+	insertedId := s.cashFlowMapper.InsertCashFlowByEntity(model.CashFlowEntity{
+		Id:            newId,
+		CategoryId:    categoryEntity.Id,
+		BelongsDate:   date,
+		Amount:        amount,
+		Description:   description,
+		BelongsUserId: userObjectId,
+		BaseEntity: model.BaseEntity{
+			CreateUserId: userObjectId,
+			UpdateUserId: userObjectId,
+		},
 	})
-	if newCashFlowId == "" {
+	if insertedId == "" {
 		return model.CashFlowEntity{}, errors.New("cash_flow create failed")
 	}
 
-	newCashFlow := cash_flow_mapper.INSTANCE.GetCashFlowByObjectId(newCashFlowId)
+	newCashFlow := s.cashFlowMapper.GetCashFlowByObjectId(newId.Hex())
+	if !newCashFlow.IsEmpty() {
+		newCashFlow.CategoryName = categoryEntity.Name
+		newCashFlow.CategoryType = categoryEntity.Type
+	}
 	return newCashFlow, nil
 }
 

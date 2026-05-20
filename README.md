@@ -1,97 +1,133 @@
 # CashLenX Server
 
-Go backend providing a CLI and REST API for daily expense tracking. Users can record income/expense cash flows with amount, category, date, and an optional remark. The server is designed for both self-hosted and cloud deployments and integrates with an external web UI.
+CashLenX Server is a Go backend for personal finance tracking. It provides a Cobra CLI and a Gorilla Mux REST API for authentication, user accounts, cash flows, categories, statistics, import/export, and admin database management.
+
+The project is still in active `v0.x` development. The current API path is `/api/v0`; stable `/api/v1` compatibility is planned for a later stable release.
 
 ## Features
-- Income/expense tracking with amount, category, date, remark
-- Category-based organization
-- Date range queries and summaries
-- Import/export for backup and migration (Excel; CSV planned)
-- Pluggable storage via abstract persistence interface (MongoDB, MySQL)
-- Structured logging and validation
-- CLI tooling (Cobra) and REST API (Gorilla Mux)
-- Docker Compose for local/self-hosted setups
 
-## Planned
-- User management with per-user data isolation
-- OIDC authentication with local user records
-- Statistics endpoints for insights and reporting
-- OpenAPI specification and generated docs
+- Local registration/login with JWT access tokens and persisted refresh tokens
+- User profile, password change, password reset, email-change request/confirm, and account deletion flows
+- Per-user cash flow CRUD, date/range queries, summaries, pagination, and filtering
+- Per-user category CRUD, name lookup, children lookup, and tree APIs
+- Statistics, dashboard, and chart endpoints for summaries, breakdowns, trends, top expenses, income/expense charts, category distribution, monthly comparison, and spending heatmaps
+- User import/export and backup/restore flows
+- Admin user management and full database backup/restore
+- MongoDB and MySQL persistence implementations
+- Docker Compose profiles for local MongoDB, MySQL, and backend startup
+- OpenAPI contract in `docs/openapi.yaml`
 
 ## Project Structure
-```
+
+```text
 cashlenx-server/
-├── cmd/                 # CLI commands (Cobra)
-├── controller/          # HTTP controllers
-├── service/             # Business logic
-├── mapper/              # Database mappers
-├── model/               # Data models
-├── middleware/          # HTTP middleware
-├── util/                # Utilities
-├── docker/              # Database init assets
-├── docs/                # Server documentation
-└── main.go              # Entry point
+├── auth/                    # Auth service/provider abstraction
+├── cmd/                     # CLI commands (Cobra)
+├── config/                  # Runtime data files
+├── controller/              # HTTP route registration and handlers
+├── docker/                  # Database initialization assets
+├── docs/                    # API, CLI, OpenAPI, roadmap docs
+├── errors/                  # Custom error types
+├── mapper/                  # MongoDB/MySQL persistence mappers
+├── middleware/              # Auth, admin, CORS, logging, schema validation
+├── migrations/              # MongoDB/MySQL migration scripts
+├── model/                   # Entities, DTOs, response types, constants
+├── scripts/                 # Start and docs helper scripts
+├── service/                 # Business logic
+├── util/                    # Config, logging, DB, email, date, ID, HTTP helpers
+├── validation/              # Validation helpers and tests
+└── main.go                  # Entry point
 ```
 
 ## Quick Start
 
-### 1) Database
+### 1. Configure
+
 ```bash
-cd cashlenx-server
-docker compose up -d mongodb
-# or
+cp .env.sample .env
+```
+
+MongoDB is the default development database, but users may choose MongoDB or MySQL during bootstrap by setting the DB-related values in `.env`.
+
+### 2. Start a Database
+
+```bash
+# MongoDB
+docker compose --profile mongodb up -d mongodb
+
+# MySQL
 docker compose --profile mysql up -d mysql
 ```
 
-### 2) Configure
+### 3. Run the API Server
+
 ```bash
-cd cashlenx-server
-cp .env.sample .env
-export $(cat .env | xargs)
+go run main.go open start -p 8080
 ```
 
-### 3) Run
-```bash
-# API server
-go run main.go server start -p 8080
+The local base URL is:
 
-# CLI examples
-go run main.go cash expense -c "Food" -a 45.50 -d "Lunch"
-go run main.go cash income -c "Salary" -a 5000
-go run main.go cash summary -f 2024-01-01 -t 2024-01-31
+```text
+http://localhost:8080/api/v0
 ```
 
-## REST API
-- `POST /api/cash/expense`
-- `POST /api/cash/income`
-- `GET /api/cash/{id}`
-- `GET /api/cash/date/{date}`
-- `DELETE /api/cash/{id}`
-- `DELETE /api/cash/date/{date}`
-- `GET /api/open/health`
-- `GET /api/open/version`
+### 4. Useful CLI Commands
 
-See `docs/api.md` for detailed endpoints.
+```bash
+go run main.go open health
+go run main.go open version
+go run main.go admin database backup -o backup.json
+go run main.go admin database restore -i backup.json
+```
+
+## REST API Highlights
+
+- `GET /api/v0/open/health`
+- `GET /api/v0/open/version`
+- `POST /api/v0/open/auth/register`
+- `POST /api/v0/open/auth/login`
+- `POST /api/v0/open/auth/logout`
+- `GET /api/v0/auth/tokens`
+- `GET /api/v0/user/profile`
+- `POST /api/v0/cash/expense`
+- `POST /api/v0/cash/income`
+- `GET /api/v0/cash`
+- `GET /api/v0/category/tree`
+- `GET /api/v0/statistic/dashboard/{period}/{date}`
+- `GET /api/v0/statistic/chart/income-expense/{period}/{date}`
+
+See `docs/openapi.yaml` for the current API contract and `docs/api.md` for additional API notes.
 
 ## Documentation
-- `docs/cli.md` — CLI command reference
-- `docs/api.md` — REST API reference
-- `docs/testing.md` — Testing guide
-- `docs/deployment_guide.md` — Deployment guide
-- `docs/roadmap.md` — Versioned roadmap and task tracking
-- `docs/quick_start.md` — Quick start guide
-- `docs/feature_parity.md` — Feature parity matrix
+
+- `AGENTS.md` - shared working guide for coding agents
+- `docs/cli.md` - CLI command reference
+- `docs/api.md` - REST API notes
+- `docs/roadmap.md` - versioned roadmap and task tracking
+- `docs/openapi.yaml` - OpenAPI specification
 
 ## Build and Test
+
 ```bash
 go build -o cashlenx main.go
-go test .
+go test ./...
+scripts/ci-test.sh
 ```
 
+Test coverage is still uneven while the project is under development. GitHub Actions uses `scripts/ci-test.sh` to run the full Go test suite with race detection and `coverage.out` generation for Codecov. DeepSource handles code analysis.
+
 ## Technology
-- Go 1.21+
-- Cobra, Gorilla Mux, Zap, Excelize
+
+- Go `1.23.0`
+- Cobra CLI
+- Gorilla Mux HTTP routing
+- Zap logging
 - MongoDB and MySQL drivers
+- JWT via `github.com/golang-jwt/jwt/v5`
+- `shopspring/decimal` for money values
+- `excelize` and `gofpdf` for exports
+- OpenAPI validation through `kin-openapi`
 
 ## License
+
 See `LICENSE` for details.

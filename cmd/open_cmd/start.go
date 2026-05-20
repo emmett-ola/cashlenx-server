@@ -2,6 +2,7 @@ package open_cmd
 
 import (
 	"github.com/macar-x/cashlenx-server/controller"
+	"github.com/macar-x/cashlenx-server/util"
 	"github.com/spf13/cobra"
 )
 
@@ -12,7 +13,11 @@ var startCmd = &cobra.Command{
 	Short: "Start the API server",
 	Long:  `Start the CashLenX API server on the specified port (default: 8080)`,
 	Run: func(cmd *cobra.Command, args []string) {
-		controller.StartServer(port)
+		startPort := port
+		if !cmd.Flags().Changed("port") {
+			startPort = int32(util.GetConfigInt("server.port", 8080))
+		}
+		controller.StartServer(startPort)
 	},
 }
 

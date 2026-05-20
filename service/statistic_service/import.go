@@ -6,8 +6,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/macar-x/cashlenx-server/mapper/cash_flow_mapper"
-	"github.com/macar-x/cashlenx-server/mapper/category_mapper"
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/util"
 	"github.com/xuri/excelize/v2"
@@ -25,6 +23,10 @@ var (
 // ImportForUser imports cash flow data from Excel to the user's account
 // All imported records will be associated with the specified user
 func ImportForUser(filePath, userId string) error {
+	return defaultStatisticService().ImportForUser(filePath, userId)
+}
+
+func (s *StatisticService) ImportForUser(filePath, userId string) error {
 	// Convert userId string to ObjectID
 	userObjectId, err := primitive.ObjectIDFromHex(userId)
 	if err != nil {
@@ -61,9 +63,9 @@ func ImportForUser(filePath, userId string) error {
 			util.Logger.Errorw("read sheet rows failed", "error", err)
 		}
 		util.Logger.Infof("processing sheet %s", currentSheetName)
-		cashFlowMapByDate := readSheetDataForUser(rows, userObjectId)
+		cashFlowMapByDate := s.readSheetDataForUser(rows, userObjectId)
 		for date, cashFlowMapByColumnList := range cashFlowMapByDate {
-			saveIntoDBForUser(cashFlowMapByColumnList, userObjectId)
+			s.saveIntoDBForUser(cashFlowMapByColumnList, userObjectId)
 			util.Logger.Debugf("%s of %s's flows imported for user %s", util.FormatDateToStringWithoutDash(date), currentSheetName, userObjectId.Hex())
 		}
 		util.Logger.Infow("sheet has been imported",
@@ -89,6 +91,10 @@ func readExcelFile(fileName string) *excelize.File {
  * Only processes data for the specified user
  */
 func readSheetDataForUser(sheetRowCursor *excelize.Rows, userId primitive.ObjectID) map[time.Time][]map[string]string {
+	return defaultStatisticService().readSheetDataForUser(sheetRowCursor, userId)
+}
+
+func (s *StatisticService) readSheetDataForUser(sheetRowCursor *excelize.Rows, userId primitive.ObjectID) map[time.Time][]map[string]string {
 	cashFlowMapByDate := make(map[time.Time][]map[string]string)
 
 	// First row is title row, verify if the format is correct
@@ -120,7 +126,7 @@ func readSheetDataForUser(sheetRowCursor *excelize.Rows, userId primitive.Object
 		cashFlowMapByColumn[sheetRowNumberLabel] = strconv.Itoa(currentRowNumber)
 
 		// Check category info and get the correct id for this user
-		newCategoryId := handleCategoryInfoForUser(
+		newCategoryId := s.handleCategoryInfoForUser(
 			cashFlowMapByColumn["CategoryId"], cashFlowMapByColumn["CategoryName"], userId)
 		if newCategoryId == "" {
 			fmt.Println("failed: row " + strconv.Itoa(currentRowNumber) + ": category not satisfied")
@@ -171,9 +177,13 @@ func isRequiredFieldSatisfied(currentRowNumber int, columnCellMap map[string]str
 // handleCategoryInfoForUser handles category lookup/creation with user context
 // Ensures categories are only matched within the user's own categories
 func handleCategoryInfoForUser(categoryId, categoryName string, userId primitive.ObjectID) string {
+	return defaultStatisticService().handleCategoryInfoForUser(categoryId, categoryName, userId)
+}
+
+func (s *StatisticService) handleCategoryInfoForUser(categoryId, categoryName string, userId primitive.ObjectID) string {
 	// Use category id to fetch first (only within user's categories)
 	if categoryId != "" {
-		categoryEntity := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(categoryId, userId)
+		categoryEntity := s.categoryMapper.GetCategoryByObjectIdAndUser(categoryId, userId)
 		if !categoryEntity.IsEmpty() {
 			return categoryEntity.Id.Hex()
 		}
@@ -186,34 +196,46 @@ func handleCategoryInfoForUser(categoryId, categoryName string, userId primitive
 	}
 
 	// Use category name to fetch correct id (only within user's categories)
-	categoryEntity := category_mapper.INSTANCE.GetCategoryByNameAndUser(categoryName, userId)
+	categoryEntity := s.categoryMapper.GetCategoryByNameAndUser(categoryName, userId)
 	if !categoryEntity.IsEmpty() {
 		return categoryEntity.Id.Hex()
 	}
 	util.Logger.Warnw("category not existed for user", "category_name", categoryName, "user_id", userId.Hex())
 
+	// Pre-generate ID before insertion
+	newId := primitive.NewObjectID()
+
 	// Create new category for this user
-	plainId := category_mapper.INSTANCE.InsertCategoryByEntity(model.CategoryEntity{
-		UserId: userId,
-		Name:   categoryName,
-		Remark: "created by import",
+	insertedId := s.categoryMapper.InsertCategoryByEntity(model.CategoryEntity{
+		Id:            newId,
+		BelongsUserId: userId,
+		Name:          categoryName,
+		Remark:        "created by import",
 	})
+	if insertedId == "" {
+		util.Logger.Errorw("Failed to create category for user", "category_name", categoryName, "user_id", userId.Hex())
+		return ""
+	}
 	util.Logger.Infow("created new category for user", "category_name", categoryName, "user_id", userId.Hex())
-	return plainId
+	return newId.Hex()
 }
 
 // saveIntoDBForUser saves cash flows with user association
 // Ensures all cash flows are associated with the specified user
 func saveIntoDBForUser(cashFlowMapByColumnList []map[string]string, userId primitive.ObjectID) {
+	defaultStatisticService().saveIntoDBForUser(cashFlowMapByColumnList, userId)
+}
+
+func (s *StatisticService) saveIntoDBForUser(cashFlowMapByColumnList []map[string]string, userId primitive.ObjectID) {
 	for _, cashFlowMapByColumn := range cashFlowMapByColumnList {
 		cashFlowEntity := model.CashFlowEntity{}.Build(cashFlowMapByColumn)
 
 		// Set the userId for this cash flow
-		cashFlowEntity.UserId = userId
+		cashFlowEntity.BelongsUserId = userId
 
 		if cashFlowEntity.Id != primitive.NilObjectID {
 			// Check if cash flow already exists for this user
-			existedCashFlow := cash_flow_mapper.INSTANCE.GetCashFlowByObjectIdAndUser(cashFlowEntity.Id.Hex(), userId)
+			existedCashFlow := s.cashFlowMapper.GetCashFlowByObjectIdAndUser(cashFlowEntity.Id.Hex(), userId)
 			if !existedCashFlow.IsEmpty() {
 				util.Logger.Warnw("cash_flow existed for user, ignored import.",
 					sheetRowNumberLabel, cashFlowMapByColumn[sheetRowNumberLabel],
@@ -224,9 +246,15 @@ func saveIntoDBForUser(cashFlowMapByColumnList []map[string]string, userId primi
 					util.ToInteger(cashFlowMapByColumn[sheetRowNumberLabel]))
 				continue
 			}
+		} else {
+			// Pre-generate ID if not already set
+			cashFlowEntity.Id = primitive.NewObjectID()
 		}
-		newPlainId := cash_flow_mapper.INSTANCE.InsertCashFlowByEntity(cashFlowEntity)
-		cashFlowEntity.Id = util.Convert2ObjectId(newPlainId)
+		insertedId := s.cashFlowMapper.InsertCashFlowByEntity(cashFlowEntity)
+		if insertedId == "" {
+			util.Logger.Errorw("Failed to insert cash flow for user", "row", cashFlowMapByColumn[sheetRowNumberLabel], "user_id", userId.Hex())
+			continue
+		}
 		util.Logger.Debugw("cash_flow inserted for user",
 			"cash_flow", cashFlowEntity.ToString(),
 			"user_id", userId.Hex())

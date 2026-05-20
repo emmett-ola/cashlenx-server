@@ -10,14 +10,13 @@ import (
 )
 
 type CategoryEntity struct {
-	Id         primitive.ObjectID `bson:"_id,omitempty"`
-	UserId     primitive.ObjectID `json:"user_id" bson:"user_id"`
-	ParentId   primitive.ObjectID `json:"parent_id" bson:"parent_id"`
-	Name       string             `json:"name" bson:"name"`
-	Type       string             `json:"type" bson:"type"`
-	Remark     string             `json:"remark" bson:"remark"`
-	CreateTime time.Time          `json:"create_time" bson:"create_time"`
-	ModifyTime time.Time          `json:"modify_time" bson:"modify_time"`
+	Id            primitive.ObjectID `bson:"_id,omitempty"`
+	BelongsUserId primitive.ObjectID `json:"belongs_user_id" bson:"belongs_user_id"`
+	ParentId      primitive.ObjectID `json:"parent_id" bson:"parent_id"`
+	Name          string             `json:"name" bson:"name"`
+	Type          string             `json:"type" bson:"type"`
+	Remark        string             `json:"remark" bson:"remark"`
+	BaseEntity    `bson:",inline"`
 }
 
 func (entity CategoryEntity) IsEmpty() bool {
@@ -29,6 +28,8 @@ func (entity CategoryEntity) ToString() string {
 		"Id: " + entity.Id.Hex() +
 		", Name: " + entity.Name +
 		", Type: " + entity.Type +
+		", Remark: " + entity.Remark +
+		", CreateTime: " + util.FormatDateToStringWithDash(entity.CreateTime) +
 		" ]"
 }
 
@@ -37,17 +38,17 @@ func (entity CategoryEntity) ToString() string {
 func (entity CategoryEntity) MarshalJSON() ([]byte, error) {
 	// Convert timestamps to configured timezone for display
 	localCreateTime := util.ToTimezone(entity.CreateTime)
-	localModifyTime := util.ToTimezone(entity.ModifyTime)
+	localUpdateTime := util.ToTimezone(entity.UpdateTime)
 
 	// Create a temporary struct with local timezone timestamps
 	type Alias CategoryEntity
 	return json.Marshal(&struct {
 		CreateTime time.Time `json:"create_time"`
-		ModifyTime time.Time `json:"modify_time"`
+		UpdateTime time.Time `json:"update_time"`
 		*Alias
 	}{
 		CreateTime: localCreateTime,
-		ModifyTime: localModifyTime,
+		UpdateTime: localUpdateTime,
 		Alias:      (*Alias)(&entity),
 	})
 }

@@ -1,0 +1,54 @@
+{
+  "categories": [
+    {
+      "name": "Salary",
+      "type": "INCOME",
+      "remark": "Income from employment"
+    },
+    {
+      "name": "Freelance",
+      "type": "INCOME",
+      "remark": "Income from freelance work"
+    },
+    {
+      "name": "Investment",
+      "type": "INCOME",
+      "remark": "Income from investments and dividends"
+    },
+    {
+      "name": "Other Income",
+      "type": "INCOME",
+      "remark": "Other income sources"
+    },
+    {
+      "name": "Food & Dining",
+      "type": "EXPENSE",
+      "remark": "Restaurants, groceries, food delivery"
+    },
+    {
+      "name": "Transportation",
+      "type": "EXPENSE",
+      "remark": "Gas, public transport, car maintenance"
+    },
+    {
+      "name": "Shopping",
+      "type": "EXPENSE",
+      "remark": "Retail purchases, online shopping"
+    },
+    {
+      "name": "Entertainment",
+      "type": "EXPENSE",
+      "remark": "Movies, games, hobbies"
+    },
+    {
+      "name": "Healthcare",
+      "type": "EXPENSE",
+      "remark": "Medical expenses, pharmacy, fitness"
+    },
+    {
+      "name": "Utilities",
+      "type": "EXPENSE",
+      "remark": "Electricity, water, internet, phone"
+    }
+  ]
+}

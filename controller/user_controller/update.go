@@ -10,14 +10,13 @@ import (
 	"github.com/macar-x/cashlenx-server/util"
 )
 
-// Update updates an existing user
+// Update updates an existing user (admin only)
 func Update(w http.ResponseWriter, r *http.Request) {
-	// Extract user ID from URL path parameters
 	vars := mux.Vars(r)
-	userId := vars["id"]
+	id := vars["id"]
 
-	if userId == "" {
-		util.ComposeJSONResponse(w, http.StatusBadRequest, errors.NewValidationError("user ID is required"))
+	if id == "" {
+		util.ComposeJSONResponse(w, http.StatusBadRequest, errors.NewValidationError("user id is required"))
 		return
 	}
 
@@ -27,24 +26,21 @@ func Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Update user via service
-	if err := user_service.UpdateService(userId, requestBody); err != nil {
+	updatedUser, err := user_service.UpdateService(id, requestBody)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			util.ComposeJSONResponse(w, http.StatusNotFound, err)
+			return
+		}
 		if errors.IsAlreadyExistsError(err) {
 			util.ComposeJSONResponse(w, http.StatusConflict, err)
 			return
 		}
-		if err.Error() == "user not found" {
-			util.ComposeJSONResponse(w, http.StatusNotFound, errors.NewNotFoundError(err.Error()))
+		if errors.IsValidationError(err) {
+			util.ComposeJSONResponse(w, http.StatusBadRequest, err)
 			return
 		}
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, errors.NewInternalError(err.Error(), nil))
-		return
-	}
-
-	// Get the updated user
-	updatedUser := user_service.GetUserByObjectId(userId)
-	if updatedUser.IsEmpty() {
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, errors.NewInternalError("failed to retrieve updated user", nil))
+		util.ComposeErrorResponse(w, r, err)
 		return
 	}
 

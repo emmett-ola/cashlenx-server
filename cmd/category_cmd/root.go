@@ -3,6 +3,7 @@ package category_cmd
 import (
 	"errors"
 
+	"github.com/macar-x/cashlenx-server/service/user_service"
 	"github.com/spf13/cobra"
 )
 
@@ -26,6 +27,17 @@ Available sub-commands:
   query  - Query categories by filters
   list   - List all categories`,
 
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		if userId == "" {
+			var err error
+			userId, err = user_service.GetDefaultAdminUserId()
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	},
+
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return errors.New("must provide a valid sub command")
 	},
@@ -33,5 +45,4 @@ Available sub-commands:
 
 func init() {
 	CategoryCmd.PersistentFlags().StringVarP(&userId, "user", "u", "", "user ID (required)")
-	CategoryCmd.MarkPersistentFlagRequired("user")
 }

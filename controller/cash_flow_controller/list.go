@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/macar-x/cashlenx-server/model"
+	"github.com/macar-x/cashlenx-server/errors"
 	"github.com/macar-x/cashlenx-server/service/cash_flow_service"
 	"github.com/macar-x/cashlenx-server/util"
 )
@@ -14,8 +14,7 @@ func ListAll(w http.ResponseWriter, r *http.Request) {
 	// Get user ID from request context (set by Auth middleware)
 	userId, ok := r.Context().Value("user_id").(string)
 	if !ok || userId == "" {
-		response := model.NewErrorResponse("UNAUTHORIZED", "user not authenticated")
-		util.ComposeJSONResponse(w, http.StatusUnauthorized, response)
+		util.ComposeJSONResponse(w, http.StatusUnauthorized, errors.NewUnauthorizedError("user not authenticated"))
 		return
 	}
 
@@ -68,8 +67,7 @@ func ListAll(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if err != nil {
-		response := model.NewErrorResponse("INTERNAL_ERROR", err.Error())
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, response)
+		util.ComposeErrorResponse(w, r, err)
 		return
 	}
 
