@@ -27,7 +27,7 @@ func RequestPasswordReset(w http.ResponseWriter, r *http.Request) {
 	// Request password reset
 	err := user_service.RequestPasswordReset(requestBody.EmailOrUsername, ipAddress)
 	if err != nil {
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, err)
+		util.ComposeErrorResponse(w, r, err)
 		return
 	}
 
@@ -63,7 +63,7 @@ func ConfirmPasswordReset(w http.ResponseWriter, r *http.Request) {
 			util.ComposeJSONResponse(w, http.StatusBadRequest, err)
 			return
 		}
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, err)
+		util.ComposeErrorResponse(w, r, err)
 		return
 	}
 

@@ -22,15 +22,7 @@ func Delete(w http.ResponseWriter, r *http.Request) {
 
 	// Delete user via service
 	if err := user_service.DeleteService(userId); err != nil {
-		if errors.IsNotFound(err) {
-			util.ComposeJSONResponse(w, http.StatusNotFound, err)
-			return
-		}
-		if errors.IsForbiddenError(err) {
-			util.ComposeJSONResponse(w, http.StatusForbidden, err)
-			return
-		}
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, err)
+		util.ComposeErrorResponse(w, r, err)
 		return
 	}
 

@@ -69,6 +69,10 @@ func getHardcodedDefaultCategories() []DefaultCategory {
 
 // InitializeDefaultCategoriesForUser creates default categories for a new user
 func InitializeDefaultCategoriesForUser(userId string) error {
+	return defaultCategoryService().InitializeDefaultCategoriesForUser(userId)
+}
+
+func (s *CategoryService) InitializeDefaultCategoriesForUser(userId string) error {
 	// Load default categories from config
 	defaultCategories, err := LoadDefaultCategories()
 	if err != nil {
@@ -78,7 +82,7 @@ func InitializeDefaultCategoriesForUser(userId string) error {
 	// Create each default category for the user
 	successCount := 0
 	for _, cat := range defaultCategories {
-		_, err := CreateForUser(cat.Name, cat.Type, cat.Remark, "", userId)
+		_, err := s.CreateForUser(cat.Name, cat.Type, cat.Remark, "", userId)
 		if err != nil {
 			util.Logger.Warnw("Failed to create default category for user",
 				"userId", userId,

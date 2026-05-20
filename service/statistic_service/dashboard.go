@@ -8,22 +8,24 @@ import (
 	"strings"
 	"time"
 
-	"github.com/macar-x/cashlenx-server/mapper/cash_flow_mapper"
-	"github.com/macar-x/cashlenx-server/mapper/category_mapper"
 	"github.com/macar-x/cashlenx-server/util"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // GetDashboardOverviewForUser returns comprehensive dashboard data
 func GetDashboardOverviewForUser(period, date, userId string) (*DashboardOverview, error) {
+	return defaultStatisticService().GetDashboardOverviewForUser(period, date, userId)
+}
+
+func (s *StatisticService) GetDashboardOverviewForUser(period, date, userId string) (*DashboardOverview, error) {
 	// Get summary
-	summary, err := GetSummaryForUser(period, date, userId)
+	summary, err := s.GetSummaryForUser(period, date, userId)
 	if err != nil {
 		return nil, err
 	}
 
 	// Get breakdown for top categories
-	breakdown, err := GetBreakdownForUser(period, date, userId)
+	breakdown, err := s.GetBreakdownForUser(period, date, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +41,7 @@ func GetDashboardOverviewForUser(period, date, userId string) (*DashboardOvervie
 	}
 
 	// Get trends to determine recent trend
-	trends, err := GetTrendsForUser(period, date, userId)
+	trends, err := s.GetTrendsForUser(period, date, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +49,7 @@ func GetDashboardOverviewForUser(period, date, userId string) (*DashboardOvervie
 	// Calculate quick stats
 	userObjectId, _ := primitive.ObjectIDFromHex(userId)
 	fromDate, toDate := getDateRange(period, util.FormatDateFromStringWithoutDash(date))
-	cashFlows := cash_flow_mapper.INSTANCE.GetCashFlowsByDateRangeAndUser(fromDate, toDate, userObjectId)
+	cashFlows := s.cashFlowMapper.GetCashFlowsByDateRangeAndUser(fromDate, toDate, userObjectId)
 
 	quickStats := QuickStats{
 		TotalTransactions: len(cashFlows),
@@ -65,7 +67,7 @@ func GetDashboardOverviewForUser(period, date, userId string) (*DashboardOvervie
 		lowestExpense := math.MaxFloat64
 		for _, flow := range cashFlows {
 			// Get category type
-			category := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(flow.CategoryId.Hex(), userObjectId)
+			category := s.categoryMapper.GetCategoryByObjectIdAndUser(flow.CategoryId.Hex(), userObjectId)
 			categoryType := ""
 			if !category.IsEmpty() {
 				categoryType = category.Type
@@ -102,7 +104,11 @@ func GetDashboardOverviewForUser(period, date, userId string) (*DashboardOvervie
 
 // GetIncomeExpenseChartDataForUser returns time-series data for charts
 func GetIncomeExpenseChartDataForUser(period, date, userId string) (*IncomeExpenseChartData, error) {
-	trends, err := GetTrendsForUser(period, date, userId)
+	return defaultStatisticService().GetIncomeExpenseChartDataForUser(period, date, userId)
+}
+
+func (s *StatisticService) GetIncomeExpenseChartDataForUser(period, date, userId string) (*IncomeExpenseChartData, error) {
+	trends, err := s.GetTrendsForUser(period, date, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +138,11 @@ func GetIncomeExpenseChartDataForUser(period, date, userId string) (*IncomeExpen
 
 // GetCategoryDistributionForUser returns pie/donut chart data
 func GetCategoryDistributionForUser(period, date, flowType, userId string) (*CategoryDistribution, error) {
-	breakdown, err := GetBreakdownForUser(period, date, userId)
+	return defaultStatisticService().GetCategoryDistributionForUser(period, date, flowType, userId)
+}
+
+func (s *StatisticService) GetCategoryDistributionForUser(period, date, flowType, userId string) (*CategoryDistribution, error) {
+	breakdown, err := s.GetBreakdownForUser(period, date, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -175,6 +185,10 @@ func GetCategoryDistributionForUser(period, date, flowType, userId string) (*Cat
 
 // GetMonthlyComparisonForUser returns month-over-month comparison data
 func GetMonthlyComparisonForUser(year, userId string) (*MonthlyComparison, error) {
+	return defaultStatisticService().GetMonthlyComparisonForUser(year, userId)
+}
+
+func (s *StatisticService) GetMonthlyComparisonForUser(year, userId string) (*MonthlyComparison, error) {
 	userObjectId, err := primitive.ObjectIDFromHex(userId)
 	if err != nil {
 		return nil, errors.New("invalid user ID")
@@ -204,14 +218,14 @@ func GetMonthlyComparisonForUser(year, userId string) (*MonthlyComparison, error
 		toDate := fromDate.AddDate(0, 1, 0) // First day of next month
 
 		// Get cash flows for this month
-		cashFlows := cash_flow_mapper.INSTANCE.GetCashFlowsByDateRangeAndUser(fromDate, toDate, userObjectId)
+		cashFlows := s.cashFlowMapper.GetCashFlowsByDateRangeAndUser(fromDate, toDate, userObjectId)
 
 		monthIncome := 0.0
 		monthExpense := 0.0
 
 		for _, flow := range cashFlows {
 			// Get category type
-			category := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(flow.CategoryId.Hex(), userObjectId)
+			category := s.categoryMapper.GetCategoryByObjectIdAndUser(flow.CategoryId.Hex(), userObjectId)
 			categoryType := ""
 			if !category.IsEmpty() {
 				categoryType = category.Type
@@ -235,6 +249,10 @@ func GetMonthlyComparisonForUser(year, userId string) (*MonthlyComparison, error
 
 // GetSpendingHeatmapForUser returns calendar heatmap data
 func GetSpendingHeatmapForUser(year, userId string) (*SpendingHeatmap, error) {
+	return defaultStatisticService().GetSpendingHeatmapForUser(year, userId)
+}
+
+func (s *StatisticService) GetSpendingHeatmapForUser(year, userId string) (*SpendingHeatmap, error) {
 	userObjectId, err := primitive.ObjectIDFromHex(userId)
 	if err != nil {
 		return nil, errors.New("invalid user ID")
@@ -261,12 +279,12 @@ func GetSpendingHeatmapForUser(year, userId string) (*SpendingHeatmap, error) {
 	fromDate := time.Date(yearInt, 1, 1, 0, 0, 0, 0, time.UTC)
 	toDate := fromDate.AddDate(1, 0, 0) // First day of next year
 
-	cashFlows := cash_flow_mapper.INSTANCE.GetCashFlowsByDateRangeAndUser(fromDate, toDate, userObjectId)
+	cashFlows := s.cashFlowMapper.GetCashFlowsByDateRangeAndUser(fromDate, toDate, userObjectId)
 
 	// Aggregate spending by day
 	for _, flow := range cashFlows {
 		// Get category type
-		category := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(flow.CategoryId.Hex(), userObjectId)
+		category := s.categoryMapper.GetCategoryByObjectIdAndUser(flow.CategoryId.Hex(), userObjectId)
 		categoryType := ""
 		if !category.IsEmpty() {
 			categoryType = category.Type

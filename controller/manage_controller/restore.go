@@ -47,9 +47,10 @@ func RestoreDatabase(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// Return error along with statistics
 		util.ComposeJSONResponse(w, http.StatusInternalServerError, map[string]interface{}{
-			"error":   err.Error(),
-			"stats":   stats,
+			"code":    string(errors.ErrInternal),
 			"message": "Database restore failed",
+			"errors":  []map[string]string{{"message": err.Error()}},
+			"stats":   stats,
 		})
 		return
 	}
@@ -104,9 +105,10 @@ func ImportUserData(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// Return error along with statistics
 		util.ComposeJSONResponse(w, http.StatusInternalServerError, map[string]interface{}{
-			"error":   err.Error(),
-			"stats":   stats,
+			"code":    string(errors.ErrInternal),
 			"message": "User data import failed",
+			"errors":  []map[string]string{{"message": err.Error()}},
+			"stats":   stats,
 		})
 		return
 	}

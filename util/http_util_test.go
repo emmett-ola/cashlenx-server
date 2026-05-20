@@ -72,3 +72,53 @@ func TestComposeJSONResponse_ResponseShapeWithDataAndMeta(t *testing.T) {
 		t.Fatalf("expected data length 1, got %d", len(data))
 	}
 }
+
+func TestStatusCodeForError_AppError(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want int
+	}{
+		{name: "validation", err: errors.NewValidationError("field is required"), want: http.StatusBadRequest},
+		{name: "unauthorized", err: errors.NewUnauthorizedError("not authenticated"), want: http.StatusUnauthorized},
+		{name: "forbidden", err: errors.NewForbiddenError("admin role required"), want: http.StatusForbidden},
+		{name: "not found", err: errors.NewNotFoundError("user not found"), want: http.StatusNotFound},
+		{name: "conflict", err: errors.NewAlreadyExistsError("username already exists"), want: http.StatusConflict},
+		{name: "internal", err: errors.NewInternalError("failed", nil), want: http.StatusInternalServerError},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := StatusCodeForError(tt.err); got != tt.want {
+				t.Fatalf("expected status %d, got %d", tt.want, got)
+			}
+		})
+	}
+}
+
+func TestStatusCodeForError_ServiceMessageFallback(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want int
+	}{
+		{name: "already exists", err: stdError("category already exists"), want: http.StatusConflict},
+		{name: "not found", err: stdError("category not found or access denied"), want: http.StatusNotFound},
+		{name: "invalid input", err: stdError("invalid user ID"), want: http.StatusBadRequest},
+		{name: "unknown failure", err: stdError("failed to create category"), want: http.StatusInternalServerError},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := StatusCodeForError(tt.err); got != tt.want {
+				t.Fatalf("expected status %d, got %d", tt.want, got)
+			}
+		})
+	}
+}
+
+type stdError string
+
+func (e stdError) Error() string {
+	return string(e)
+}

@@ -28,7 +28,7 @@ func GetDailyBreakdown(w http.ResponseWriter, r *http.Request) {
 
 	breakdown, err := statistic_service.GetBreakdownForUser("daily", date, userId)
 	if err != nil {
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, errors.NewInternalError(err.Error(), err))
+		util.ComposeErrorResponse(w, r, err)
 		return
 	}
 
@@ -54,7 +54,7 @@ func GetMonthlyBreakdown(w http.ResponseWriter, r *http.Request) {
 
 	breakdown, err := statistic_service.GetBreakdownForUser("monthly", month, userId)
 	if err != nil {
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, errors.NewInternalError(err.Error(), err))
+		util.ComposeErrorResponse(w, r, err)
 		return
 	}
 
@@ -80,7 +80,7 @@ func GetYearlyBreakdown(w http.ResponseWriter, r *http.Request) {
 
 	breakdown, err := statistic_service.GetBreakdownForUser("yearly", year, userId)
 	if err != nil {
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, errors.NewInternalError(err.Error(), err))
+		util.ComposeErrorResponse(w, r, err)
 		return
 	}
 

@@ -1,4 +1,4 @@
-package verification_code_mapper
+package operation_confirm_code_mapper
 
 import (
 	"context"
@@ -10,11 +10,11 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type VerificationCodeMongoMapper struct{}
+type OperationConfirmCodeMongoMapper struct{}
 
-func (mapper *VerificationCodeMongoMapper) CreateCode(code model.OperationConfirmCode) error {
+func (mapper *OperationConfirmCodeMongoMapper) CreateCode(code model.OperationConfirmCode) error {
 	collection := database.GetMongoCollection(code.CollectionName())
-	
+
 	// Convert ID string to ObjectID if needed, or let Mongo generate it
 	// But usually ID is generated before calling create
 	var id primitive.ObjectID
@@ -50,9 +50,9 @@ func (mapper *VerificationCodeMongoMapper) CreateCode(code model.OperationConfir
 	return err
 }
 
-func (mapper *VerificationCodeMongoMapper) GetCodeByToken(token string) model.OperationConfirmCode {
+func (mapper *OperationConfirmCodeMongoMapper) GetCodeByToken(token string) model.OperationConfirmCode {
 	collection := database.GetMongoCollection(model.OperationConfirmCode{}.CollectionName())
-	
+
 	filter := bson.M{
 		"code":      token,
 		"is_delete": false,
@@ -67,9 +67,9 @@ func (mapper *VerificationCodeMongoMapper) GetCodeByToken(token string) model.Op
 	return mapper.mapBsonToEntity(result)
 }
 
-func (mapper *VerificationCodeMongoMapper) InvalidateActiveCodes(userId string, operationType string) error {
+func (mapper *OperationConfirmCodeMongoMapper) InvalidateActiveCodes(userId string, operationType string) error {
 	collection := database.GetMongoCollection(model.OperationConfirmCode{}.CollectionName())
-	
+
 	filter := bson.M{
 		"user_id":        userId,
 		"operation_type": operationType,
@@ -88,9 +88,9 @@ func (mapper *VerificationCodeMongoMapper) InvalidateActiveCodes(userId string, 
 	return err
 }
 
-func (mapper *VerificationCodeMongoMapper) MarkCodeAsUsed(id string) error {
+func (mapper *OperationConfirmCodeMongoMapper) MarkCodeAsUsed(id string) error {
 	collection := database.GetMongoCollection(model.OperationConfirmCode{}.CollectionName())
-	
+
 	objectId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return err
@@ -108,9 +108,9 @@ func (mapper *VerificationCodeMongoMapper) MarkCodeAsUsed(id string) error {
 	return err
 }
 
-func (mapper *VerificationCodeMongoMapper) DeleteCode(id string) error {
+func (mapper *OperationConfirmCodeMongoMapper) DeleteCode(id string) error {
 	collection := database.GetMongoCollection(model.OperationConfirmCode{}.CollectionName())
-	
+
 	objectId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return err
@@ -128,13 +128,13 @@ func (mapper *VerificationCodeMongoMapper) DeleteCode(id string) error {
 	return err
 }
 
-func (mapper *VerificationCodeMongoMapper) mapBsonToEntity(data bson.M) model.OperationConfirmCode {
+func (mapper *OperationConfirmCodeMongoMapper) mapBsonToEntity(data bson.M) model.OperationConfirmCode {
 	var entity model.OperationConfirmCode
-	
+
 	if id, ok := data["_id"].(primitive.ObjectID); ok {
 		entity.Id = id.Hex()
 	}
-	
+
 	if val, ok := data["user_id"].(string); ok {
 		entity.UserId = val
 	}
@@ -147,7 +147,7 @@ func (mapper *VerificationCodeMongoMapper) mapBsonToEntity(data bson.M) model.Op
 	if val, ok := data["payload"].(string); ok {
 		entity.Payload = val
 	}
-	
+
 	// Handle time fields
 	if val, ok := data["expires_time"].(primitive.DateTime); ok {
 		entity.ExpiresTime = val.Time()
@@ -171,7 +171,7 @@ func (mapper *VerificationCodeMongoMapper) mapBsonToEntity(data bson.M) model.Op
 	} else if val, ok := data["create_time"].(time.Time); ok {
 		entity.CreateTime = val
 	}
-	
+
 	if val, ok := data["update_user_id"].(primitive.ObjectID); ok {
 		entity.UpdateUserId = val
 	}
@@ -180,17 +180,10 @@ func (mapper *VerificationCodeMongoMapper) mapBsonToEntity(data bson.M) model.Op
 	} else if val, ok := data["update_time"].(time.Time); ok {
 		entity.UpdateTime = val
 	}
-	
+
 	if val, ok := data["is_delete"].(bool); ok {
 		entity.IsDelete = val
 	}
 
 	return entity
-}
-
-// Register the mapper
-func init() {
-	// Check database type and register appropriate mapper
-	// For now defaulting to Mongo as per project structure
-	INSTANCE = &VerificationCodeMongoMapper{}
 }

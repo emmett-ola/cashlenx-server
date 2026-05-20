@@ -1,10 +1,14 @@
-CREATE TABLE IF NOT EXISTS auth_token_password_reset (
+CREATE TABLE IF NOT EXISTS refresh_tokens (
     id VARCHAR(36) PRIMARY KEY,
     user_id VARCHAR(36) NOT NULL,
     token VARCHAR(255) NOT NULL UNIQUE,
     expires_at DATETIME NOT NULL,
-    used_at DATETIME,
+    revoked_at DATETIME,
+    revoked_by VARCHAR(36),
+    device_id VARCHAR(100),
+    device_name VARCHAR(100),
     ip_address VARCHAR(45),
+    user_agent VARCHAR(255),
     
     -- BaseEntity columns
     create_user_id VARCHAR(36) NOT NULL,

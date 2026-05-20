@@ -28,7 +28,7 @@ func GetDailySummary(w http.ResponseWriter, r *http.Request) {
 
 	summary, err := statistic_service.GetSummaryForUser("daily", date, userId)
 	if err != nil {
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, errors.NewInternalError(err.Error(), err))
+		util.ComposeErrorResponse(w, r, err)
 		return
 	}
 
@@ -54,7 +54,7 @@ func GetMonthlySummary(w http.ResponseWriter, r *http.Request) {
 
 	summary, err := statistic_service.GetSummaryForUser("monthly", month, userId)
 	if err != nil {
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, errors.NewInternalError(err.Error(), err))
+		util.ComposeErrorResponse(w, r, err)
 		return
 	}
 
@@ -80,7 +80,7 @@ func GetYearlySummary(w http.ResponseWriter, r *http.Request) {
 
 	summary, err := statistic_service.GetSummaryForUser("yearly", year, userId)
 	if err != nil {
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, errors.NewInternalError(err.Error(), err))
+		util.ComposeErrorResponse(w, r, err)
 		return
 	}
 

@@ -25,6 +25,9 @@ func TestCORSPrefightAllowsDevLoopbackOrigin(t *testing.T) {
 	if got := rec.Header().Get("Access-Control-Allow-Origin"); got != "http://localhost:55500" {
 		t.Fatalf("Access-Control-Allow-Origin = %q, want %q", got, "http://localhost:55500")
 	}
+	if got := rec.Header().Get("Access-Control-Expose-Headers"); !strings.Contains(got, "X-Request-ID") {
+		t.Fatalf("Access-Control-Expose-Headers = %q, want it to include X-Request-ID", got)
+	}
 }
 
 func TestCORSPreflightAllowsLoginRequestHeaders(t *testing.T) {

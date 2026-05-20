@@ -5,8 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/macar-x/cashlenx-server/mapper/cash_flow_mapper"
-	"github.com/macar-x/cashlenx-server/mapper/category_mapper"
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/util"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -15,6 +13,10 @@ import (
 // GetTrendsForUser gets spending trends for the specified period
 // Only includes transactions belonging to the specified user
 func GetTrendsForUser(period, date, userId string) (*Trends, error) {
+	return defaultStatisticService().GetTrendsForUser(period, date, userId)
+}
+
+func (s *StatisticService) GetTrendsForUser(period, date, userId string) (*Trends, error) {
 	// Convert userId string to ObjectID
 	userObjectId, err := primitive.ObjectIDFromHex(userId)
 	if err != nil {
@@ -36,16 +38,20 @@ func GetTrendsForUser(period, date, userId string) (*Trends, error) {
 	fromDate, toDate := getDateRange(period, baseDate)
 
 	// Get all cash flows for user in this period
-	cashFlows := cash_flow_mapper.INSTANCE.GetCashFlowsByDateRangeAndUser(fromDate, toDate, userObjectId)
+	cashFlows := s.cashFlowMapper.GetCashFlowsByDateRangeAndUser(fromDate, toDate, userObjectId)
 
 	// Calculate trends
-	trends := calculateTrends(period, date, fromDate, toDate, cashFlows)
+	trends := s.calculateTrends(period, date, fromDate, toDate, cashFlows)
 
 	return trends, nil
 }
 
 // calculateTrends groups data by sub-periods and analyzes trends
 func calculateTrends(period, dateStr string, fromDate, toDate time.Time, cashFlows []model.CashFlowEntity) *Trends {
+	return defaultStatisticService().calculateTrends(period, dateStr, fromDate, toDate, cashFlows)
+}
+
+func (s *StatisticService) calculateTrends(period, dateStr string, fromDate, toDate time.Time, cashFlows []model.CashFlowEntity) *Trends {
 	trends := &Trends{
 		Period:     dateStr,
 		PeriodType: period,
@@ -97,7 +103,7 @@ func calculateTrends(period, dateStr string, fromDate, toDate time.Time, cashFlo
 		if flows, exists := flowsByDate[dateKey]; exists {
 			for _, flow := range flows {
 				// Get category type
-				category := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(flow.CategoryId.Hex(), flow.BelongsUserId)
+				category := s.categoryMapper.GetCategoryByObjectIdAndUser(flow.CategoryId.Hex(), flow.BelongsUserId)
 				categoryType := ""
 				if !category.IsEmpty() {
 					categoryType = category.Type

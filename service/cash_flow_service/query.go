@@ -5,8 +5,6 @@ import (
 	"time"
 
 	myErrors "github.com/macar-x/cashlenx-server/errors"
-	"github.com/macar-x/cashlenx-server/mapper/cash_flow_mapper"
-	"github.com/macar-x/cashlenx-server/mapper/category_mapper"
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/util"
 	"github.com/macar-x/cashlenx-server/validation"
@@ -51,13 +49,21 @@ func IsQueryFieldsConflicted(plainId, belongsDate, exactDescription, fuzzyDescri
 }
 
 func QueryById(plainId string) (model.CashFlowEntity, error) {
-	cashFlowEntity := cash_flow_mapper.INSTANCE.GetCashFlowByObjectId(plainId)
+	return defaultCashFlowService().QueryById(plainId)
+}
+
+func (s *CashFlowService) QueryById(plainId string) (model.CashFlowEntity, error) {
+	if err := validation.ValidateID(plainId); err != nil {
+		return model.CashFlowEntity{}, err
+	}
+
+	cashFlowEntity := s.cashFlowMapper.GetCashFlowByObjectId(plainId)
 	if cashFlowEntity.IsEmpty() {
 		return model.CashFlowEntity{}, myErrors.NewNotFoundError("cash_flow not found")
 	}
 
 	// Populate category info
-	category := category_mapper.INSTANCE.GetCategoryByObjectId(cashFlowEntity.CategoryId.Hex())
+	category := s.categoryMapper.GetCategoryByObjectId(cashFlowEntity.CategoryId.Hex())
 	if !category.IsEmpty() {
 		cashFlowEntity.CategoryName = category.Name
 		cashFlowEntity.CategoryType = category.Type
@@ -69,6 +75,10 @@ func QueryById(plainId string) (model.CashFlowEntity, error) {
 }
 
 func QueryByDate(belongsDate string) ([]model.CashFlowEntity, error) {
+	return defaultCashFlowService().QueryByDate(belongsDate)
+}
+
+func (s *CashFlowService) QueryByDate(belongsDate string) ([]model.CashFlowEntity, error) {
 	// Validate date
 	if err := validation.ValidateDate(belongsDate); err != nil {
 		return []model.CashFlowEntity{}, err
@@ -92,47 +102,55 @@ func QueryByDate(belongsDate string) ([]model.CashFlowEntity, error) {
 		ToDate:   endOfDay,
 	}
 
-	matchedCashFlowList, err := cash_flow_mapper.INSTANCE.GetCashFlowsByFilter(filter)
+	matchedCashFlowList, err := s.cashFlowMapper.GetCashFlowsByFilter(filter)
 	if err != nil {
 		return nil, err
 	}
 
 	// Populate category info
-	populateCategoryInfo(matchedCashFlowList)
+	s.populateCategoryInfo(matchedCashFlowList)
 
 	return matchedCashFlowList, nil
 }
 
 func QueryByExactDescription(exactDescription string) ([]model.CashFlowEntity, error) {
+	return defaultCashFlowService().QueryByExactDescription(exactDescription)
+}
+
+func (s *CashFlowService) QueryByExactDescription(exactDescription string) ([]model.CashFlowEntity, error) {
 	// Use unified filter
 	filter := model.CashFlowFilter{
 		ExactDescription: exactDescription,
 	}
 
-	matchedCashFlowList, err := cash_flow_mapper.INSTANCE.GetCashFlowsByFilter(filter)
+	matchedCashFlowList, err := s.cashFlowMapper.GetCashFlowsByFilter(filter)
 	if err != nil {
 		return nil, err
 	}
 
 	// Populate category info
-	populateCategoryInfo(matchedCashFlowList)
+	s.populateCategoryInfo(matchedCashFlowList)
 
 	return matchedCashFlowList, nil
 }
 
 func QueryByFuzzyDescription(fuzzyDescription string) ([]model.CashFlowEntity, error) {
+	return defaultCashFlowService().QueryByFuzzyDescription(fuzzyDescription)
+}
+
+func (s *CashFlowService) QueryByFuzzyDescription(fuzzyDescription string) ([]model.CashFlowEntity, error) {
 	// Use unified filter
 	filter := model.CashFlowFilter{
 		Description: fuzzyDescription,
 	}
 
-	matchedCashFlowList, err := cash_flow_mapper.INSTANCE.GetCashFlowsByFilter(filter)
+	matchedCashFlowList, err := s.cashFlowMapper.GetCashFlowsByFilter(filter)
 	if err != nil {
 		return nil, err
 	}
 
 	// Populate category info
-	populateCategoryInfo(matchedCashFlowList)
+	s.populateCategoryInfo(matchedCashFlowList)
 
 	return matchedCashFlowList, nil
 }
@@ -141,6 +159,10 @@ func QueryByFuzzyDescription(fuzzyDescription string) ([]model.CashFlowEntity, e
 
 // QueryByIdForUser retrieves a cash flow by ID, ensuring it belongs to the user
 func QueryByIdForUser(plainId string, userId string) (model.CashFlowEntity, error) {
+	return defaultCashFlowService().QueryByIdForUser(plainId, userId)
+}
+
+func (s *CashFlowService) QueryByIdForUser(plainId string, userId string) (model.CashFlowEntity, error) {
 	// Validate ID
 	if err := validation.ValidateID(plainId); err != nil {
 		return model.CashFlowEntity{}, err
@@ -152,13 +174,13 @@ func QueryByIdForUser(plainId string, userId string) (model.CashFlowEntity, erro
 		return model.CashFlowEntity{}, errors.New("invalid user ID")
 	}
 
-	cashFlowEntity := cash_flow_mapper.INSTANCE.GetCashFlowByObjectIdAndUser(plainId, userObjectId)
+	cashFlowEntity := s.cashFlowMapper.GetCashFlowByObjectIdAndUser(plainId, userObjectId)
 	if cashFlowEntity.IsEmpty() {
 		return model.CashFlowEntity{}, errors.New("cash_flow not found or access denied")
 	}
 
 	// Populate category info
-	category := category_mapper.INSTANCE.GetCategoryByObjectId(cashFlowEntity.CategoryId.Hex())
+	category := s.categoryMapper.GetCategoryByObjectId(cashFlowEntity.CategoryId.Hex())
 	if !category.IsEmpty() {
 		cashFlowEntity.CategoryName = category.Name
 		cashFlowEntity.CategoryType = category.Type
@@ -171,6 +193,10 @@ func QueryByIdForUser(plainId string, userId string) (model.CashFlowEntity, erro
 
 // QueryByDateForUser retrieves cash flows for a specific date for the user
 func QueryByDateForUser(belongsDate string, userId string) ([]model.CashFlowEntity, error) {
+	return defaultCashFlowService().QueryByDateForUser(belongsDate, userId)
+}
+
+func (s *CashFlowService) QueryByDateForUser(belongsDate string, userId string) ([]model.CashFlowEntity, error) {
 	// Validate date
 	if err := validation.ValidateDate(belongsDate); err != nil {
 		return []model.CashFlowEntity{}, err
@@ -200,35 +226,33 @@ func QueryByDateForUser(belongsDate string, userId string) ([]model.CashFlowEnti
 		ToDate:   endOfDay,
 	}
 
-	matchedCashFlowList, err := cash_flow_mapper.INSTANCE.GetCashFlowsByFilter(filter)
+	matchedCashFlowList, err := s.cashFlowMapper.GetCashFlowsByFilter(filter)
 	if err != nil {
 		return nil, err
 	}
 
 	// Populate category info
-	populateCategoryInfo(matchedCashFlowList)
+	s.populateCategoryInfo(matchedCashFlowList)
 
 	return matchedCashFlowList, nil
 }
 
 // QueryByDateRangeForUser retrieves cash flows within a date range for the user
 func QueryByDateRangeForUser(fromDateStr, toDateStr string, userId string) ([]model.CashFlowEntity, error) {
+	return defaultCashFlowService().QueryByDateRangeForUser(fromDateStr, toDateStr, userId)
+}
+
+func (s *CashFlowService) QueryByDateRangeForUser(fromDateStr, toDateStr string, userId string) ([]model.CashFlowEntity, error) {
+	fromDate, toDate, err := validateDateRange(fromDateStr, toDateStr)
+	if err != nil {
+		return []model.CashFlowEntity{}, err
+	}
+
 	// Validate and convert userId
 	userObjectId := util.Convert2ObjectId(userId)
 	if userObjectId == primitive.NilObjectID {
 		util.Logger.Warnf("Invalid user ID format: '%s'", userId)
 		return []model.CashFlowEntity{}, errors.New("invalid user ID")
-	}
-
-	// Parse date strings
-	fromDate, err := util.ParseDate(fromDateStr)
-	if err != nil {
-		return []model.CashFlowEntity{}, errors.New("from_date error, try format like 19700101, 1970-01-01, or 1970/01/01")
-	}
-
-	toDate, err := util.ParseDate(toDateStr)
-	if err != nil {
-		return []model.CashFlowEntity{}, errors.New("to_date error, try format like 19700101, 1970-01-01, or 1970/01/01")
 	}
 
 	// Use UTC time
@@ -242,22 +266,48 @@ func QueryByDateRangeForUser(fromDateStr, toDateStr string, userId string) ([]mo
 		ToDate:   endDate,
 	}
 
-	matchedCashFlowList, err := cash_flow_mapper.INSTANCE.GetCashFlowsByFilter(filter)
+	matchedCashFlowList, err := s.cashFlowMapper.GetCashFlowsByFilter(filter)
 	if err != nil {
 		return nil, err
 	}
 
 	// Populate category info
-	populateCategoryInfo(matchedCashFlowList)
+	s.populateCategoryInfo(matchedCashFlowList)
 
 	return matchedCashFlowList, nil
 }
 
+func validateDateRange(fromDateStr, toDateStr string) (time.Time, time.Time, error) {
+	if fromDateStr == "" || toDateStr == "" {
+		return time.Time{}, time.Time{}, errors.New("from_date and to_date are required")
+	}
+
+	fromDate, err := util.ParseDate(fromDateStr)
+	if err != nil {
+		return time.Time{}, time.Time{}, errors.New("from_date error, try format like 19700101, 1970-01-01, or 1970/01/01")
+	}
+
+	toDate, err := util.ParseDate(toDateStr)
+	if err != nil {
+		return time.Time{}, time.Time{}, errors.New("to_date error, try format like 19700101, 1970-01-01, or 1970/01/01")
+	}
+
+	if fromDate.After(toDate) {
+		return time.Time{}, time.Time{}, errors.New("from_date should be before or equal to to_date")
+	}
+
+	return fromDate, toDate, nil
+}
+
 // Helper function to populate category info
 func populateCategoryInfo(cashFlowList []model.CashFlowEntity) {
+	defaultCashFlowService().populateCategoryInfo(cashFlowList)
+}
+
+func (s *CashFlowService) populateCategoryInfo(cashFlowList []model.CashFlowEntity) {
 	for i := range cashFlowList {
 		entity := &cashFlowList[i]
-		category := category_mapper.INSTANCE.GetCategoryByObjectId(entity.CategoryId.Hex())
+		category := s.categoryMapper.GetCategoryByObjectId(entity.CategoryId.Hex())
 		if !category.IsEmpty() {
 			entity.CategoryName = category.Name
 			entity.CategoryType = category.Type

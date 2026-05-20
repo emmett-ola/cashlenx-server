@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
 	"time"
 
 	"go.uber.org/zap"
@@ -55,8 +56,8 @@ func initConsoleLogger() *zap.Logger {
 
 	// Set up console output
 	consoleOutput := zapcore.Lock(os.Stdout)
-	// Set up file output
-	fileOutput := zapcore.Lock(zapcore.AddSync(createLogFile()))
+	// Set up date-rolling file output
+	fileOutput := zapcore.Lock(createDailyLogWriter())
 
 	// Set up log encoders
 	consoleEncoder := zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig())
@@ -75,7 +76,14 @@ func initConsoleLogger() *zap.Logger {
 	return logger
 }
 
-func createLogFile() *os.File {
+type dailyLogWriter struct {
+	mu          sync.Mutex
+	folder      string
+	currentDate string
+	file        *os.File
+}
+
+func createDailyLogWriter() zapcore.WriteSyncer {
 	// Get the log folder from config, default to ./logs
 	logFolder := GetConfigByKey("logger.file")
 
@@ -117,14 +125,51 @@ func createLogFile() *os.File {
 		logFolder = defaultFolder
 	}
 
-	// Always use date-based filename in the configured folder
-	currentDate := time.Now().Format("20060102")
-	logFilePath := fmt.Sprintf("%s/cashlenx_%s.log", logFolder, currentDate)
+	writer := &dailyLogWriter{folder: logFolder}
+	if err := writer.rotateIfNeeded(time.Now()); err != nil {
+		log.Fatal("failed to create log file: ", err)
+	}
+	return writer
+}
+
+func (writer *dailyLogWriter) Write(p []byte) (int, error) {
+	writer.mu.Lock()
+	defer writer.mu.Unlock()
+
+	if err := writer.rotateIfNeeded(time.Now()); err != nil {
+		return 0, err
+	}
+	return writer.file.Write(p)
+}
+
+func (writer *dailyLogWriter) Sync() error {
+	writer.mu.Lock()
+	defer writer.mu.Unlock()
+
+	if writer.file == nil {
+		return nil
+	}
+	return writer.file.Sync()
+}
+
+func (writer *dailyLogWriter) rotateIfNeeded(now time.Time) error {
+	currentDate := now.Format("20060102")
+	if writer.file != nil && writer.currentDate == currentDate {
+		return nil
+	}
+
+	if writer.file != nil {
+		_ = writer.file.Close()
+	}
+
+	logFilePath := fmt.Sprintf("%s/cashlenx_%s.log", writer.folder, currentDate)
 
 	// Open file with append mode if it exists, create if it doesn't
 	file, err := os.OpenFile(logFilePath, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0644)
 	if err != nil {
-		log.Fatal("failed to create log file: ", err)
+		return err
 	}
-	return file
+	writer.file = file
+	writer.currentDate = currentDate
+	return nil
 }

@@ -6,8 +6,6 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/macar-x/cashlenx-server/mapper/cash_flow_mapper"
-	"github.com/macar-x/cashlenx-server/mapper/category_mapper"
 	"github.com/macar-x/cashlenx-server/util"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -15,6 +13,10 @@ import (
 // ExportToCSVForUser exports the user's cash flow data to CSV file
 // Only exports data belonging to the specified user
 func ExportToCSVForUser(fromDateInString, toDateInString, filePath, userId string) error {
+	return defaultStatisticService().ExportToCSVForUser(fromDateInString, toDateInString, filePath, userId)
+}
+
+func (s *StatisticService) ExportToCSVForUser(fromDateInString, toDateInString, filePath, userId string) error {
 	if filePath == "" {
 		filePath = "./export.csv"
 	}
@@ -52,7 +54,7 @@ func ExportToCSVForUser(fromDateInString, toDateInString, filePath, userId strin
 		offset := 0
 
 		for {
-			cashFlows := cash_flow_mapper.INSTANCE.GetAllCashFlowsByUser(userObjectId, limit, offset)
+			cashFlows := s.cashFlowMapper.GetAllCashFlowsByUser(userObjectId, limit, offset)
 			if len(cashFlows) == 0 {
 				break
 			}
@@ -61,7 +63,7 @@ func ExportToCSVForUser(fromDateInString, toDateInString, filePath, userId strin
 			for _, cashFlow := range cashFlows {
 				categoryName := "Unknown"
 				categoryType := ""
-				categoryEntity := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(cashFlow.CategoryId.Hex(), userObjectId)
+				categoryEntity := s.categoryMapper.GetCategoryByObjectIdAndUser(cashFlow.CategoryId.Hex(), userObjectId)
 				if !categoryEntity.IsEmpty() {
 					categoryName = categoryEntity.Name
 					categoryType = categoryEntity.Type
@@ -92,12 +94,12 @@ func ExportToCSVForUser(fromDateInString, toDateInString, filePath, userId strin
 		queryDateEnded := util.FormatDateFromStringWithoutDash(toDateInString).AddDate(0, 0, 1)
 
 		for queryDateEnded.After(queryDateCurrent) {
-			cashFlowArray := cash_flow_mapper.INSTANCE.GetCashFlowsByBelongsDateAndUser(queryDateCurrent, userObjectId)
+			cashFlowArray := s.cashFlowMapper.GetCashFlowsByBelongsDateAndUser(queryDateCurrent, userObjectId)
 
 			for _, cashFlow := range cashFlowArray {
 				categoryName := "Unknown"
 				categoryType := ""
-				categoryEntity := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(cashFlow.CategoryId.Hex(), userObjectId)
+				categoryEntity := s.categoryMapper.GetCategoryByObjectIdAndUser(cashFlow.CategoryId.Hex(), userObjectId)
 				if !categoryEntity.IsEmpty() {
 					categoryName = categoryEntity.Name
 					categoryType = categoryEntity.Type

@@ -13,6 +13,13 @@ type responseWriter struct {
 	statusCode int
 }
 
+func (rw *responseWriter) Write(data []byte) (int, error) {
+	if rw.statusCode == 0 {
+		rw.statusCode = http.StatusOK
+	}
+	return rw.ResponseWriter.Write(data)
+}
+
 func (rw *responseWriter) WriteHeader(code int) {
 	rw.statusCode = code
 	rw.ResponseWriter.WriteHeader(code)
@@ -22,6 +29,12 @@ func (rw *responseWriter) WriteHeader(code int) {
 func Logging(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
+		requestID := r.Header.Get(util.RequestIDHeader)
+		if requestID == "" {
+			requestID = util.NewRequestID()
+		}
+		w.Header().Set(util.RequestIDHeader, requestID)
+		r = r.WithContext(util.ContextWithRequestID(r.Context(), requestID))
 
 		// Wrap the response writer to capture status code
 		wrapped := &responseWriter{
@@ -41,6 +54,7 @@ func Logging(next http.Handler) http.Handler {
 			"status", wrapped.statusCode,
 			"duration", duration,
 			"remote_addr", r.RemoteAddr,
+			"request_id", requestID,
 		)
 	})
 }

@@ -42,7 +42,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 			util.ComposeJSONResponse(w, http.StatusConflict, err)
 			return
 		}
-		util.ComposeJSONResponse(w, http.StatusInternalServerError, err)
+		util.ComposeErrorResponse(w, r, err)
 		return
 	}
 

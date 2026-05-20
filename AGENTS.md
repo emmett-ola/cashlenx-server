@@ -33,9 +33,9 @@ These are collaboration defaults provided by the project owner and should be tre
 - Default development database is MongoDB
 - Users may still choose MongoDB or MySQL when bootstrapping their environment
 - This is an under-development project, so use practical baseline validation effort rather than assuming strict release-grade test gates
-- We are currently developing on the `dev/v0.5.0` branch line
+- We are currently developing on the `dev/v0.6.0` branch line
 - The branch line maps to the feature/version batch currently in progress
-- Once planned work for `v0.5.0` is complete, it is intended to be merged/promoted to `main`, then development moves to the next branch line such as `dev/v0.6.0`
+- Once planned work for `v0.6.0` is complete, it is intended to be merged/promoted to `main`, then development moves to the next branch line such as `dev/v0.7.0`
 - API versioning stays under `/api/v0` during active development
 - A stable release is expected to introduce `/api/v1` alongside a stable application version such as `v1.0.0`
 - User-facing feature/function completion takes priority over enhancement work such as observability, performance, migration tooling, cloud hardening, and release automation
@@ -157,7 +157,7 @@ Important: the server start command is currently `go run main.go open start -p 8
 - `POST /api/{version}/open/auth/reset-password`
 - `POST /api/{version}/open/auth/reset-password/confirm`
 
-Note: `logout` lives under `/open/auth/logout` even though it is intended to be protected. Treat route grouping carefully when changing auth behavior.
+Note: `logout` lives under `/open/auth/logout` and is intentionally public/idempotent. It returns OK without credentials and only performs revocation when a valid `refresh_token` or bearer access token is provided.
 
 ### Admin routes
 
@@ -235,11 +235,11 @@ Mapper packages currently include:
 - `category_mapper`
 - `user_mapper`
 - `refresh_token_mapper`
-- `verification_code_mapper`
+- `operation_confirm_code_mapper`
 
 Both MongoDB and MySQL implementations are expected for production-facing features. When adding persistence features, update both backends unless the change is explicitly database-specific and documented.
 
-Current caveat: `mapper/verification_code_mapper/mysql_mapper.go` is a placeholder that returns nil/empty values. Password reset and email-change verification should be treated as MongoDB-backed only until the MySQL implementation is completed.
+Beta deployments are MongoDB-first, but touched persistence code should remain build-compatible across MongoDB and MySQL. Verification-code persistence is implemented for both mapper backends.
 
 ### Service packages
 
@@ -285,6 +285,13 @@ When modifying queries, verify whether the helper already appends `is_delete = f
 
 Admin routes use `middleware.Admin`, which expects `role` to be present in request context from the auth layer. If you touch auth middleware or token claims, verify this still works end-to-end.
 
+Admin role lifecycle:
+
+- Admin users are only bootstrapped by `user_service.InitAdminUser()` during server startup when no admin account exists
+- Registration and admin/user creation paths must always create `user` role accounts, even if a request body includes `role: admin`
+- User update paths must not promote or demote roles; preserve admin role changes for explicit future design work rather than accepting them through generic user management
+- User deletion must reject admin accounts
+
 ## Auth and Verification
 
 ### Auth components
@@ -296,7 +303,7 @@ Admin routes use `middleware.Admin`, which expects `role` to be present in reque
 ### Token-related persistence
 
 - Refresh tokens are stored through `mapper/refresh_token_mapper`
-- Verification codes are stored through `mapper/verification_code_mapper`
+- Verification codes are stored through `mapper/operation_confirm_code_mapper`
 
 ### Verification flows
 
@@ -408,7 +415,9 @@ Middleware files:
 
 CORS must stay outermost so browser `OPTIONS` preflight requests are answered before auth or OpenAPI schema validation can reject them. This is required for Flutter web and other browser clients.
 
-Auth middleware skips `/api/{version}/open/*` except `/open/auth/logout`, which deliberately falls through to JWT validation. Do not assume every route under `/open` is unauthenticated.
+`middleware.Logging` adds or preserves `X-Request-ID`, stores it in request context, echoes it in the response header, and includes it in structured request logs. `util.ComposeErrorResponse` logs API errors centrally with request ID, status, method/path, caller location, and user ID when present; 4xx responses log at warn level and 5xx responses log at error level.
+
+Auth middleware skips all `/api/{version}/open/*` routes. `/open/auth/logout` handles optional token validation in its controller so the `/open` prefix remains consistently public.
 
 OpenAPI schema validation loads `docs/openapi.yaml` at package init when enabled. Keep route paths in that spec aligned with `controller/server.go`; validation is bypassed automatically if the spec cannot be loaded or parsed.
 
@@ -452,21 +461,25 @@ Repo scripts include:
 - `scripts/start.ps1`, `scripts/start.sh`
 - `scripts/interactive.ps1`, `scripts/interactive.sh`
 - `scripts/generate-docs.ps1`, `scripts/generate-docs.sh`
+- `scripts/smoke-api.sh`
+- `scripts/ci-test.sh`
 
 ### CI
 
 GitHub Actions workflow: `.github/workflows/ci.yml`
+Codecov configuration: `codecov.yml`
+DeepSource configuration: `.deepsource.toml`
 
 Current CI behavior:
 
 - builds the repo
-- runs a narrow test subset: `go test -v ./errors ./validation`
-- optionally runs `golangci-lint` if installed
+- runs `scripts/ci-test.sh`, which executes `go test -v -race -covermode=atomic -coverprofile=coverage.out ./...`
+- uploads coverage to Codecov from GitHub Actions when provider credentials/network are available
+- uses DeepSource for repository code analysis
 - builds Docker image
 - generates Swagger UI HTML docs from `docs/openapi.yaml`
 
-Important: CI is not currently exercising the full application or the DB-backed service packages.
-Also note: `go.mod` declares Go `1.23.0`, but `.github/workflows/ci.yml` currently runs Go `1.21`.
+Important: CI unit tests do not run the live MongoDB-backed `scripts/smoke-api.sh`; that remains an environment smoke check against a running server.
 
 ## Migrations and Data Setup
 
@@ -498,9 +511,25 @@ Observed test locations include:
 - `util/date_util_test.go`
 - `util/http_util_test.go`
 - `service/cash_flow_service/*_test.go`
+- `service/category_service/*_test.go`
 - `service/manage_service/*_test.go`
+- `service/refresh_token_service/refresh_token_test.go`
+- `service/statistic_service/*_test.go`
+- `service/user_service/*_test.go`
+- `service/verification_service/*_test.go`
 
 Before relying on a refactor, check whether the affected path is covered. In many areas, manual verification is still necessary.
+
+Unit test guidance:
+
+- Unit tests should be deterministic and should not create, delete, or mutate real files or database data
+- Prefer in-memory fakes/stubs and package-local dependency seams for mapper, email, token, time, randomness, and other side effects
+- If code structure blocks practical unit testing, refactor the source code to expose a small testable seam while preserving business logic, API contracts, persistence behavior, and error semantics
+- Keep live database and filesystem verification in integration/smoke checks, not unit tests
+- Service-layer code should use constructor-based dependency injection for mappers; package-level functions may remain for compatibility, but should delegate to default service instances
+- Service unit tests should instantiate service structs with in-memory fake mapper implementations instead of overriding mapper globals
+- Mapper integration tests should be isolated from normal unit tests, use explicit integration naming/build tags or scripts, and run only against disposable test databases
+- API integration tests should exercise controller-to-database behavior separately from `go test ./...`, for example through the smoke script against Docker-backed services
 
 CLI statistic import/export note: `cmd/statistic_cmd/export.go` and `cmd/statistic_cmd/import.go` accept `--user`, but currently fall back to `user_service.GetDefaultAdminUserId()` when it is omitted. Treat this as a development convenience, not a finished multi-user CLI auth story.
 
@@ -538,6 +567,9 @@ go build -o cashlenx main.go
 
 # Run all tests
 go test ./...
+
+# Run API smoke flow against a running local server
+BASE_URL=http://localhost:8080/api/v0 scripts/smoke-api.sh
 ```
 
 ## Guidelines For Future Changes
@@ -557,11 +589,10 @@ When adding or changing a feature:
 Use this section as a lightweight backlog of mismatches between implementation, docs, tooling, and intended architecture. Keep it factual and safe to commit.
 
 - [ ] Keep `README.md`, `docs/openapi.yaml`, `docs/roadmap.md`, and `model/version.go` synchronized when the active milestone or API contract changes
-- [ ] Treat `/open/auth/logout` as a compatibility path that currently requires authenticated user context; reconsider route naming before stable `/api/v1`
+- [x] Treat `/open/auth/logout` as a public idempotent compatibility path; it only revokes sessions when a valid token is supplied
 - [ ] Treat `/auth/tokens` as authenticated token-management API; keep OpenAPI/docs explicit about its auth expectation
 - [ ] Smoke test SMTP-backed password reset and email-change flows with a real provider before beta
 - [ ] Decide on the future provider strategy for email delivery, likely a third-party provider such as Mailgun, and document the intended integration approach
-- [ ] Implement `mapper/verification_code_mapper/mysql_mapper.go` before claiming password reset or email-change verification support on MySQL
 - [ ] Replace statistic CLI import/export default-admin fallback with an explicit user/auth model before treating those commands as production-ready multi-user workflows
 - [ ] Expand CI and/or local verification to cover more than `./errors` and `./validation`, especially DB-backed service paths as the project matures
 - [ ] Review legacy DB helper behavior that still uses package-global state plus `panic`/`log.Fatal`, and gradually normalize error handling

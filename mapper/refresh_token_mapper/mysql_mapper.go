@@ -17,7 +17,7 @@ type RefreshTokenMySqlMapper struct{}
 // CreateToken creates a new refresh token in MySQL
 func (m RefreshTokenMySqlMapper) CreateToken(token model.RefreshToken) string {
 	// Create the SQL query
-	query := `INSERT INTO auth_token_refresh (id, user_id, token, expires_at, 
+	query := `INSERT INTO ` + database.RefreshTokenTableName + ` (id, user_id, token, expires_at,
 		device_id, device_name, ip_address, user_agent,
 		create_time, create_user_id, update_time, update_user_id, is_delete) 
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
@@ -62,7 +62,7 @@ func (m RefreshTokenMySqlMapper) GetTokenByToken(tokenStr string) model.RefreshT
 	// Create the SQL query
 	query := `SELECT id, user_id, token, expires_at, create_time, create_user_id, revoked_at, revoked_by,
 		device_id, device_name, ip_address, user_agent, update_time, update_user_id 
-		FROM auth_token_refresh WHERE token = ? AND (revoked_at IS NULL OR revoked_at > ?)`
+		FROM ` + database.RefreshTokenTableName + ` WHERE token = ? AND (revoked_at IS NULL OR revoked_at > ?)`
 
 	// Get database connection
 	connection := database.GetMySqlConnection()
@@ -133,7 +133,7 @@ func (m RefreshTokenMySqlMapper) GetTokenByToken(tokenStr string) model.RefreshT
 // RevokeToken revokes a refresh token by its token string
 func (m RefreshTokenMySqlMapper) RevokeToken(tokenStr string, revokedBy string) error {
 	// Create the SQL query
-	query := `UPDATE auth_token_refresh SET revoked_at = ?, revoked_by = ?, update_time = ?, update_user_id = ? WHERE token = ?`
+	query := `UPDATE ` + database.RefreshTokenTableName + ` SET revoked_at = ?, revoked_by = ?, update_time = ?, update_user_id = ? WHERE token = ?`
 
 	// Get database connection
 	connection := database.GetMySqlConnection()
@@ -165,7 +165,7 @@ func (m RefreshTokenMySqlMapper) RevokeToken(tokenStr string, revokedBy string) 
 // RevokeAllTokensByUserId revokes all refresh tokens for a user
 func (m RefreshTokenMySqlMapper) RevokeAllTokensByUserId(userId string) error {
 	// Create the SQL query
-	query := `UPDATE auth_token_refresh SET revoked_at = ?, revoked_by = ?, update_time = ?, update_user_id = ? WHERE user_id = ? AND revoked_at IS NULL`
+	query := `UPDATE ` + database.RefreshTokenTableName + ` SET revoked_at = ?, revoked_by = ?, update_time = ?, update_user_id = ? WHERE user_id = ? AND revoked_at IS NULL`
 
 	// Get database connection
 	connection := database.GetMySqlConnection()
@@ -190,7 +190,7 @@ func (m RefreshTokenMySqlMapper) GetTokensByUserId(userId string) []model.Refres
 	// Create the SQL query
 	query := `SELECT id, user_id, token, expires_at, create_time, create_user_id, revoked_at, revoked_by,
 		device_id, device_name, ip_address, user_agent, update_time, update_user_id
-		FROM auth_token_refresh 
+		FROM ` + database.RefreshTokenTableName + `
 		WHERE user_id = ? 
 		ORDER BY create_time DESC`
 

@@ -6,8 +6,6 @@ import (
 	"strings"
 
 	"github.com/jung-kurt/gofpdf"
-	"github.com/macar-x/cashlenx-server/mapper/cash_flow_mapper"
-	"github.com/macar-x/cashlenx-server/mapper/category_mapper"
 	"github.com/macar-x/cashlenx-server/util"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -15,6 +13,10 @@ import (
 // ExportToPDFForUser exports the user's cash flow data to PDF file
 // Only exports data belonging to the specified user
 func ExportToPDFForUser(fromDateInString, toDateInString, filePath, userId string) error {
+	return defaultStatisticService().ExportToPDFForUser(fromDateInString, toDateInString, filePath, userId)
+}
+
+func (s *StatisticService) ExportToPDFForUser(fromDateInString, toDateInString, filePath, userId string) error {
 	if filePath == "" {
 		filePath = "./export.pdf"
 	}
@@ -73,7 +75,7 @@ func ExportToPDFForUser(fromDateInString, toDateInString, filePath, userId strin
 		offset := 0
 
 		for {
-			cashFlows := cash_flow_mapper.INSTANCE.GetAllCashFlowsByUser(userObjectId, limit, offset)
+			cashFlows := s.cashFlowMapper.GetAllCashFlowsByUser(userObjectId, limit, offset)
 			if len(cashFlows) == 0 {
 				break
 			}
@@ -94,7 +96,7 @@ func ExportToPDFForUser(fromDateInString, toDateInString, filePath, userId strin
 
 				categoryName := "Unknown"
 				categoryType := ""
-				categoryEntity := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(cashFlow.CategoryId.Hex(), userObjectId)
+				categoryEntity := s.categoryMapper.GetCategoryByObjectIdAndUser(cashFlow.CategoryId.Hex(), userObjectId)
 				if !categoryEntity.IsEmpty() {
 					categoryName = categoryEntity.Name
 					categoryType = categoryEntity.Type
@@ -138,7 +140,7 @@ func ExportToPDFForUser(fromDateInString, toDateInString, filePath, userId strin
 		queryDateEnded := util.FormatDateFromStringWithoutDash(toDateInString).AddDate(0, 0, 1)
 
 		for queryDateEnded.After(queryDateCurrent) {
-			cashFlowArray := cash_flow_mapper.INSTANCE.GetCashFlowsByBelongsDateAndUser(queryDateCurrent, userObjectId)
+			cashFlowArray := s.cashFlowMapper.GetCashFlowsByBelongsDateAndUser(queryDateCurrent, userObjectId)
 
 			for _, cashFlow := range cashFlowArray {
 				// Create new page if needed
@@ -156,7 +158,7 @@ func ExportToPDFForUser(fromDateInString, toDateInString, filePath, userId strin
 
 				categoryName := "Unknown"
 				categoryType := ""
-				categoryEntity := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(cashFlow.CategoryId.Hex(), userObjectId)
+				categoryEntity := s.categoryMapper.GetCategoryByObjectIdAndUser(cashFlow.CategoryId.Hex(), userObjectId)
 				if !categoryEntity.IsEmpty() {
 					categoryName = categoryEntity.Name
 					categoryType = categoryEntity.Type

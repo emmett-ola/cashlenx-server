@@ -2,11 +2,9 @@ package cash_flow_service
 
 import (
 	"errors"
-	"github.com/macar-x/cashlenx-server/mapper/category_mapper"
 	"reflect"
 	"time"
 
-	"github.com/macar-x/cashlenx-server/mapper/cash_flow_mapper"
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/util"
 	"github.com/macar-x/cashlenx-server/validation"
@@ -35,17 +33,21 @@ func IsDeleteFieldsConflicted(plainId, belongsDate string) bool {
 }
 
 func DeleteById(plainId string) (model.CashFlowEntity, error) {
+	return defaultCashFlowService().DeleteById(plainId)
+}
+
+func (s *CashFlowService) DeleteById(plainId string) (model.CashFlowEntity, error) {
 	// Validate ID
 	if err := validation.ValidateID(plainId); err != nil {
 		return model.CashFlowEntity{}, err
 	}
 
-	existCashFlowEntity := cash_flow_mapper.INSTANCE.GetCashFlowByObjectId(plainId)
+	existCashFlowEntity := s.cashFlowMapper.GetCashFlowByObjectId(plainId)
 	if existCashFlowEntity.IsEmpty() {
 		return model.CashFlowEntity{}, errors.New("cash_flow not found")
 	}
 
-	existCashFlowEntity = cash_flow_mapper.INSTANCE.DeleteCashFlowByObjectId(plainId)
+	existCashFlowEntity = s.cashFlowMapper.DeleteCashFlowByObjectId(plainId)
 	if existCashFlowEntity.IsEmpty() {
 		return model.CashFlowEntity{}, errors.New("cash_flow delete failed")
 	}
@@ -53,6 +55,10 @@ func DeleteById(plainId string) (model.CashFlowEntity, error) {
 }
 
 func DeleteByDate(belongsDate string) ([]model.CashFlowEntity, error) {
+	return defaultCashFlowService().DeleteByDate(belongsDate)
+}
+
+func (s *CashFlowService) DeleteByDate(belongsDate string) ([]model.CashFlowEntity, error) {
 	// Validate date
 	if err := validation.ValidateDate(belongsDate); err != nil {
 		return []model.CashFlowEntity{}, err
@@ -63,12 +69,16 @@ func DeleteByDate(belongsDate string) ([]model.CashFlowEntity, error) {
 		return []model.CashFlowEntity{}, errors.New("belongs_date error, try format like 19700101")
 	}
 
-	cashFlowList := cash_flow_mapper.INSTANCE.DeleteCashFlowByBelongsDate(deleteDate)
+	cashFlowList := s.cashFlowMapper.DeleteCashFlowByBelongsDate(deleteDate)
 	return cashFlowList, nil
 }
 
 // DeleteByIdForUser deletes a cash flow by ID, ensuring it belongs to the user
 func DeleteByIdForUser(plainId string, userId string) (model.CashFlowEntity, error) {
+	return defaultCashFlowService().DeleteByIdForUser(plainId, userId)
+}
+
+func (s *CashFlowService) DeleteByIdForUser(plainId string, userId string) (model.CashFlowEntity, error) {
 	// Validate ID
 	if err := validation.ValidateID(plainId); err != nil {
 		return model.CashFlowEntity{}, err
@@ -81,19 +91,19 @@ func DeleteByIdForUser(plainId string, userId string) (model.CashFlowEntity, err
 	}
 
 	// Check if it exists and belongs to user
-	existCashFlowEntity := cash_flow_mapper.INSTANCE.GetCashFlowByObjectIdAndUser(plainId, userObjectId)
+	existCashFlowEntity := s.cashFlowMapper.GetCashFlowByObjectIdAndUser(plainId, userObjectId)
 	if existCashFlowEntity.IsEmpty() {
 		return model.CashFlowEntity{}, errors.New("cash_flow not found or access denied")
 	}
 
 	// Delete it
-	deletedEntity := cash_flow_mapper.INSTANCE.DeleteCashFlowByObjectIdAndUser(plainId, userObjectId)
+	deletedEntity := s.cashFlowMapper.DeleteCashFlowByObjectIdAndUser(plainId, userObjectId)
 	if deletedEntity.IsEmpty() {
 		return model.CashFlowEntity{}, errors.New("cash_flow delete failed")
 	}
 
 	// Populate category info for return value
-	category := category_mapper.INSTANCE.GetCategoryByObjectId(deletedEntity.CategoryId.Hex())
+	category := s.categoryMapper.GetCategoryByObjectId(deletedEntity.CategoryId.Hex())
 	if !category.IsEmpty() {
 		deletedEntity.CategoryName = category.Name
 		deletedEntity.CategoryType = category.Type
@@ -106,6 +116,10 @@ func DeleteByIdForUser(plainId string, userId string) (model.CashFlowEntity, err
 
 // DeleteByDateForUser deletes cash flows for a specific date for the user
 func DeleteByDateForUser(belongsDate string, userId string) ([]model.CashFlowEntity, error) {
+	return defaultCashFlowService().DeleteByDateForUser(belongsDate, userId)
+}
+
+func (s *CashFlowService) DeleteByDateForUser(belongsDate string, userId string) ([]model.CashFlowEntity, error) {
 	// Validate date
 	if err := validation.ValidateDate(belongsDate); err != nil {
 		return []model.CashFlowEntity{}, err
@@ -123,12 +137,12 @@ func DeleteByDateForUser(belongsDate string, userId string) ([]model.CashFlowEnt
 		return []model.CashFlowEntity{}, errors.New("belongs_date error, try format like 19700101")
 	}
 
-	cashFlowList := cash_flow_mapper.INSTANCE.DeleteCashFlowsByBelongsDateAndUser(deleteDate, userObjectId)
+	cashFlowList := s.cashFlowMapper.DeleteCashFlowsByBelongsDateAndUser(deleteDate, userObjectId)
 
 	// Populate category info for each deleted item
 	for i := range cashFlowList {
 		entity := &cashFlowList[i]
-		category := category_mapper.INSTANCE.GetCategoryByObjectId(entity.CategoryId.Hex())
+		category := s.categoryMapper.GetCategoryByObjectId(entity.CategoryId.Hex())
 		if !category.IsEmpty() {
 			entity.CategoryName = category.Name
 			entity.CategoryType = category.Type

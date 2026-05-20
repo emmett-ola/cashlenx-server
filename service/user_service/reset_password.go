@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/macar-x/cashlenx-server/errors"
-	"github.com/macar-x/cashlenx-server/mapper/user_mapper"
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/service/verification_service"
 	"github.com/macar-x/cashlenx-server/util"
@@ -21,9 +20,9 @@ func RequestPasswordReset(emailOrUsername string, ipAddress string) error {
 	user = GetUserByUsername(emailOrUsername)
 	if user.Id.IsZero() {
 		// Try email
-		user = user_mapper.INSTANCE.GetUserByEmail(emailOrUsername)
+		user = userRepo.GetUserByEmail(emailOrUsername)
 	}
-	
+
 	if user.Id.IsZero() {
 		// If user not found, return nil (security best practice: do not reveal user existence)
 		return nil
@@ -121,7 +120,7 @@ func ConfirmPasswordReset(token string, newPassword string) error {
 	user.UpdateTime = util.GetCurrentTime()
 
 	// Save updated user
-	updatedUser := user_mapper.INSTANCE.UpdateUserByEntity(user.Id.Hex(), user)
+	updatedUser := userRepo.UpdateUserByEntity(user.Id.Hex(), user)
 	if updatedUser.Id.IsZero() {
 		return errors.NewInternalError("failed to update password", nil)
 	}
@@ -130,6 +129,6 @@ func ConfirmPasswordReset(token string, newPassword string) error {
 	verification_service.InvalidateToken(token)
 
 	// Note: We are no longer deleting tokens from DB since we use in-memory store
-	
+
 	return nil
 }

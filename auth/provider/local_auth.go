@@ -197,14 +197,8 @@ func (s *LocalAuthService) Middleware(next http.Handler) http.Handler {
 		// util.Logger.Debugw("Auth middleware", "path", path, "apiPrefix", apiPrefix, "isPublic", strings.HasPrefix(path, apiPrefix+"/open/"))
 
 		if strings.HasPrefix(path, apiPrefix+"/open/") {
-			// Exception for logout: although it's in /open/, it should still check auth if header is present
-			// but fail if missing (per user request to handle it like other auth-required APIs)
-			if strings.HasSuffix(path, "/auth/logout") {
-				// Fall through to auth check logic below
-			} else {
-				next.ServeHTTP(w, r)
-				return
-			}
+			next.ServeHTTP(w, r)
+			return
 		}
 
 		// Extract token from Authorization header
