@@ -201,6 +201,47 @@ paths:
         '400':
           $ref: '#/components/responses/WrappedResponse'
 
+  /user/configuration:
+    get:
+      summary: Get current user configuration profile
+      operationId: getUserConfiguration
+      tags: [User]
+      responses:
+        '200':
+          $ref: '#/components/responses/WrappedResponse'
+        '401':
+          $ref: '#/components/responses/WrappedResponse'
+    post:
+      summary: Create or update current user configuration profile
+      operationId: createUserConfiguration
+      tags: [User]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserConfigurationRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/WrappedResponse'
+        '400':
+          $ref: '#/components/responses/WrappedResponse'
+    put:
+      summary: Update current user configuration profile
+      operationId: updateUserConfiguration
+      tags: [User]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserConfigurationRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/WrappedResponse'
+        '400':
+          $ref: '#/components/responses/WrappedResponse'
+
   /user/password:
     put:
       summary: Change current user password
@@ -1219,6 +1260,26 @@ components:
         gender:
           type: string
           enum: [male, female, others, ""]
+
+    UserConfigurationRequest:
+      type: object
+      properties:
+        display_language:
+          type: string
+          minLength: 1
+          maxLength: 20
+          example: en
+        currency_code:
+          type: string
+          minLength: 3
+          maxLength: 3
+          pattern: '^[A-Za-z]{3}$'
+          example: HKD
+        active_theme_color:
+          type: string
+          minLength: 1
+          maxLength: 50
+          example: '#2563eb'
 
     UserChangePasswordRequest:
       type: object

@@ -64,6 +64,9 @@ User and admin:
 
 - `GET /user/profile`
 - `PUT /user/profile`
+- `GET /user/configuration`
+- `POST /user/configuration`
+- `PUT /user/configuration`
 - `PUT /user/password`
 - `POST /user/email/change`
 - `POST /user/email/confirm`

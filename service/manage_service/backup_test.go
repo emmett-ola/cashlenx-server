@@ -8,6 +8,7 @@ import (
 
 	"github.com/macar-x/cashlenx-server/mapper/cash_flow_mapper"
 	"github.com/macar-x/cashlenx-server/mapper/category_mapper"
+	"github.com/macar-x/cashlenx-server/mapper/user_config_mapper"
 	"github.com/macar-x/cashlenx-server/mapper/user_mapper"
 	"github.com/macar-x/cashlenx-server/model"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -17,91 +18,230 @@ import (
 type MockUserMapper struct {
 	users []model.UserEntity
 }
+
 func (m MockUserMapper) GetUserByObjectId(plainId string) model.UserEntity { return model.UserEntity{} }
-func (m MockUserMapper) GetUserByUsername(username string) model.UserEntity { return model.UserEntity{} }
-func (m MockUserMapper) GetUserByUsernameIncludeDeleted(username string) model.UserEntity { return model.UserEntity{} }
-func (m MockUserMapper) GetUserByEmail(email string) model.UserEntity { return model.UserEntity{} }
+func (m MockUserMapper) GetUserByUsername(username string) model.UserEntity {
+	return model.UserEntity{}
+}
+func (m MockUserMapper) GetUserByUsernameIncludeDeleted(username string) model.UserEntity {
+	return model.UserEntity{}
+}
+func (m MockUserMapper) GetUserByEmail(email string) model.UserEntity         { return model.UserEntity{} }
 func (m MockUserMapper) InsertUserByEntity(newEntity model.UserEntity) string { return "" }
-func (m MockUserMapper) UpdateUserByEntity(plainId string, updatedEntity model.UserEntity) model.UserEntity { return model.UserEntity{} }
-func (m MockUserMapper) GetAllUsers(limit, offset int) []model.UserEntity { return []model.UserEntity{} }
-func (m MockUserMapper) GetAllUsersIncludeDeleted(limit, offset int) []model.UserEntity { return m.users }
+func (m MockUserMapper) UpdateUserByEntity(plainId string, updatedEntity model.UserEntity) model.UserEntity {
+	return model.UserEntity{}
+}
+func (m MockUserMapper) GetAllUsers(limit, offset int) []model.UserEntity {
+	return []model.UserEntity{}
+}
+func (m MockUserMapper) GetAllUsersIncludeDeleted(limit, offset int) []model.UserEntity {
+	return m.users
+}
 func (m MockUserMapper) GetUsersByRole(role string) []model.UserEntity { return []model.UserEntity{} }
-func (m MockUserMapper) CountAllUsers() int64 { return 0 }
-func (m MockUserMapper) DeleteUserByObjectId(plainId string) model.UserEntity { return model.UserEntity{} }
+func (m MockUserMapper) CountAllUsers() int64                          { return 0 }
+func (m MockUserMapper) DeleteUserByObjectId(plainId string) model.UserEntity {
+	return model.UserEntity{}
+}
 func (m MockUserMapper) TruncateUsers() error { return nil }
 
 // MockCategoryMapper
 type MockBackupCategoryMapper struct {
 	categories []model.CategoryEntity
 }
-func (m MockBackupCategoryMapper) GetCategoryByObjectId(plainId string) model.CategoryEntity { return model.CategoryEntity{} }
-func (m MockBackupCategoryMapper) GetCategoryByName(categoryName string) model.CategoryEntity { return model.CategoryEntity{} }
-func (m MockBackupCategoryMapper) GetCategoryByParentId(parentPlainId string) []model.CategoryEntity { return []model.CategoryEntity{} }
-func (m MockBackupCategoryMapper) InsertCategoryByEntity(newEntity model.CategoryEntity) string { return "" }
-func (m MockBackupCategoryMapper) UpdateCategoryByEntity(plainId string, updatedEntity model.CategoryEntity) model.CategoryEntity { return model.CategoryEntity{} }
-func (m MockBackupCategoryMapper) GetAllCategories(limit, offset int) []model.CategoryEntity { return []model.CategoryEntity{} }
-func (m MockBackupCategoryMapper) GetAllCategoriesIncludeDeleted(limit, offset int) []model.CategoryEntity { return m.categories }
-func (m MockBackupCategoryMapper) CountAllCategories() int64 { return 0 }
-func (m MockBackupCategoryMapper) CountCategoriesByUserAndType(userId primitive.ObjectID, categoryType string) (int64, error) { return 0, nil }
-func (m MockBackupCategoryMapper) DeleteCategoryByObjectId(plainId string) model.CategoryEntity { return model.CategoryEntity{} }
-func (m MockBackupCategoryMapper) TruncateCategories() error { return nil }
-func (m MockBackupCategoryMapper) GetAllCategoriesByUser(userId primitive.ObjectID, limit, offset int) []model.CategoryEntity { return []model.CategoryEntity{} }
-func (m MockBackupCategoryMapper) GetCategoryByObjectIdAndUser(id string, userId primitive.ObjectID) model.CategoryEntity { return model.CategoryEntity{} }
-func (m MockBackupCategoryMapper) CountAllCategoriesByUser(userId primitive.ObjectID) int64 { return 0 }
-func (m MockBackupCategoryMapper) GetCategoriesByUserAndType(userId primitive.ObjectID, categoryType string, limit, offset int) ([]model.CategoryEntity, error) { return []model.CategoryEntity{}, nil }
-func (m MockBackupCategoryMapper) GetRootCategoriesByUser(userId primitive.ObjectID) ([]model.CategoryEntity, error) { return []model.CategoryEntity{}, nil }
-func (m MockBackupCategoryMapper) GetRootCategoriesByUserAndType(userId primitive.ObjectID, categoryType string) ([]model.CategoryEntity, error) { return []model.CategoryEntity{}, nil }
-func (m MockBackupCategoryMapper) GetCategoriesByParentIdAndUser(parentId primitive.ObjectID, userId primitive.ObjectID) ([]model.CategoryEntity, error) { return []model.CategoryEntity{}, nil }
-func (m MockBackupCategoryMapper) GetCategoriesByParentIdUserAndType(parentId primitive.ObjectID, userId primitive.ObjectID, categoryType string) ([]model.CategoryEntity, error) { return []model.CategoryEntity{}, nil }
-func (m MockBackupCategoryMapper) GetCategoryByNameAndUser(categoryName string, userId primitive.ObjectID) model.CategoryEntity { return model.CategoryEntity{} }
-func (m MockBackupCategoryMapper) GetCategoryByNameUserAndType(categoryName string, userId primitive.ObjectID, categoryType string) model.CategoryEntity { return model.CategoryEntity{} }
-func (m MockBackupCategoryMapper) GetCategoryByNameUserTypeAndParent(categoryName string, userId primitive.ObjectID, categoryType string, parentId primitive.ObjectID) model.CategoryEntity { return model.CategoryEntity{} }
-func (m MockBackupCategoryMapper) DeleteCategoryByObjectIdAndUser(plainId string, userId primitive.ObjectID) model.CategoryEntity { return model.CategoryEntity{} }
-func (m MockBackupCategoryMapper) UpdateCategoryByEntityAndUser(plainId string, updatedEntity model.CategoryEntity, userId primitive.ObjectID) model.CategoryEntity { return model.CategoryEntity{} }
-func (m MockBackupCategoryMapper) GetAllCategoriesByUserIncludeDeleted(userId primitive.ObjectID) []model.CategoryEntity { return []model.CategoryEntity{} }
-func (m MockBackupCategoryMapper) DeleteAllCategoriesByUser(userId primitive.ObjectID) (int64, error) { return 0, nil }
 
+func (m MockBackupCategoryMapper) GetCategoryByObjectId(plainId string) model.CategoryEntity {
+	return model.CategoryEntity{}
+}
+func (m MockBackupCategoryMapper) GetCategoryByName(categoryName string) model.CategoryEntity {
+	return model.CategoryEntity{}
+}
+func (m MockBackupCategoryMapper) GetCategoryByParentId(parentPlainId string) []model.CategoryEntity {
+	return []model.CategoryEntity{}
+}
+func (m MockBackupCategoryMapper) InsertCategoryByEntity(newEntity model.CategoryEntity) string {
+	return ""
+}
+func (m MockBackupCategoryMapper) UpdateCategoryByEntity(plainId string, updatedEntity model.CategoryEntity) model.CategoryEntity {
+	return model.CategoryEntity{}
+}
+func (m MockBackupCategoryMapper) GetAllCategories(limit, offset int) []model.CategoryEntity {
+	return []model.CategoryEntity{}
+}
+func (m MockBackupCategoryMapper) GetAllCategoriesIncludeDeleted(limit, offset int) []model.CategoryEntity {
+	return m.categories
+}
+func (m MockBackupCategoryMapper) CountAllCategories() int64 { return 0 }
+func (m MockBackupCategoryMapper) CountCategoriesByUserAndType(userId primitive.ObjectID, categoryType string) (int64, error) {
+	return 0, nil
+}
+func (m MockBackupCategoryMapper) DeleteCategoryByObjectId(plainId string) model.CategoryEntity {
+	return model.CategoryEntity{}
+}
+func (m MockBackupCategoryMapper) TruncateCategories() error { return nil }
+func (m MockBackupCategoryMapper) GetAllCategoriesByUser(userId primitive.ObjectID, limit, offset int) []model.CategoryEntity {
+	return []model.CategoryEntity{}
+}
+func (m MockBackupCategoryMapper) GetCategoryByObjectIdAndUser(id string, userId primitive.ObjectID) model.CategoryEntity {
+	return model.CategoryEntity{}
+}
+func (m MockBackupCategoryMapper) CountAllCategoriesByUser(userId primitive.ObjectID) int64 { return 0 }
+func (m MockBackupCategoryMapper) GetCategoriesByUserAndType(userId primitive.ObjectID, categoryType string, limit, offset int) ([]model.CategoryEntity, error) {
+	return []model.CategoryEntity{}, nil
+}
+func (m MockBackupCategoryMapper) GetRootCategoriesByUser(userId primitive.ObjectID) ([]model.CategoryEntity, error) {
+	return []model.CategoryEntity{}, nil
+}
+func (m MockBackupCategoryMapper) GetRootCategoriesByUserAndType(userId primitive.ObjectID, categoryType string) ([]model.CategoryEntity, error) {
+	return []model.CategoryEntity{}, nil
+}
+func (m MockBackupCategoryMapper) GetCategoriesByParentIdAndUser(parentId primitive.ObjectID, userId primitive.ObjectID) ([]model.CategoryEntity, error) {
+	return []model.CategoryEntity{}, nil
+}
+func (m MockBackupCategoryMapper) GetCategoriesByParentIdUserAndType(parentId primitive.ObjectID, userId primitive.ObjectID, categoryType string) ([]model.CategoryEntity, error) {
+	return []model.CategoryEntity{}, nil
+}
+func (m MockBackupCategoryMapper) GetCategoryByNameAndUser(categoryName string, userId primitive.ObjectID) model.CategoryEntity {
+	return model.CategoryEntity{}
+}
+func (m MockBackupCategoryMapper) GetCategoryByNameUserAndType(categoryName string, userId primitive.ObjectID, categoryType string) model.CategoryEntity {
+	return model.CategoryEntity{}
+}
+func (m MockBackupCategoryMapper) GetCategoryByNameUserTypeAndParent(categoryName string, userId primitive.ObjectID, categoryType string, parentId primitive.ObjectID) model.CategoryEntity {
+	return model.CategoryEntity{}
+}
+func (m MockBackupCategoryMapper) DeleteCategoryByObjectIdAndUser(plainId string, userId primitive.ObjectID) model.CategoryEntity {
+	return model.CategoryEntity{}
+}
+func (m MockBackupCategoryMapper) UpdateCategoryByEntityAndUser(plainId string, updatedEntity model.CategoryEntity, userId primitive.ObjectID) model.CategoryEntity {
+	return model.CategoryEntity{}
+}
+func (m MockBackupCategoryMapper) GetAllCategoriesByUserIncludeDeleted(userId primitive.ObjectID) []model.CategoryEntity {
+	return []model.CategoryEntity{}
+}
+func (m MockBackupCategoryMapper) DeleteAllCategoriesByUser(userId primitive.ObjectID) (int64, error) {
+	return 0, nil
+}
 
 // MockCashFlowMapper
 type MockCashFlowMapper struct {
 	cashFlows []model.CashFlowEntity
 }
-func (m MockCashFlowMapper) GetCashFlowByObjectId(plainId string) model.CashFlowEntity { return model.CashFlowEntity{} }
+
+func (m MockCashFlowMapper) GetCashFlowByObjectId(plainId string) model.CashFlowEntity {
+	return model.CashFlowEntity{}
+}
 func (m MockCashFlowMapper) InsertCashFlowByEntity(newEntity model.CashFlowEntity) string { return "" }
-func (m MockCashFlowMapper) BulkInsertCashFlows(newEntities []model.CashFlowEntity) ([]string, error) { return []string{}, nil }
-func (m MockCashFlowMapper) UpdateCashFlowByEntity(plainId string, updatedEntity model.CashFlowEntity) model.CashFlowEntity { return model.CashFlowEntity{} }
-func (m MockCashFlowMapper) GetAllCashFlows(limit, offset int) []model.CashFlowEntity { return []model.CashFlowEntity{} }
-func (m MockCashFlowMapper) GetAllCashFlowsIncludeDeleted(limit, offset int) []model.CashFlowEntity { return m.cashFlows }
+func (m MockCashFlowMapper) BulkInsertCashFlows(newEntities []model.CashFlowEntity) ([]string, error) {
+	return []string{}, nil
+}
+func (m MockCashFlowMapper) UpdateCashFlowByEntity(plainId string, updatedEntity model.CashFlowEntity) model.CashFlowEntity {
+	return model.CashFlowEntity{}
+}
+func (m MockCashFlowMapper) GetAllCashFlows(limit, offset int) []model.CashFlowEntity {
+	return []model.CashFlowEntity{}
+}
+func (m MockCashFlowMapper) GetAllCashFlowsIncludeDeleted(limit, offset int) []model.CashFlowEntity {
+	return m.cashFlows
+}
 func (m MockCashFlowMapper) CountAllCashFlows() int64 { return 0 }
-func (m MockCashFlowMapper) DeleteCashFlowByObjectId(plainId string) model.CashFlowEntity { return model.CashFlowEntity{} }
+func (m MockCashFlowMapper) DeleteCashFlowByObjectId(plainId string) model.CashFlowEntity {
+	return model.CashFlowEntity{}
+}
 func (m MockCashFlowMapper) TruncateCashFlows() error { return nil }
-func (m MockCashFlowMapper) GetAllCashFlowsByUser(userId primitive.ObjectID, limit, offset int) []model.CashFlowEntity { return []model.CashFlowEntity{} }
-func (m MockCashFlowMapper) GetCashFlowByObjectIdAndUser(id string, userId primitive.ObjectID) model.CashFlowEntity { return model.CashFlowEntity{} }
-func (m MockCashFlowMapper) GetCashFlowsByCategoryIdAndUser(categoryId string, userId primitive.ObjectID) []model.CashFlowEntity { return []model.CashFlowEntity{} }
-func (m MockCashFlowMapper) GetCashFlowsByDateRangeAndUser(startDate, endDate time.Time, userId primitive.ObjectID) []model.CashFlowEntity { return []model.CashFlowEntity{} }
+func (m MockCashFlowMapper) GetAllCashFlowsByUser(userId primitive.ObjectID, limit, offset int) []model.CashFlowEntity {
+	return []model.CashFlowEntity{}
+}
+func (m MockCashFlowMapper) GetCashFlowByObjectIdAndUser(id string, userId primitive.ObjectID) model.CashFlowEntity {
+	return model.CashFlowEntity{}
+}
+func (m MockCashFlowMapper) GetCashFlowsByCategoryIdAndUser(categoryId string, userId primitive.ObjectID) []model.CashFlowEntity {
+	return []model.CashFlowEntity{}
+}
+func (m MockCashFlowMapper) GetCashFlowsByDateRangeAndUser(startDate, endDate time.Time, userId primitive.ObjectID) []model.CashFlowEntity {
+	return []model.CashFlowEntity{}
+}
 func (m MockCashFlowMapper) CountAllCashFlowsByUser(userId primitive.ObjectID) int64 { return 0 }
-func (m MockCashFlowMapper) GetCashFlowsByObjectIdArray(plainIdList []string) []model.CashFlowEntity { return []model.CashFlowEntity{} }
-func (m MockCashFlowMapper) GetCashFlowsByBelongsDate(belongsDate time.Time) []model.CashFlowEntity { return []model.CashFlowEntity{} }
-func (m MockCashFlowMapper) DeleteCashFlowByBelongsDate(belongsDate time.Time) []model.CashFlowEntity { return []model.CashFlowEntity{} }
-func (m MockCashFlowMapper) GetCashFlowsByBelongsDateAndUser(belongsDate time.Time, userId primitive.ObjectID) []model.CashFlowEntity { return []model.CashFlowEntity{} }
-func (m MockCashFlowMapper) DeleteCashFlowByObjectIdAndUser(plainId string, userId primitive.ObjectID) model.CashFlowEntity { return model.CashFlowEntity{} }
-func (m MockCashFlowMapper) DeleteCashFlowsByBelongsDateAndUser(belongsDate time.Time, userId primitive.ObjectID) []model.CashFlowEntity { return []model.CashFlowEntity{} }
-func (m MockCashFlowMapper) DeleteCashFlowsByCategoryIdAndUser(categoryPlainId string, userId primitive.ObjectID) int64 { return 0 }
-func (m MockCashFlowMapper) UpdateCashFlowByEntityAndUser(plainId string, updatedEntity model.CashFlowEntity, userId primitive.ObjectID) model.CashFlowEntity { return model.CashFlowEntity{} }
-func (m MockCashFlowMapper) GetCashFlowsByFilter(filter model.CashFlowFilter) ([]model.CashFlowEntity, error) { return []model.CashFlowEntity{}, nil }
-func (m MockCashFlowMapper) CountCashFlowsByFilter(filter model.CashFlowFilter) (int64, error) { return 0, nil }
-func (m MockCashFlowMapper) GetAllCashFlowsByUserIncludeDeleted(userId primitive.ObjectID) []model.CashFlowEntity { return []model.CashFlowEntity{} }
-func (m MockCashFlowMapper) DeleteAllCashFlowsByUser(userId primitive.ObjectID) (int64, error) { return 0, nil }
+func (m MockCashFlowMapper) GetCashFlowsByObjectIdArray(plainIdList []string) []model.CashFlowEntity {
+	return []model.CashFlowEntity{}
+}
+func (m MockCashFlowMapper) GetCashFlowsByBelongsDate(belongsDate time.Time) []model.CashFlowEntity {
+	return []model.CashFlowEntity{}
+}
+func (m MockCashFlowMapper) DeleteCashFlowByBelongsDate(belongsDate time.Time) []model.CashFlowEntity {
+	return []model.CashFlowEntity{}
+}
+func (m MockCashFlowMapper) GetCashFlowsByBelongsDateAndUser(belongsDate time.Time, userId primitive.ObjectID) []model.CashFlowEntity {
+	return []model.CashFlowEntity{}
+}
+func (m MockCashFlowMapper) DeleteCashFlowByObjectIdAndUser(plainId string, userId primitive.ObjectID) model.CashFlowEntity {
+	return model.CashFlowEntity{}
+}
+func (m MockCashFlowMapper) DeleteCashFlowsByBelongsDateAndUser(belongsDate time.Time, userId primitive.ObjectID) []model.CashFlowEntity {
+	return []model.CashFlowEntity{}
+}
+func (m MockCashFlowMapper) DeleteCashFlowsByCategoryIdAndUser(categoryPlainId string, userId primitive.ObjectID) int64 {
+	return 0
+}
+func (m MockCashFlowMapper) UpdateCashFlowByEntityAndUser(plainId string, updatedEntity model.CashFlowEntity, userId primitive.ObjectID) model.CashFlowEntity {
+	return model.CashFlowEntity{}
+}
+func (m MockCashFlowMapper) GetCashFlowsByFilter(filter model.CashFlowFilter) ([]model.CashFlowEntity, error) {
+	return []model.CashFlowEntity{}, nil
+}
+func (m MockCashFlowMapper) CountCashFlowsByFilter(filter model.CashFlowFilter) (int64, error) {
+	return 0, nil
+}
+func (m MockCashFlowMapper) GetAllCashFlowsByUserIncludeDeleted(userId primitive.ObjectID) []model.CashFlowEntity {
+	return []model.CashFlowEntity{}
+}
+func (m MockCashFlowMapper) DeleteAllCashFlowsByUser(userId primitive.ObjectID) (int64, error) {
+	return 0, nil
+}
+
+type MockUserConfigurationMapper struct {
+	configs []model.UserConfigurationEntity
+}
+
+func (m MockUserConfigurationMapper) GetByUserId(plainUserId string) model.UserConfigurationEntity {
+	for _, config := range m.configs {
+		if config.BelongsUserId.Hex() == plainUserId && !config.IsDelete {
+			return config
+		}
+	}
+	return model.UserConfigurationEntity{}
+}
+
+func (m MockUserConfigurationMapper) InsertByEntity(newEntity model.UserConfigurationEntity) string {
+	return newEntity.Id.Hex()
+}
+
+func (m MockUserConfigurationMapper) UpdateByUserId(plainUserId string, updatedEntity model.UserConfigurationEntity) model.UserConfigurationEntity {
+	return updatedEntity
+}
+
+func (m MockUserConfigurationMapper) GetAllIncludeDeleted(limit, offset int) []model.UserConfigurationEntity {
+	return m.configs
+}
+
+func (m MockUserConfigurationMapper) CountAll() int64 {
+	return int64(len(m.configs))
+}
+
+func (m MockUserConfigurationMapper) Truncate() error {
+	return nil
+}
 
 func TestAdminDumpDatabase(t *testing.T) {
 	// Save original instances
 	origUserMapper := user_mapper.INSTANCE
 	origCategoryMapper := category_mapper.INSTANCE
 	origCashFlowMapper := cash_flow_mapper.INSTANCE
+	origUserConfigMapper := user_config_mapper.INSTANCE
 	defer func() {
 		user_mapper.INSTANCE = origUserMapper
 		category_mapper.INSTANCE = origCategoryMapper
 		cash_flow_mapper.INSTANCE = origCashFlowMapper
+		user_config_mapper.INSTANCE = origUserConfigMapper
 	}()
 
 	// Setup mock data
@@ -111,10 +251,10 @@ func TestAdminDumpDatabase(t *testing.T) {
 
 	users := []model.UserEntity{
 		{
-			Id:           userId,
-			Username:     "testuser",
-			Nickname:     "Test User",
-			AvatarUrl:    "http://avatar.com/1.png",
+			Id:        userId,
+			Username:  "testuser",
+			Nickname:  "Test User",
+			AvatarUrl: "http://avatar.com/1.png",
 			BaseEntity: model.BaseEntity{
 				IsDelete:     true,
 				DeleteUserId: &deleteUserId,
@@ -122,9 +262,9 @@ func TestAdminDumpDatabase(t *testing.T) {
 			},
 		},
 		{
-			Id:           primitive.NewObjectID(),
-			Username:     "activeuser",
-			Nickname:     "Active User",
+			Id:       primitive.NewObjectID(),
+			Username: "activeuser",
+			Nickname: "Active User",
 			BaseEntity: model.BaseEntity{
 				IsDelete: false,
 			},
@@ -134,6 +274,7 @@ func TestAdminDumpDatabase(t *testing.T) {
 	user_mapper.INSTANCE = MockUserMapper{users: users}
 	category_mapper.INSTANCE = MockBackupCategoryMapper{categories: []model.CategoryEntity{}}
 	cash_flow_mapper.INSTANCE = MockCashFlowMapper{cashFlows: []model.CashFlowEntity{}}
+	user_config_mapper.INSTANCE = MockUserConfigurationMapper{configs: []model.UserConfigurationEntity{}}
 
 	// Create temp file
 	tmpFile, err := os.CreateTemp("", "backup_test_*.json")
@@ -189,12 +330,12 @@ func TestAdminDumpDatabase(t *testing.T) {
 	if val, ok := activeUser["delete_time"]; !ok || val != nil {
 		t.Errorf("Active user expected nil delete_time, got %v", val)
 	}
-	
+
 	// Verify null handling for empty strings
 	if val, ok := activeUser["avatar_url"]; !ok || val != nil {
 		t.Errorf("Active user expected nil avatar_url for empty string, got %v", val)
 	}
-	
+
 	// Test gender validation (mock data setup modification needed if we want to test the mapper logic specifically,
 	// but here we are testing backup service logic. The validation happens in mapper.)
 	// Since we are mocking the mapper in this test, we can't test the validation logic here directly

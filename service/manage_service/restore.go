@@ -8,6 +8,7 @@ import (
 
 	"github.com/macar-x/cashlenx-server/mapper/cash_flow_mapper"
 	"github.com/macar-x/cashlenx-server/mapper/category_mapper"
+	"github.com/macar-x/cashlenx-server/mapper/user_config_mapper"
 	"github.com/macar-x/cashlenx-server/mapper/user_mapper"
 	"github.com/macar-x/cashlenx-server/model"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -16,9 +17,10 @@ import (
 // AdminRestoreDatabase restores database from a backup file (truncates existing data)
 func AdminRestoreDatabase(filePath string) (OperationStats, error) {
 	stats := OperationStats{
-		Users:      EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
-		Categories: EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
-		CashFlows:  EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
+		Users:       EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
+		UserConfigs: EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
+		Categories:  EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
+		CashFlows:   EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
 	}
 
 	if filePath == "" {
@@ -41,9 +43,11 @@ func AdminRestoreDatabase(filePath string) (OperationStats, error) {
 
 	// Update total counts for stats
 	totalUsers := len(backup.Users)
+	totalUserConfigs := len(backup.UserConfigs)
 	totalCategories := len(backup.Categories)
 	totalCashFlows := len(backup.CashFlows)
 	stats.Users.Failed = totalUsers
+	stats.UserConfigs.Failed = totalUserConfigs
 	stats.Categories.Failed = totalCategories
 	stats.CashFlows.Failed = totalCashFlows
 
@@ -132,7 +136,16 @@ func AdminRestoreDatabase(filePath string) (OperationStats, error) {
 		}
 	}
 
-	// Step 2: Insert categories from backup
+	// Step 2: Insert user configurations from backup
+	for _, configMap := range backup.UserConfigs {
+		configEntity := restoreUserConfigurationFromMap(configMap, false)
+		if configId := user_config_mapper.INSTANCE.InsertByEntity(configEntity); configId != "" {
+			stats.UserConfigs.Success++
+			stats.UserConfigs.Failed--
+		}
+	}
+
+	// Step 3: Insert categories from backup
 	for _, catMap := range backup.Categories {
 		// Parse Id from backup data
 		id, _ := primitive.ObjectIDFromHex(catMap["id"].(string))
@@ -212,7 +225,7 @@ func AdminRestoreDatabase(filePath string) (OperationStats, error) {
 		}
 	}
 
-	// Step 3: Insert cash flows from backup
+	// Step 4: Insert cash flows from backup
 	cashFlowEntities := make([]model.CashFlowEntity, totalCashFlows)
 	for i, cfMap := range backup.CashFlows {
 		// Parse Id from backup data
@@ -313,9 +326,10 @@ func AdminRestoreDatabase(filePath string) (OperationStats, error) {
 // UserImportData imports user data from a backup file with upsert logic (skips deleted records)
 func UserImportData(userId string, filePath string) (OperationStats, error) {
 	stats := OperationStats{
-		Users:      EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
-		Categories: EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
-		CashFlows:  EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
+		Users:       EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
+		UserConfigs: EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
+		Categories:  EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
+		CashFlows:   EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
 	}
 
 	if filePath == "" {
@@ -348,7 +362,7 @@ func UserImportData(userId string, filePath string) (OperationStats, error) {
 	if len(backup.Users) != 1 {
 		return stats, errors.New("backup file must contain exactly one user record")
 	}
-	
+
 	backupUser := backup.Users[0]
 	backupUserId, ok := backupUser["id"].(string)
 	if !ok || backupUserId != userId {
@@ -356,8 +370,27 @@ func UserImportData(userId string, filePath string) (OperationStats, error) {
 	}
 
 	// Step 1: Skip User restoration (only validate) but we might want to check gender of the backup user if we were to update it
-	// But UserImportData does NOT update the user record itself, only related data. 
+	// But UserImportData does NOT update the user record itself, only related data.
 	// So no gender validation needed here for UserImportData.
+
+	for _, configMap := range backup.UserConfigs {
+		belongsUserId := parseObjectIDFromMap(configMap, "belongs_user_id")
+		if belongsUserId != userObjectId {
+			continue
+		}
+		if isDelete, ok := configMap["is_delete"].(bool); ok && isDelete {
+			continue
+		}
+		if !user_config_mapper.INSTANCE.GetByUserId(userId).Id.IsZero() {
+			continue
+		}
+		stats.UserConfigs.Failed++
+		configEntity := restoreUserConfigurationFromMap(configMap, true)
+		if configId := user_config_mapper.INSTANCE.InsertByEntity(configEntity); configId != "" {
+			stats.UserConfigs.Success++
+			stats.UserConfigs.Failed--
+		}
+	}
 
 	// Step 2: Import categories
 	for _, catMap := range backup.Categories {
@@ -368,7 +401,7 @@ func UserImportData(userId string, filePath string) (OperationStats, error) {
 		} else if userIdStr, ok := catMap["user_id"].(string); ok && userIdStr != "" {
 			belongsUserId, _ = primitive.ObjectIDFromHex(userIdStr)
 		}
-		
+
 		if belongsUserId != userObjectId {
 			continue // Skip data not belonging to this user
 		}
@@ -377,7 +410,7 @@ func UserImportData(userId string, filePath string) (OperationStats, error) {
 		if isDelete, ok := catMap["is_delete"].(bool); ok && isDelete {
 			continue
 		}
-		
+
 		// Parse Id from backup data
 		id, _ := primitive.ObjectIDFromHex(catMap["id"].(string))
 
@@ -397,11 +430,11 @@ func UserImportData(userId string, filePath string) (OperationStats, error) {
 		if !parentId.IsZero() {
 			parent := category_mapper.INSTANCE.GetCategoryByObjectIdAndUser(parentId.Hex(), userObjectId)
 			if parent.Id.IsZero() {
-				// Parent doesn't exist in DB. 
+				// Parent doesn't exist in DB.
 				// NOTE: This is tricky if parent is also in this import list but not yet inserted.
-				// Ideally we should topological sort or multi-pass. 
+				// Ideally we should topological sort or multi-pass.
 				// Given the prompt "parent_data not existed, they do nothing", we skip.
-				continue 
+				continue
 			}
 		}
 
@@ -460,7 +493,7 @@ func UserImportData(userId string, filePath string) (OperationStats, error) {
 		} else if userIdStr, ok := cfMap["user_id"].(string); ok && userIdStr != "" {
 			belongsUserId, _ = primitive.ObjectIDFromHex(userIdStr)
 		}
-		
+
 		if belongsUserId != userObjectId {
 			continue // Skip
 		}
@@ -534,7 +567,7 @@ func UserImportData(userId string, filePath string) (OperationStats, error) {
 				IsDelete:     isDelete,
 			},
 		}
-		
+
 		// Insert
 		if id := cash_flow_mapper.INSTANCE.InsertCashFlowByEntity(cfEntity); id != "" {
 			stats.CashFlows.Success++
@@ -543,4 +576,90 @@ func UserImportData(userId string, filePath string) (OperationStats, error) {
 	}
 
 	return stats, nil
+}
+
+func restoreUserConfigurationFromMap(configMap map[string]interface{}, forceActive bool) model.UserConfigurationEntity {
+	id := parseObjectIDFromMap(configMap, "id")
+	belongsUserId := parseObjectIDFromMap(configMap, "belongs_user_id")
+	createUserId := parseObjectIDFromMap(configMap, "create_user_id")
+	if createUserId.IsZero() {
+		createUserId = belongsUserId
+	}
+	updateUserId := parseObjectIDFromMap(configMap, "update_user_id")
+	if updateUserId.IsZero() {
+		updateUserId = belongsUserId
+	}
+
+	createTime := parseTimeFromMap(configMap, "create_time")
+	updateTime := parseTimeFromMap(configMap, "update_time")
+	deleteUserId := parseOptionalObjectIDFromMap(configMap, "delete_user_id")
+	deleteTime := parseOptionalTimeFromMap(configMap, "delete_time")
+	isDelete, _ := configMap["is_delete"].(bool)
+	if forceActive {
+		deleteUserId = nil
+		deleteTime = nil
+		isDelete = false
+	}
+
+	displayLanguage, _ := configMap["display_language"].(string)
+	if displayLanguage == "" {
+		displayLanguage = model.DefaultDisplayLanguage
+	}
+	currencyCode, _ := configMap["currency_code"].(string)
+	if currencyCode == "" {
+		currencyCode = model.DefaultCurrencyCode
+	}
+	activeThemeColor, _ := configMap["active_theme_color"].(string)
+	if activeThemeColor == "" {
+		activeThemeColor = model.DefaultThemeColor
+	}
+
+	return model.UserConfigurationEntity{
+		Id:               id,
+		BelongsUserId:    belongsUserId,
+		DisplayLanguage:  displayLanguage,
+		CurrencyCode:     currencyCode,
+		ActiveThemeColor: activeThemeColor,
+		BaseEntity: model.BaseEntity{
+			CreateUserId: createUserId,
+			CreateTime:   createTime,
+			UpdateUserId: updateUserId,
+			UpdateTime:   updateTime,
+			DeleteUserId: deleteUserId,
+			DeleteTime:   deleteTime,
+			IsDelete:     isDelete,
+		},
+	}
+}
+
+func parseObjectIDFromMap(data map[string]interface{}, key string) primitive.ObjectID {
+	if value, ok := data[key].(string); ok && value != "" {
+		id, _ := primitive.ObjectIDFromHex(value)
+		return id
+	}
+	return primitive.NilObjectID
+}
+
+func parseOptionalObjectIDFromMap(data map[string]interface{}, key string) *primitive.ObjectID {
+	if value, ok := data[key].(string); ok && value != "" {
+		id, _ := primitive.ObjectIDFromHex(value)
+		return &id
+	}
+	return nil
+}
+
+func parseTimeFromMap(data map[string]interface{}, key string) time.Time {
+	if value, ok := data[key].(string); ok && value != "" {
+		parsed, _ := time.Parse(time.RFC3339, value)
+		return parsed
+	}
+	return time.Now()
+}
+
+func parseOptionalTimeFromMap(data map[string]interface{}, key string) *time.Time {
+	if value, ok := data[key].(string); ok && value != "" {
+		parsed, _ := time.Parse(time.RFC3339, value)
+		return &parsed
+	}
+	return nil
 }

@@ -1,6 +1,7 @@
 package user_service
 
 import (
+	"github.com/macar-x/cashlenx-server/mapper/user_config_mapper"
 	"github.com/macar-x/cashlenx-server/mapper/user_mapper"
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/service/category_service"
@@ -62,8 +63,29 @@ func (mapperUserRepository) DeleteUserByObjectId(plainId string) model.UserEntit
 	return user_mapper.INSTANCE.DeleteUserByObjectId(plainId)
 }
 
+type userConfigurationRepository interface {
+	GetByUserId(plainUserId string) model.UserConfigurationEntity
+	InsertByEntity(newEntity model.UserConfigurationEntity) string
+	UpdateByUserId(plainUserId string, updatedEntity model.UserConfigurationEntity) model.UserConfigurationEntity
+}
+
+type mapperUserConfigurationRepository struct{}
+
+func (mapperUserConfigurationRepository) GetByUserId(plainUserId string) model.UserConfigurationEntity {
+	return user_config_mapper.INSTANCE.GetByUserId(plainUserId)
+}
+
+func (mapperUserConfigurationRepository) InsertByEntity(newEntity model.UserConfigurationEntity) string {
+	return user_config_mapper.INSTANCE.InsertByEntity(newEntity)
+}
+
+func (mapperUserConfigurationRepository) UpdateByUserId(plainUserId string, updatedEntity model.UserConfigurationEntity) model.UserConfigurationEntity {
+	return user_config_mapper.INSTANCE.UpdateByUserId(plainUserId, updatedEntity)
+}
+
 var (
-	userRepo                           userRepository = mapperUserRepository{}
-	initializeDefaultCategoriesForUser                = category_service.InitializeDefaultCategoriesForUser
-	revokeAllRefreshTokens                            = refresh_token_service.RevokeAllRefreshTokens
+	userRepo                           userRepository              = mapperUserRepository{}
+	userConfigurationRepo              userConfigurationRepository = mapperUserConfigurationRepository{}
+	initializeDefaultCategoriesForUser                             = category_service.InitializeDefaultCategoriesForUser
+	revokeAllRefreshTokens                                         = refresh_token_service.RevokeAllRefreshTokens
 )

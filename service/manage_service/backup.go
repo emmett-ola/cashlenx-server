@@ -8,16 +8,19 @@ import (
 
 	"github.com/macar-x/cashlenx-server/mapper/cash_flow_mapper"
 	"github.com/macar-x/cashlenx-server/mapper/category_mapper"
+	"github.com/macar-x/cashlenx-server/mapper/user_config_mapper"
 	"github.com/macar-x/cashlenx-server/mapper/user_mapper"
+	"github.com/macar-x/cashlenx-server/model"
 )
 
 // BackupData represents the structure of backup data
 type BackupData struct {
-	Version    string                   `json:"version"`
-	Timestamp  string                   `json:"timestamp"`
-	Users      []map[string]interface{} `json:"users"`
-	Categories []map[string]interface{} `json:"categories"`
-	CashFlows  []map[string]interface{} `json:"cash_flows"`
+	Version     string                   `json:"version"`
+	Timestamp   string                   `json:"timestamp"`
+	Users       []map[string]interface{} `json:"users"`
+	UserConfigs []map[string]interface{} `json:"user_configurations,omitempty"`
+	Categories  []map[string]interface{} `json:"categories"`
+	CashFlows   []map[string]interface{} `json:"cash_flows"`
 }
 
 // EntityStats represents statistics for a single entity type (cash_flows, categories, or users)
@@ -29,17 +32,19 @@ type EntityStats struct {
 
 // OperationStats represents comprehensive statistics for an operation (backup/restore/truncate)
 type OperationStats struct {
-	Users      EntityStats `json:"users"`
-	Categories EntityStats `json:"categories"`
-	CashFlows  EntityStats `json:"cash_flows"`
+	Users       EntityStats `json:"users"`
+	UserConfigs EntityStats `json:"user_configurations"`
+	Categories  EntityStats `json:"categories"`
+	CashFlows   EntityStats `json:"cash_flows"`
 }
 
 // AdminDumpDatabase creates a full database dump (including deleted records)
 func AdminDumpDatabase(filePath string) (OperationStats, error) {
 	stats := OperationStats{
-		Users:      EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
-		Categories: EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
-		CashFlows:  EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
+		Users:       EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
+		UserConfigs: EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
+		Categories:  EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
+		CashFlows:   EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
 	}
 
 	if filePath == "" {
@@ -96,6 +101,13 @@ func AdminDumpDatabase(filePath string) (OperationStats, error) {
 			userMap["delete_time"] = nil
 		}
 		userMaps[i] = userMap
+	}
+
+	configs := user_config_mapper.INSTANCE.GetAllIncludeDeleted(0, 0)
+	stats.UserConfigs.Success = len(configs)
+	configMaps := make([]map[string]interface{}, len(configs))
+	for i, config := range configs {
+		configMaps[i] = userConfigurationToMap(config)
 	}
 
 	// Get all categories (no pagination limit - get everything)
@@ -168,11 +180,12 @@ func AdminDumpDatabase(filePath string) (OperationStats, error) {
 
 	// Create backup structure
 	backup := BackupData{
-		Version:    "1.0.0", // Version updated for user data isolation
-		Timestamp:  time.Now().Format(time.RFC3339),
-		Users:      userMaps,
-		Categories: categoryMaps,
-		CashFlows:  cashFlowMaps,
+		Version:     "1.0.0", // Version updated for user data isolation
+		Timestamp:   time.Now().Format(time.RFC3339),
+		Users:       userMaps,
+		UserConfigs: configMaps,
+		Categories:  categoryMaps,
+		CashFlows:   cashFlowMaps,
 	}
 
 	// Write to file
@@ -194,9 +207,10 @@ func AdminDumpDatabase(filePath string) (OperationStats, error) {
 // UserExportData creates a backup of data for a specific user (excludes deleted records)
 func UserExportData(userId string, filePath string) (OperationStats, error) {
 	stats := OperationStats{
-		Users:      EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
-		Categories: EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
-		CashFlows:  EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
+		Users:       EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
+		UserConfigs: EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
+		Categories:  EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
+		CashFlows:   EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
 	}
 
 	if filePath == "" {
@@ -258,6 +272,13 @@ func UserExportData(userId string, filePath string) (OperationStats, error) {
 
 	userMaps[0] = userMap
 
+	var configMaps []map[string]interface{}
+	config := user_config_mapper.INSTANCE.GetByUserId(user.Id.Hex())
+	if !config.Id.IsZero() {
+		stats.UserConfigs.Success = 1
+		configMaps = []map[string]interface{}{userConfigurationToMap(config)}
+	}
+
 	// Get categories for user (Exclude deleted)
 	// Use GetAllCategoriesByUser instead of IncludeDeleted version
 	categories := category_mapper.INSTANCE.GetAllCategoriesByUser(user.Id, 0, 0)
@@ -310,11 +331,12 @@ func UserExportData(userId string, filePath string) (OperationStats, error) {
 
 	// Create backup structure
 	backup := BackupData{
-		Version:    "2.0.0",
-		Timestamp:  time.Now().Format(time.RFC3339),
-		Users:      userMaps,
-		Categories: categoryMaps,
-		CashFlows:  cashFlowMaps,
+		Version:     "2.0.0",
+		Timestamp:   time.Now().Format(time.RFC3339),
+		Users:       userMaps,
+		UserConfigs: configMaps,
+		Categories:  categoryMaps,
+		CashFlows:   cashFlowMaps,
 	}
 
 	// Write to file
@@ -331,4 +353,30 @@ func UserExportData(userId string, filePath string) (OperationStats, error) {
 	}
 
 	return stats, nil
+}
+
+func userConfigurationToMap(config model.UserConfigurationEntity) map[string]interface{} {
+	configMap := map[string]interface{}{
+		"id":                 config.Id.Hex(),
+		"belongs_user_id":    config.BelongsUserId.Hex(),
+		"display_language":   config.DisplayLanguage,
+		"currency_code":      config.CurrencyCode,
+		"active_theme_color": config.ActiveThemeColor,
+		"create_time":        config.CreateTime,
+		"update_time":        config.UpdateTime,
+		"create_user_id":     config.CreateUserId.Hex(),
+		"update_user_id":     config.UpdateUserId.Hex(),
+		"is_delete":          config.IsDelete,
+	}
+	if config.DeleteUserId != nil {
+		configMap["delete_user_id"] = config.DeleteUserId.Hex()
+	} else {
+		configMap["delete_user_id"] = nil
+	}
+	if config.DeleteTime != nil {
+		configMap["delete_time"] = config.DeleteTime
+	} else {
+		configMap["delete_time"] = nil
+	}
+	return configMap
 }

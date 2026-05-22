@@ -28,6 +28,11 @@ print("\nCreating indexes for category collection...");
 db.category.createIndex({ "name": 1 }, { unique: true, name: "idx_category_name_unique" });
 print("✓ Created unique index: idx_category_name_unique");
 
+print("\nCreating indexes for user_configurations collection...");
+
+db.user_configurations.createIndex({ "belongs_user_id": 1 }, { unique: true, name: "user_configurations_belongs_user_id_unique_index" });
+print("✓ Created unique index: user_configurations_belongs_user_id_unique_index");
+
 print("\n=== Index Creation Complete ===");
 print("\nVerifying indexes:");
 
@@ -38,5 +43,10 @@ db.cash_flow.getIndexes().forEach(function(idx) {
 
 print("\ncategory indexes:");
 db.category.getIndexes().forEach(function(idx) {
+    print("  - " + idx.name + ": " + JSON.stringify(idx.key));
+});
+
+print("\nuser_configurations indexes:");
+db.user_configurations.getIndexes().forEach(function(idx) {
     print("  - " + idx.name + ": " + JSON.stringify(idx.key));
 });

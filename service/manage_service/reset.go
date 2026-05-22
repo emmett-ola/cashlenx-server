@@ -3,19 +3,22 @@ package manage_service
 import (
 	"github.com/macar-x/cashlenx-server/mapper/cash_flow_mapper"
 	"github.com/macar-x/cashlenx-server/mapper/category_mapper"
+	"github.com/macar-x/cashlenx-server/mapper/user_config_mapper"
 	"github.com/macar-x/cashlenx-server/mapper/user_mapper"
 )
 
 // ResetDatabase clears all data from the database
 func ResetDatabase() (OperationStats, error) {
 	stats := OperationStats{
-		CashFlows:  EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
-		Categories: EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
+		CashFlows:   EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
+		Categories:  EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
+		UserConfigs: EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
 	}
 
 	// Count items before truncation to provide accurate statistics
 	stats.CashFlows.Success = int(cash_flow_mapper.INSTANCE.CountAllCashFlows())
 	stats.Categories.Success = int(category_mapper.INSTANCE.CountAllCategories())
+	stats.UserConfigs.Success = int(user_config_mapper.INSTANCE.CountAll())
 
 	// This is a dangerous operation - truncate all data
 	// First truncate cash flows (dependent data)
@@ -31,6 +34,12 @@ func ResetDatabase() (OperationStats, error) {
 		// If truncation fails, set success to 0 and failed to the counted items
 		stats.Categories.Failed = stats.Categories.Success
 		stats.Categories.Success = 0
+		return stats, err
+	}
+
+	if err := user_config_mapper.INSTANCE.Truncate(); err != nil {
+		stats.UserConfigs.Failed = stats.UserConfigs.Success
+		stats.UserConfigs.Success = 0
 		return stats, err
 	}
 

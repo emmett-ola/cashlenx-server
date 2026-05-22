@@ -112,6 +112,9 @@ func registerUserRoutes(r *mux.Router, prefix string) {
 	// User profile management
 	r.HandleFunc(prefix+"/user/profile", user_controller.GetProfile).Methods("GET")
 	r.HandleFunc(prefix+"/user/profile", user_controller.UpdateProfile).Methods("PUT")
+	r.HandleFunc(prefix+"/user/configuration", user_controller.GetConfiguration).Methods("GET")
+	r.HandleFunc(prefix+"/user/configuration", user_controller.UpsertConfiguration).Methods("POST")
+	r.HandleFunc(prefix+"/user/configuration", user_controller.UpsertConfiguration).Methods("PUT")
 	r.HandleFunc(prefix+"/user/password", user_controller.ChangePassword).Methods("PUT")
 	r.HandleFunc(prefix+"/user/email/change", user_controller.RequestEmailChange).Methods("POST")
 	r.HandleFunc(prefix+"/user/email/confirm", user_controller.ConfirmEmailChange).Methods("POST")

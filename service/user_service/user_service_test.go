@@ -134,6 +134,55 @@ func TestUpdateProfileServiceUpdatesAllowedProfileFields(t *testing.T) {
 	}
 }
 
+func TestUserConfigurationServiceReturnsDefaultAndUpserts(t *testing.T) {
+	repo := installUserServiceTestDeps(t)
+	userID := primitive.NewObjectID()
+	repo.users[userID.Hex()] = model.UserEntity{
+		Id:       userID,
+		Username: "alice",
+	}
+
+	defaultConfig, err := GetConfigurationService(userID.Hex())
+	if err != nil {
+		t.Fatalf("GetConfigurationService returned error: %v", err)
+	}
+	if defaultConfig.DisplayLanguage != model.DefaultDisplayLanguage {
+		t.Fatalf("DisplayLanguage = %q, want %q", defaultConfig.DisplayLanguage, model.DefaultDisplayLanguage)
+	}
+	if defaultConfig.CurrencyCode != model.DefaultCurrencyCode {
+		t.Fatalf("CurrencyCode = %q, want %q", defaultConfig.CurrencyCode, model.DefaultCurrencyCode)
+	}
+
+	language := "zh-CN"
+	currency := "hkd"
+	themeColor := "#16a34a"
+	created, err := UpsertConfigurationService(userID.Hex(), model.UserConfigurationRequest{
+		DisplayLanguage:  &language,
+		CurrencyCode:     &currency,
+		ActiveThemeColor: &themeColor,
+	})
+	if err != nil {
+		t.Fatalf("UpsertConfigurationService create returned error: %v", err)
+	}
+	if created.DisplayLanguage != language || created.CurrencyCode != "HKD" || created.ActiveThemeColor != themeColor {
+		t.Fatalf("created config = %#v", created)
+	}
+	if created.BelongsUserId != userID || created.CreateUserId != userID || created.UpdateUserId != userID {
+		t.Fatalf("expected audit/user ids to point to current user: %#v", created)
+	}
+
+	newThemeColor := "#0f172a"
+	updated, err := UpsertConfigurationService(userID.Hex(), model.UserConfigurationRequest{
+		ActiveThemeColor: &newThemeColor,
+	})
+	if err != nil {
+		t.Fatalf("UpsertConfigurationService update returned error: %v", err)
+	}
+	if updated.DisplayLanguage != language || updated.CurrencyCode != "HKD" || updated.ActiveThemeColor != newThemeColor {
+		t.Fatalf("updated config = %#v", updated)
+	}
+}
+
 func TestChangePasswordServiceRequiresOldPasswordAndRevokesTokens(t *testing.T) {
 	repo := installUserServiceTestDeps(t)
 	var revokedUserID string
@@ -274,6 +323,7 @@ func installUserServiceTestDeps(t *testing.T) *userRepoStub {
 	t.Helper()
 
 	originalRepo := userRepo
+	originalConfigRepo := userConfigurationRepo
 	originalInitCategories := initializeDefaultCategoriesForUser
 	originalRevokeAll := revokeAllRefreshTokens
 
@@ -281,12 +331,17 @@ func installUserServiceTestDeps(t *testing.T) *userRepoStub {
 		users:      map[string]model.UserEntity{},
 		deletedIDs: map[string]bool{},
 	}
+	configStub := &userConfigurationRepoStub{
+		configs: map[string]model.UserConfigurationEntity{},
+	}
 	userRepo = stub
+	userConfigurationRepo = configStub
 	initializeDefaultCategoriesForUser = func(userId string) error { return nil }
 	revokeAllRefreshTokens = func(userId string) error { return nil }
 
 	t.Cleanup(func() {
 		userRepo = originalRepo
+		userConfigurationRepo = originalConfigRepo
 		initializeDefaultCategoriesForUser = originalInitCategories
 		revokeAllRefreshTokens = originalRevokeAll
 	})
@@ -373,4 +428,30 @@ func (stub *userRepoStub) DeleteUserByObjectId(plainId string) model.UserEntity 
 	}
 	stub.deletedIDs[plainId] = true
 	return user
+}
+
+type userConfigurationRepoStub struct {
+	configs   map[string]model.UserConfigurationEntity
+	insertErr bool
+	updateErr bool
+}
+
+func (stub *userConfigurationRepoStub) GetByUserId(plainUserId string) model.UserConfigurationEntity {
+	return stub.configs[plainUserId]
+}
+
+func (stub *userConfigurationRepoStub) InsertByEntity(newEntity model.UserConfigurationEntity) string {
+	if stub.insertErr {
+		return ""
+	}
+	stub.configs[newEntity.BelongsUserId.Hex()] = newEntity
+	return newEntity.Id.Hex()
+}
+
+func (stub *userConfigurationRepoStub) UpdateByUserId(plainUserId string, updatedEntity model.UserConfigurationEntity) model.UserConfigurationEntity {
+	if stub.updateErr {
+		return model.UserConfigurationEntity{}
+	}
+	stub.configs[plainUserId] = updatedEntity
+	return updatedEntity
 }

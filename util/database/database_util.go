@@ -18,6 +18,7 @@ var (
 	CashFlowTableName             = "cash_flows"
 	CategoryTableName             = "categories"
 	UserTableName                 = "users"
+	UserConfigurationTableName    = "user_configurations"
 	OperationConfirmCodeTableName = "operation_confirm_codes"
 	RefreshTokenTableName         = "refresh_tokens"
 )
