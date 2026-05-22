@@ -20,6 +20,7 @@ type SMTPService interface {
 
 // smtpServiceImpl implements SMTPService
 type smtpServiceImpl struct {
+	enabled       bool
 	host          string
 	port          int
 	username      string
@@ -56,6 +57,13 @@ func ReloadConfig() {
 func (s *smtpServiceImpl) loadConfig() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
+	s.enabled = util.GetConfigByKey("smtp.enabled") == "true"
+	if !s.enabled {
+		s.configured = false
+		util.Logger.Warn("SMTP feature is disabled. Email features are unavailable.")
+		return
+	}
 
 	s.host = util.GetConfigByKey("smtp.host")
 	portStr := util.GetConfigByKey("smtp.port")
@@ -104,12 +112,20 @@ func (s *smtpServiceImpl) loadConfig() {
 func (s *smtpServiceImpl) IsConfigured() bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return s.configured
+	return s.enabled && s.configured
 }
 
 // SendEmail sends an email using the configured SMTP server with retry logic
 func (s *smtpServiceImpl) SendEmail(to []string, subject, body string, isHTML bool) error {
-	if !s.IsConfigured() {
+	s.mu.RLock()
+	enabled := s.enabled
+	configured := s.configured
+	s.mu.RUnlock()
+
+	if !enabled {
+		return fmt.Errorf("SMTP feature is not available")
+	}
+	if !configured {
 		return fmt.Errorf("SMTP service is not configured")
 	}
 

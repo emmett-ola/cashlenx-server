@@ -27,6 +27,7 @@ func TestConfigContainsRuntimeKeys(t *testing.T) {
 		"default_categories.path",
 		"verification.code.expire_minutes",
 		"verification.code.send_interval_seconds",
+		"smtp.enabled",
 		"smtp.host",
 		"smtp.port",
 		"smtp.username",

@@ -160,6 +160,11 @@ func initDefaultValues() {
 	configurationMap["verification.code.send_interval_seconds"] = verificationSendInterval
 
 	// SMTP email delivery configuration
+	smtpEnabled := os.Getenv("SMTP_ENABLED")
+	if smtpEnabled == "" {
+		smtpEnabled = "false"
+	}
+	configurationMap["smtp.enabled"] = smtpEnabled
 	configurationMap["smtp.host"] = os.Getenv("SMTP_HOST")
 	configurationMap["smtp.port"] = os.Getenv("SMTP_PORT")
 	configurationMap["smtp.username"] = os.Getenv("SMTP_USERNAME")
