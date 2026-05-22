@@ -139,7 +139,7 @@ The CLI structure in code is:
 - `category`
   - `create`, `list`, `query`, `tree`, `update`, `delete`
 - `statistic`
-  - `summary`, `breakdown`, `trends`, `top`, `export`, `import`
+  - `summary`, `breakdown`, `trends`, `top`, `dashboard`, `chart`, `export`, `import`
 
 Important: the server start command is currently `go run main.go open start -p 8080`, not `server start`.
 

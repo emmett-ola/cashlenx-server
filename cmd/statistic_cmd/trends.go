@@ -19,7 +19,7 @@ var trendsCmd = &cobra.Command{
 	Short: "Show spending trends over time",
 	Long: `Display spending trends analysis for the specified period.
 Only includes your own transactions.`,
-	Example: `  cashlenx statistic trends -p year -d 2024 -u <userId>`,
+	Example: `  cashlenx statistic trends -p yearly -d 2024 -u <userId>`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if trendsUserId == "" {
 			var err error
@@ -55,8 +55,8 @@ Only includes your own transactions.`,
 }
 
 func init() {
-	trendsCmd.Flags().StringVarP(&trendsPeriod, "period", "p", "year", "period type: year")
-	trendsCmd.Flags().StringVarP(&trendsDate, "date", "d", "", "date (YYYY for year) (required)")
+	trendsCmd.Flags().StringVarP(&trendsPeriod, "period", "p", "yearly", "period type: daily, monthly, yearly")
+	trendsCmd.Flags().StringVarP(&trendsDate, "date", "d", "", "date (required)")
 	trendsCmd.Flags().StringVarP(&trendsUserId, "user", "u", "", "user ID (required)")
 	trendsCmd.MarkFlagRequired("date")
 }

@@ -19,8 +19,8 @@ var breakdownCmd = &cobra.Command{
 	Short: "Show category breakdown analysis",
 	Long: `Display spending breakdown by category for the specified period.
 Only includes your own transactions.`,
-	Example: `  cashlenx statistic breakdown -p month -d 2024-01 -u <userId>
-  cashlenx statistic breakdown -p year -d 2024 -u <userId>`,
+	Example: `  cashlenx statistic breakdown -p monthly -d 2024-01 -u <userId>
+  cashlenx statistic breakdown -p yearly -d 2024 -u <userId>`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if breakdownUserId == "" {
 			var err error
@@ -61,8 +61,8 @@ Only includes your own transactions.`,
 }
 
 func init() {
-	breakdownCmd.Flags().StringVarP(&breakdownPeriod, "period", "p", "month", "period type: month, year")
-	breakdownCmd.Flags().StringVarP(&breakdownDate, "date", "d", "", "date (YYYY-MM for month, YYYY for year) (required)")
+	breakdownCmd.Flags().StringVarP(&breakdownPeriod, "period", "p", "monthly", "period type: daily, monthly, yearly")
+	breakdownCmd.Flags().StringVarP(&breakdownDate, "date", "d", "", "date (required)")
 	breakdownCmd.Flags().StringVarP(&breakdownUserId, "user", "u", "", "user ID (required)")
 	breakdownCmd.MarkFlagRequired("date")
 }

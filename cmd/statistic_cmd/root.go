@@ -16,7 +16,9 @@ Available sub-commands:
   summary    - Financial summary (daily/monthly/yearly)
   breakdown  - Category breakdown analysis
   trends     - Spending trends over time
-  top        - Top N expenses`,
+  top        - Top N expenses
+  dashboard  - Dashboard overview
+  chart      - Chart data for visualizations`,
 }
 
 func init() {
@@ -27,4 +29,6 @@ func init() {
 	StatisticCmd.AddCommand(breakdownCmd)
 	StatisticCmd.AddCommand(trendsCmd)
 	StatisticCmd.AddCommand(topCmd)
+	StatisticCmd.AddCommand(dashboardCmd)
+	StatisticCmd.AddCommand(chartCmd)
 }

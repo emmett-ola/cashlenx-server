@@ -1,7 +1,7 @@
 # CashLenX CLI Reference
 
 **Version**: 0.6.0
-**Last Updated**: 2026-05-12
+**Last Updated**: 2026-05-22
 
 The CashLenX CLI is implemented with Cobra and starts from `main.go -> cmd.Execute()`. The current executable name is `cashlenx` when built, or `go run main.go` during local development.
 
@@ -51,6 +51,12 @@ cashlenx
     ├── breakdown
     ├── trends
     ├── top
+    ├── dashboard
+    ├── chart
+    │   ├── income-expense
+    │   ├── category-distribution
+    │   ├── monthly-comparison
+    │   └── spending-heatmap
     ├── export
     └── import
 ```
@@ -112,14 +118,19 @@ Category commands support `income` and `expense` category types. The category ro
 
 ```bash
 go run main.go statistic summary --period monthly --date 202601 --user <user_id>
-go run main.go statistic breakdown --period month --date 2026-01 --user <user_id>
-go run main.go statistic trends --period year --date 2026 --user <user_id>
-go run main.go statistic top --period month --date 2026-01 --number 10 --user <user_id>
+go run main.go statistic breakdown --period monthly --date 2026-01 --user <user_id>
+go run main.go statistic trends --period yearly --date 2026 --user <user_id>
+go run main.go statistic top --period monthly --date 2026-01 --number 10 --user <user_id>
+go run main.go statistic dashboard --period monthly --date 2026-01 --user <user_id>
+go run main.go statistic chart income-expense --period monthly --date 2026-01 --user <user_id>
+go run main.go statistic chart category-distribution --period monthly --date 2026-01 --type expense --user <user_id>
+go run main.go statistic chart monthly-comparison --year 2026 --user <user_id>
+go run main.go statistic chart spending-heatmap --year 2026 --user <user_id>
 go run main.go statistic export --from 20260101 --to 20260131 --output export.xlsx --user <user_id>
 go run main.go statistic import --input export.xlsx --user <user_id>
 ```
 
-Statistic commands are user-scoped. The exact period names differ slightly by command because the current CLI implementation predates the newer HTTP route cleanup; check command help when in doubt.
+Statistic commands are user-scoped. Period flags use the service-level values `daily`, `monthly`, and `yearly`.
 
 ## Build
 

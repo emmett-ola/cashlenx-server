@@ -9,10 +9,10 @@ import (
 )
 
 var (
-	topLimit   int
-	topPeriod  string
-	topDate    string
-	topUserId  string
+	topLimit  int
+	topPeriod string
+	topDate   string
+	topUserId string
 )
 
 var topCmd = &cobra.Command{
@@ -20,8 +20,8 @@ var topCmd = &cobra.Command{
 	Short: "Show top N expenses",
 	Long: `Display the top N expenses for the specified period.
 Only includes your own transactions.`,
-	Example: `  cashlenx statistic top -n 10 -p month -d 2024-01 -u <userId>
-  cashlenx statistic top -n 20 -p year -d 2024 -u <userId>`,
+	Example: `  cashlenx statistic top -n 10 -p monthly -d 2024-01 -u <userId>
+  cashlenx statistic top -n 20 -p yearly -d 2024 -u <userId>`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if topUserId == "" {
 			var err error
@@ -61,8 +61,8 @@ Only includes your own transactions.`,
 
 func init() {
 	topCmd.Flags().IntVarP(&topLimit, "number", "n", 10, "number of top expenses to show")
-	topCmd.Flags().StringVarP(&topPeriod, "period", "p", "month", "period type: month, year")
-	topCmd.Flags().StringVarP(&topDate, "date", "d", "", "date (YYYY-MM for month, YYYY for year) (required)")
+	topCmd.Flags().StringVarP(&topPeriod, "period", "p", "monthly", "period type: daily, monthly, yearly")
+	topCmd.Flags().StringVarP(&topDate, "date", "d", "", "date (required)")
 	topCmd.Flags().StringVarP(&topUserId, "user", "u", "", "user ID (required)")
 	topCmd.MarkFlagRequired("date")
 }
