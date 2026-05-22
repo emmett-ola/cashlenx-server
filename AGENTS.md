@@ -85,7 +85,7 @@ The repository is farther along than some older docs imply. These features are p
 - User registration and login
 - JWT access tokens plus persisted refresh tokens
 - Admin bootstrap user initialization on server startup
-- User profile update, user configuration profile query/create/update, password change, email change request/confirm, and account deletion
+- User profile query/update with nickname, gender, active status, user configuration profile query/create/update, password change, email change request/confirm, and account deletion
 - Password reset request/confirm using verification codes
 - Purpose-scoped email verification code send/verify flow for sign-up, password reset, and email change
 - Login can also refresh tokens by passing `refresh_token` to `POST /open/auth/login`

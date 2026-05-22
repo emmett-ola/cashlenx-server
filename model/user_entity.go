@@ -113,6 +113,21 @@ type UserProfileUpdateRequest struct {
 	Gender    string `json:"gender,omitempty"`
 }
 
+// UserProfileResponse represents current-user profile data returned to clients.
+type UserProfileResponse struct {
+	Id              string `json:"id"`
+	Username        string `json:"username"`
+	Nickname        string `json:"nickname,omitempty"`
+	AvatarUrl       string `json:"avatar_url,omitempty"`
+	EmailAddress    string `json:"email_address,omitempty"`
+	IsEmailVerified bool   `json:"is_email_verified"`
+	Gender          string `json:"gender,omitempty"`
+	IsActive        bool   `json:"is_active"`
+	Role            string `json:"role,omitempty"`
+	CreatedAt       string `json:"created_at,omitempty"`
+	UpdatedAt       string `json:"updated_at,omitempty"`
+}
+
 // PasswordResetRequest represents a request to reset password
 type PasswordResetRequest struct {
 	EmailOrUsername string `json:"email_or_username"`

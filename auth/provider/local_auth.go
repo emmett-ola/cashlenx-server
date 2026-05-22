@@ -42,6 +42,9 @@ func (s *LocalAuthService) Authenticate(username, password, deviceID, deviceName
 	if err != nil {
 		return "", "", model.UserEntity{}, errors.NewUnauthorizedError("invalid username or password")
 	}
+	if !user.IsActive {
+		return "", "", model.UserEntity{}, errors.NewUnauthorizedError("user account is inactive")
+	}
 
 	// Generate JWT token
 	token, err := s.GenerateToken(user.Id.Hex(), user.Username, user.Role)
@@ -140,6 +143,9 @@ func (s *LocalAuthService) RefreshToken(refreshToken, deviceID, deviceName, ipAd
 	if user.Id.IsZero() {
 		return "", "", model.UserEntity{}, errors.NewUnauthorizedError("user not found")
 	}
+	if !user.IsActive {
+		return "", "", model.UserEntity{}, errors.NewUnauthorizedError("user account is inactive")
+	}
 
 	// Revoke old refresh token
 	err = refresh_token_service.RevokeRefreshToken(refreshToken, user.Id.Hex())
@@ -174,6 +180,9 @@ func (s *LocalAuthService) GetUserFromToken(tokenString string) (model.UserEntit
 	user := user_service.GetUserByObjectId(claims.UserID)
 	if user.Id.IsZero() {
 		return model.UserEntity{}, errors.NewUnauthorizedError("user not found")
+	}
+	if !user.IsActive {
+		return model.UserEntity{}, errors.NewUnauthorizedError("user account is inactive")
 	}
 
 	return user, nil
@@ -231,16 +240,26 @@ func (s *LocalAuthService) Middleware(next http.Handler) http.Handler {
 			return
 		}
 
+		user := user_service.GetUserByObjectId(claims.UserID)
+		if user.Id.IsZero() {
+			util.ComposeJSONResponse(w, http.StatusUnauthorized, errors.NewUnauthorizedError("user not found"))
+			return
+		}
+		if !user.IsActive {
+			util.ComposeJSONResponse(w, http.StatusUnauthorized, errors.NewUnauthorizedError("user account is inactive"))
+			return
+		}
+
 		// Add user information to request context
 		ctx := r.Context()
-		ctx = context.WithValue(ctx, "user_id", claims.UserID)
-		ctx = context.WithValue(ctx, "username", claims.Username)
-		ctx = context.WithValue(ctx, "role", claims.Role)
+		ctx = context.WithValue(ctx, "user_id", user.Id.Hex())
+		ctx = context.WithValue(ctx, "username", user.Username)
+		ctx = context.WithValue(ctx, "role", user.Role)
 		r = r.WithContext(ctx)
 
 		// Check if admin role is required for admin-only routes
 		if strings.HasPrefix(path, apiPrefix+"/admin/") {
-			if claims.Role != "admin" {
+			if user.Role != "admin" {
 				util.ComposeJSONResponse(w, http.StatusForbidden, errors.NewForbiddenError("admin role required"))
 				return
 			}

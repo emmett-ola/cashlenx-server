@@ -25,7 +25,7 @@ func GetProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	util.ComposeJSONResponse(w, http.StatusOK, user)
+	util.ComposeJSONResponse(w, http.StatusOK, buildUserProfileResponse(user))
 }
 
 // UpdateProfile handles updating the current user's profile
@@ -50,21 +50,23 @@ func UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Convert to DTO
-	userDTO := model.UserDTO{
-		Id:           updatedUser.Id.Hex(),
-		Username:     updatedUser.Username,
-		IsActive:     updatedUser.IsActive,
-		Role:         updatedUser.Role,
-		Nickname:     updatedUser.Nickname,
-		AvatarUrl:    updatedUser.AvatarUrl,
-		EmailAddress: updatedUser.EmailAddress,
-		Gender:       updatedUser.Gender,
-		CreatedAt:    util.FormatDateToStringWithDash(updatedUser.CreateTime),
-		UpdatedAt:    util.FormatDateToStringWithDash(updatedUser.UpdateTime),
-	}
+	util.ComposeJSONResponse(w, http.StatusOK, buildUserProfileResponse(updatedUser))
+}
 
-	util.ComposeJSONResponse(w, http.StatusOK, userDTO)
+func buildUserProfileResponse(user model.UserEntity) model.UserProfileResponse {
+	return model.UserProfileResponse{
+		Id:              user.Id.Hex(),
+		Username:        user.Username,
+		Nickname:        user.Nickname,
+		AvatarUrl:       user.AvatarUrl,
+		EmailAddress:    user.EmailAddress,
+		IsEmailVerified: user.IsEmailVerified,
+		Gender:          user.Gender,
+		IsActive:        user.IsActive,
+		Role:            user.Role,
+		CreatedAt:       util.FormatDateToStringWithDash(user.CreateTime),
+		UpdatedAt:       util.FormatDateToStringWithDash(user.UpdateTime),
+	}
 }
 
 // ChangePassword handles changing the current user's password

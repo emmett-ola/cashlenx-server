@@ -1261,6 +1261,35 @@ components:
           type: string
           enum: [male, female, others, ""]
 
+    UserProfileResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        nickname:
+          type: string
+        avatar_url:
+          type: string
+        email_address:
+          type: string
+        is_email_verified:
+          type: boolean
+        gender:
+          type: string
+          enum: [male, female, others, ""]
+        is_active:
+          type: boolean
+          description: Whether this account is currently active.
+        role:
+          type: string
+          enum: [user, admin]
+        created_at:
+          type: string
+        updated_at:
+          type: string
+
     UserConfigurationRequest:
       type: object
       properties:
