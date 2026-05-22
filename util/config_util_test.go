@@ -34,6 +34,8 @@ func TestConfigContainsRuntimeKeys(t *testing.T) {
 		"smtp.from_name",
 		"smtp.max_retries",
 		"smtp.retry_interval",
+		"smtp.rate_limit.daily_per_ip",
+		"smtp.rate_limit.daily_per_email",
 	}
 
 	for _, key := range keys {

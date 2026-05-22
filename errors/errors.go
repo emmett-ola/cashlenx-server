@@ -15,6 +15,7 @@ const (
 	ErrForbidden        ErrorCode = "FORBIDDEN"
 	ErrInternal         ErrorCode = "INTERNAL_ERROR"
 	ErrValidation       ErrorCode = "VALIDATION_ERROR"
+	ErrRateLimited      ErrorCode = "RATE_LIMITED"
 )
 
 // AppError represents an application error with a code, message, and optional cause
@@ -144,6 +145,14 @@ func NewInternalError(message string, cause error) *AppError {
 	}
 }
 
+// NewRateLimitedError creates a RATE_LIMITED error.
+func NewRateLimitedError(message string) *AppError {
+	return &AppError{
+		Code:    ErrRateLimited,
+		Message: message,
+	}
+}
+
 // NewConnectionFailedError creates a CONNECTION_FAILED error
 func NewConnectionFailedError(message string, cause error) *AppError {
 	return &AppError{
@@ -197,6 +206,14 @@ func IsForbiddenError(err error) bool {
 func IsAlreadyExistsError(err error) bool {
 	if appErr, ok := err.(*AppError); ok {
 		return appErr.Code == ErrAlreadyExists
+	}
+	return false
+}
+
+// IsRateLimitedError checks if error is a RATE_LIMITED error.
+func IsRateLimitedError(err error) bool {
+	if appErr, ok := err.(*AppError); ok {
+		return appErr.Code == ErrRateLimited
 	}
 	return false
 }

@@ -114,6 +114,8 @@ func defaultCodeForStatus(statusCode int) string {
 		return string(appErrors.ErrNotFound)
 	case http.StatusConflict:
 		return string(appErrors.ErrAlreadyExists)
+	case http.StatusTooManyRequests:
+		return string(appErrors.ErrRateLimited)
 	default:
 		if statusCode >= 500 {
 			return string(appErrors.ErrInternal)
@@ -140,6 +142,8 @@ func StatusCodeForError(err error) int {
 			return http.StatusNotFound
 		case appErrors.ErrAlreadyExists:
 			return http.StatusConflict
+		case appErrors.ErrRateLimited:
+			return http.StatusTooManyRequests
 		case appErrors.ErrDatabase, appErrors.ErrConnectionFailed, appErrors.ErrInternal:
 			return http.StatusInternalServerError
 		}

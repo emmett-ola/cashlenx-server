@@ -160,8 +160,29 @@ func initDefaultValues() {
 	configurationMap["smtp.password"] = os.Getenv("SMTP_PASSWORD")
 	configurationMap["smtp.from_address"] = os.Getenv("SMTP_FROM_ADDRESS")
 	configurationMap["smtp.from_name"] = os.Getenv("SMTP_FROM_NAME")
-	configurationMap["smtp.max_retries"] = os.Getenv("SMTP_MAX_RETRIES")
-	configurationMap["smtp.retry_interval"] = os.Getenv("SMTP_RETRY_INTERVAL")
+	smtpMaxRetries := os.Getenv("SMTP_MAX_RETRIES")
+	if smtpMaxRetries == "" {
+		smtpMaxRetries = "3"
+	}
+	configurationMap["smtp.max_retries"] = smtpMaxRetries
+
+	smtpRetryInterval := os.Getenv("SMTP_RETRY_INTERVAL")
+	if smtpRetryInterval == "" {
+		smtpRetryInterval = "1000"
+	}
+	configurationMap["smtp.retry_interval"] = smtpRetryInterval
+
+	smtpRateLimitDailyPerIP := os.Getenv("SMTP_RATE_LIMIT_DAILY_PER_IP")
+	if smtpRateLimitDailyPerIP == "" {
+		smtpRateLimitDailyPerIP = "5"
+	}
+	configurationMap["smtp.rate_limit.daily_per_ip"] = smtpRateLimitDailyPerIP
+
+	smtpRateLimitDailyPerEmail := os.Getenv("SMTP_RATE_LIMIT_DAILY_PER_EMAIL")
+	if smtpRateLimitDailyPerEmail == "" {
+		smtpRateLimitDailyPerEmail = "5"
+	}
+	configurationMap["smtp.rate_limit.daily_per_email"] = smtpRateLimitDailyPerEmail
 }
 
 func GetConfigByKey(configKey string) string {

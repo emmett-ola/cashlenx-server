@@ -370,6 +370,8 @@ Important keys currently loaded there:
 - `smtp.from_name`
 - `smtp.max_retries`
 - `smtp.retry_interval`
+- `smtp.rate_limit.daily_per_ip`
+- `smtp.rate_limit.daily_per_email`
 
 Important nuance:
 

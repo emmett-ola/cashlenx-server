@@ -32,10 +32,12 @@ func RequestEmailChange(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ipAddress := util.GetClientIP(r)
+
 	// Call service
-	err := user_service.RequestEmailChange(userID, req.NewEmail)
+	err := user_service.RequestEmailChange(userID, req.NewEmail, ipAddress)
 	if err != nil {
-		util.ComposeJSONResponse(w, http.StatusBadRequest, errors.NewBadRequestError(err.Error()))
+		util.ComposeErrorResponse(w, r, err)
 		return
 	}
 
@@ -75,7 +77,7 @@ func ConfirmEmailChange(w http.ResponseWriter, r *http.Request) {
 	// Call service
 	err := user_service.ConfirmEmailChange(userID, req.Token, req.Password)
 	if err != nil {
-		util.ComposeJSONResponse(w, http.StatusBadRequest, errors.NewBadRequestError(err.Error()))
+		util.ComposeErrorResponse(w, r, err)
 		return
 	}
 

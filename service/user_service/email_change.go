@@ -1,9 +1,9 @@
 package user_service
 
 import (
-	"errors"
 	"fmt"
 
+	appErrors "github.com/macar-x/cashlenx-server/errors"
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/service/verification_service"
 	"github.com/macar-x/cashlenx-server/util"
@@ -12,10 +12,10 @@ import (
 )
 
 // RequestEmailChange initiates the email change process
-func RequestEmailChange(userId string, newEmail string) error {
+func RequestEmailChange(userId string, newEmail string, ipAddress string) error {
 	// Validate email format
 	if newEmail == "" {
-		return errors.New("new email is required")
+		return appErrors.NewInvalidInputError("new email is required")
 	}
 
 	// Check if email is already in use
@@ -24,12 +24,20 @@ func RequestEmailChange(userId string, newEmail string) error {
 	// Get current user
 	user := GetUserByObjectId(userId)
 	if user.Id.IsZero() {
-		return errors.New("user not found")
+		return appErrors.NewNotFoundError("user not found")
 	}
 
 	// Check if SMTP is configured
 	if !email.GetService().IsConfigured() {
-		return errors.New("SMTP service is not configured")
+		return appErrors.NewInternalError("SMTP service is not configured", nil)
+	}
+
+	if err := email.CheckAndRecordPurposeEmailAllowance(
+		string(verification_service.OperationEmailChange),
+		ipAddress,
+		[]string{newEmail},
+	); err != nil {
+		return err
 	}
 
 	// Generate verification token
@@ -37,28 +45,28 @@ func RequestEmailChange(userId string, newEmail string) error {
 	token, err := verification_service.GenerateVerificationToken(userId, verification_service.OperationEmailChange, newEmail)
 	if err != nil {
 		util.Logger.Errorw("Failed to generate verification token", "error", err)
-		return errors.New("failed to generate verification token")
+		return appErrors.NewInternalError("failed to generate verification token", err)
 	}
 
 	// Send verification email first - if this fails, we shouldn't update the user
 	subject := "Verify your new email address"
-	body := fmt.Sprintf("Please use the following code to verify your new email address: %s\n\nThis code will expire in 1 hour.", token)
+	body := fmt.Sprintf("Please use the following code to verify your new email address: %s\n\nThis code will expire in %s.", token, verificationCodeExpiryText())
 	err = email.GetService().SendEmail([]string{newEmail}, subject, body, false)
 	if err != nil {
 		util.Logger.Errorw("Failed to send verification email", "error", err)
 		// Return specific error so client knows it was an SMTP failure
-		return fmt.Errorf("failed to send verification email: %v", err)
+		return err
 	}
 
 	// Update user email immediately and set verified to false
 	user.EmailAddress = newEmail
 	user.IsEmailVerified = false
 	_, err = UpdateService(user.Id.Hex(), model.UserDTO{
-		EmailAddress: newEmail,
+		EmailAddress:    newEmail,
 		IsEmailVerified: false,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to update user profile: %v", err)
+		return appErrors.NewInternalError("failed to update user profile", err)
 	}
 
 	return nil
@@ -70,28 +78,28 @@ func ConfirmEmailChange(userId string, token string, password string) error {
 	// Retrieve new email from token payload
 	newEmail, tokenUserId, valid := verification_service.VerifyToken(token, verification_service.OperationEmailChange)
 	if !valid {
-		return errors.New("invalid or expired token")
+		return appErrors.NewInvalidInputError("invalid or expired token")
 	}
 
 	// Ensure token belongs to the requesting user
 	if tokenUserId != userId {
-		return errors.New("invalid token for this user")
+		return appErrors.NewInvalidInputError("invalid token for this user")
 	}
 
 	// Verify password for security
 	user := GetUserByObjectId(userId)
 	if user.Id.IsZero() {
-		return errors.New("user not found")
+		return appErrors.NewNotFoundError("user not found")
 	}
 
 	err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
 	if err != nil {
-		return errors.New("invalid password")
+		return appErrors.NewUnauthorizedError("invalid password")
 	}
 
 	// Check if the email in token matches user's current pending email
 	if user.EmailAddress != newEmail {
-		return errors.New("email address mismatch, please request a new verification code")
+		return appErrors.NewInvalidInputError("email address mismatch, please request a new verification code")
 	}
 
 	// Set verified to true

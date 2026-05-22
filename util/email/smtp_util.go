@@ -11,24 +11,25 @@ import (
 	"github.com/macar-x/cashlenx-server/util"
 )
 
-// SMTPSerivce defines the interface for sending emails
+// SMTPService defines the interface for sending emails
 type SMTPService interface {
 	SendEmail(to []string, subject, body string, isHTML bool) error
+	SendPurposeEmail(to []string, subject, body string, isHTML bool, purpose string, ipAddress string) error
 	IsConfigured() bool
 }
 
 // smtpServiceImpl implements SMTPService
 type smtpServiceImpl struct {
-	host         string
-	port         int
-	username     string
-	password     string
-	fromAddress  string
-	fromName     string
-	maxRetries   int
+	host          string
+	port          int
+	username      string
+	password      string
+	fromAddress   string
+	fromName      string
+	maxRetries    int
 	retryInterval int
-	configured   bool
-	mu           sync.RWMutex
+	configured    bool
+	mu            sync.RWMutex
 }
 
 var (
@@ -62,7 +63,7 @@ func (s *smtpServiceImpl) loadConfig() {
 	s.password = util.GetConfigByKey("smtp.password")
 	s.fromAddress = util.GetConfigByKey("smtp.from_address")
 	s.fromName = util.GetConfigByKey("smtp.from_name")
-	
+
 	maxRetriesStr := util.GetConfigByKey("smtp.max_retries")
 	retryIntervalStr := util.GetConfigByKey("smtp.retry_interval")
 
@@ -158,7 +159,7 @@ func (s *smtpServiceImpl) SendEmail(to []string, subject, body string, isHTML bo
 		}
 
 		sendErr = sendMailWithTLS(addr, auth, fromAddress, to, []byte(message), host)
-		
+
 		if sendErr == nil {
 			util.Logger.Infow("Email sent successfully", "to", to, "subject", subject)
 			return nil
@@ -168,6 +169,14 @@ func (s *smtpServiceImpl) SendEmail(to []string, subject, body string, isHTML bo
 	}
 
 	return fmt.Errorf("failed to send email after %d attempts: %w", maxRetries, sendErr)
+}
+
+// SendPurposeEmail sends a purpose-scoped email after applying SMTP abuse limits.
+func (s *smtpServiceImpl) SendPurposeEmail(to []string, subject, body string, isHTML bool, purpose string, ipAddress string) error {
+	if err := CheckAndRecordPurposeEmailAllowance(purpose, ipAddress, to); err != nil {
+		return err
+	}
+	return s.SendEmail(to, subject, body, isHTML)
 }
 
 // Helper function: SendEmail (Backward compatibility wrapper)

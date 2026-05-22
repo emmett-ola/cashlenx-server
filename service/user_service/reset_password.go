@@ -2,6 +2,7 @@ package user_service
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/macar-x/cashlenx-server/errors"
 	"github.com/macar-x/cashlenx-server/model"
@@ -30,62 +31,74 @@ func RequestPasswordReset(emailOrUsername string, ipAddress string) error {
 
 	userId := user.Id.Hex()
 
-	// 2. Check rate limits (Optional: Implement in-memory rate limiting if needed)
-	// For now, relying on basic verification service which is simpler than DB-based tracking
-	// To fully replicate the previous logic, we'd need to add tracking to verification_service or keep using DB for logs
-	// Given the move to in-memory verification codes, we'll skip complex historical rate limiting for this iteration
-	// or assume the verification service's ephemeral nature is acceptable.
+	if user.EmailAddress == "" {
+		util.Logger.Warnw("User has no email address, cannot send reset token", "userId", userId)
+		return errors.NewInvalidInputError("user has no email address configured")
+	}
 
-	// 3. Invalidate existing active tokens for this operation
-	// We use the new verification service to invalidate old tokens in memory
+	if !email.GetService().IsConfigured() {
+		util.Logger.Errorw("SMTP service is not configured, cannot send reset token", "userId", userId)
+		return errors.NewInternalError("SMTP service is not configured", nil)
+	}
+
+	if err := email.CheckAndRecordPurposeEmailAllowance(
+		string(verification_service.OperationPasswordReset),
+		ipAddress,
+		[]string{user.EmailAddress},
+	); err != nil {
+		return err
+	}
+
+	// 2. Invalidate existing active tokens for this operation.
 	verification_service.InvalidateTokensByUserAndOperation(userId, verification_service.OperationPasswordReset)
 
-	// 4. Generate verification token
-	// We use the verification service instead of database storage for the token
-	// Payload is empty as we don't need to store extra data for password reset
+	// 3. Generate verification token.
 	token, err := verification_service.GenerateVerificationToken(userId, verification_service.OperationPasswordReset, "")
 	if err != nil {
 		util.Logger.Errorw("Failed to generate verification token", "error", err)
 		return errors.NewInternalError("failed to generate verification token", err)
 	}
 
-	// 5. Send email
-	if user.EmailAddress != "" {
-		// Check if SMTP is configured
-		if !email.GetService().IsConfigured() {
-			util.Logger.Errorw("SMTP service is not configured, cannot send reset token", "userId", userId)
-			return errors.NewInternalError("SMTP service is not configured", nil)
-		}
-
-		// Construct email body
-		subject := "Password Reset Request - CashLenX"
-		body := fmt.Sprintf(`Hello %s,
+	// 4. Send email.
+	subject := "Password Reset Request - CashLenX"
+	body := fmt.Sprintf(`Hello %s,
 
 We received a request to reset your password for your CashLenX account.
 Your password reset token is: %s
 
-This token will expire in 1 hour.
+This token will expire in %s.
 
 If you did not request a password reset, please ignore this email.
 
 Best regards,
-The CashLenX Team`, user.Username, token)
+The CashLenX Team`, user.Username, token, verificationCodeExpiryText())
 
-		// Send email synchronously to catch errors
-		err := email.GetService().SendEmail([]string{user.EmailAddress}, subject, body, false)
-		if err != nil {
-			util.Logger.Errorw("Failed to send password reset email", "error", err, "userId", userId, "email", user.EmailAddress)
-			// Invalidate the token we just generated since email failed
-			verification_service.InvalidateToken(token)
-			return errors.NewInternalError("failed to send password reset email", err)
-		}
-	} else {
-		util.Logger.Warnw("User has no email address, cannot send reset token", "userId", userId)
-		// If user has no email, they can't reset password this way.
-		return errors.NewInvalidInputError("user has no email address configured")
+	err = email.GetService().SendEmail([]string{user.EmailAddress}, subject, body, false)
+	if err != nil {
+		util.Logger.Errorw("Failed to send password reset email", "error", err, "userId", userId, "email", user.EmailAddress)
+		verification_service.InvalidateToken(token)
+		return errors.NewInternalError("failed to send password reset email", err)
 	}
 
 	return nil
+}
+
+func verificationCodeExpiryText() string {
+	minutes := int(util.GetConfigInt("verification.code.expire_minutes", 30))
+	if minutes <= 0 {
+		minutes = 30
+	}
+	if minutes == 1 {
+		return "1 minute"
+	}
+	if minutes%60 == 0 {
+		hours := minutes / 60
+		if hours == 1 {
+			return "1 hour"
+		}
+		return strconv.Itoa(hours) + " hours"
+	}
+	return strconv.Itoa(minutes) + " minutes"
 }
 
 // ConfirmPasswordReset confirms a password reset using a token
