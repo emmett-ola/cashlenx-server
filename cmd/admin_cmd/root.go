@@ -11,6 +11,7 @@ var AdminCmd = &cobra.Command{
 These commands are restricted and mirror the /api/admin/* endpoints.
 
 Available sub-commands:
+  user    - Manage users
   backup  - Create database backup
   restore - Restore database from backup`,
 }

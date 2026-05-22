@@ -7,10 +7,12 @@ import (
 	"syscall"
 
 	"github.com/macar-x/cashlenx-server/cmd/admin_cmd"
+	"github.com/macar-x/cashlenx-server/cmd/auth_cmd"
 	"github.com/macar-x/cashlenx-server/cmd/cash_flow_cmd"
 	"github.com/macar-x/cashlenx-server/cmd/category_cmd"
 	"github.com/macar-x/cashlenx-server/cmd/open_cmd"
 	"github.com/macar-x/cashlenx-server/cmd/statistic_cmd"
+	"github.com/macar-x/cashlenx-server/cmd/user_cmd"
 	"github.com/macar-x/cashlenx-server/util"
 	"github.com/macar-x/cashlenx-server/util/database"
 	"github.com/spf13/cobra"
@@ -68,10 +70,14 @@ func init() {
 	// Public commands (no auth required)
 	rootCmd.AddCommand(open_cmd.OpenCmd)
 
+	// Authenticated token commands
+	rootCmd.AddCommand(auth_cmd.AuthCmd)
+
 	// Admin-only commands
 	rootCmd.AddCommand(admin_cmd.AdminCmd)
 
 	// User-specific commands (auth required)
+	rootCmd.AddCommand(user_cmd.UserCmd)
 	rootCmd.AddCommand(cash_flow_cmd.CashCmd)
 	rootCmd.AddCommand(category_cmd.CategoryCmd)
 	rootCmd.AddCommand(statistic_cmd.StatisticCmd)

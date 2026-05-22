@@ -1,0 +1,63 @@
+package user_service
+
+import (
+	"strings"
+
+	"github.com/macar-x/cashlenx-server/errors"
+	"github.com/macar-x/cashlenx-server/mapper/user_mapper"
+	"github.com/macar-x/cashlenx-server/model"
+	"github.com/macar-x/cashlenx-server/service/verification_service"
+	"github.com/macar-x/cashlenx-server/util"
+	"github.com/macar-x/cashlenx-server/validation"
+)
+
+// RegisterPublicUser creates a self-registered user after email verification.
+func RegisterPublicUser(username, password, emailAddress, verificationToken string) (string, error) {
+	registerEnabled := util.GetConfigByKey("auth.registration.enabled")
+	if registerEnabled != "true" {
+		return "", errors.NewForbiddenError("user registration is disabled")
+	}
+	if username == "" {
+		return "", errors.NewValidationError("username is required")
+	}
+	if password == "" {
+		return "", errors.NewValidationError("password is required")
+	}
+	if emailAddress == "" {
+		return "", errors.NewValidationError("email_address is required")
+	}
+	if verificationToken == "" {
+		return "", errors.NewValidationError("verification_token is required")
+	}
+	if err := validation.ValidatePassword(password); err != nil {
+		return "", err
+	}
+	if err := validation.ValidateEmail(emailAddress); err != nil {
+		return "", err
+	}
+
+	emailAddress = strings.ToLower(strings.TrimSpace(emailAddress))
+	existingUser := user_mapper.INSTANCE.GetUserByUsernameIncludeDeleted(username)
+	if !existingUser.Id.IsZero() {
+		return "", errors.NewFieldAlreadyExistsError("username", "username already exists")
+	}
+	existingEmailUser := user_mapper.INSTANCE.GetUserByEmail(emailAddress)
+	if !existingEmailUser.Id.IsZero() {
+		return "", errors.NewFieldAlreadyExistsError("email_address", "email address already exists")
+	}
+
+	verification, err := verification_service.ConsumeVerifiedToken(verificationToken, verification_service.OperationSignup)
+	if err != nil {
+		return "", err
+	}
+	if !strings.EqualFold(verification.Payload, emailAddress) {
+		return "", errors.NewValidationError("verification token email does not match registration email")
+	}
+
+	return CreateService(model.UserDTO{
+		Username:        username,
+		Password:        password,
+		EmailAddress:    emailAddress,
+		IsEmailVerified: true,
+	}, nil)
+}

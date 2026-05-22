@@ -130,10 +130,22 @@ The CLI structure in code is:
   - `start`
   - `health`
   - `version`
+  - `auth`: `login`, `register`, `logout`, `reset-password`, `reset-password-confirm`
+  - `verification`: `code`, `verify`
+- `auth`
+  - `tokens`
 - `admin`
   - `database`
     - `backup`
     - `restore`
+  - `user`: `create`, `list`, `get`, `update`, `delete`
+- `user`
+  - `profile`: `get`, `update`
+  - `configuration`: `get`, `upsert`
+  - `password`
+  - `email`: `change`, `confirm`
+  - `account`
+  - `database`: `backup`, `restore`
 - `cash`
   - `expense`, `income`, `list`, `query`, `range`, `summary`, `update`, `delete`
 - `category`

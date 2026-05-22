@@ -25,8 +25,40 @@ cashlenx
 ├── open
 │   ├── start
 │   ├── health
-│   └── version
+│   ├── version
+│   ├── auth
+│   │   ├── login
+│   │   ├── register
+│   │   ├── logout
+│   │   ├── reset-password
+│   │   └── reset-password-confirm
+│   └── verification
+│       ├── code
+│       └── verify
+├── auth
+│   └── tokens
 ├── admin
+│   ├── user
+│   │   ├── create
+│   │   ├── list
+│   │   ├── get
+│   │   ├── update
+│   │   └── delete
+│   └── database
+│       ├── backup
+│       └── restore
+├── user
+│   ├── profile
+│   │   ├── get
+│   │   └── update
+│   ├── configuration
+│   │   ├── get
+│   │   └── upsert
+│   ├── password
+│   ├── email
+│   │   ├── change
+│   │   └── confirm
+│   ├── account
 │   └── database
 │       ├── backup
 │       └── restore
@@ -67,22 +99,62 @@ cashlenx
 go run main.go open start -p 8080
 go run main.go open health
 go run main.go open version
+go run main.go open verification code --purpose signup --email user@example.com
+go run main.go open verification verify --purpose signup --email user@example.com --code <code>
+go run main.go open auth register --username alice --password <password> --email user@example.com --verification-token <token>
+go run main.go open auth login --username alice --password <password>
+go run main.go open auth login --refresh-token <refresh_token>
+go run main.go open auth logout --refresh-token <refresh_token>
+go run main.go open auth reset-password --email-or-username user@example.com
+go run main.go open auth reset-password-confirm --token <token> --password <new_password>
 ```
 
 - `open start` starts the REST API server.
 - `open health` calls the local health endpoint.
 - `open version` prints version, build time, git commit, Go version, and OS/architecture.
+- `open auth` and `open verification` mirror public authentication and verification endpoints.
+
+## Auth Commands
+
+```bash
+go run main.go auth tokens --user <user_id>
+```
+
+- `auth tokens` lists refresh tokens for a user. The current CLI uses explicit `--user` rather than bearer-token context.
 
 ## Admin Commands
 
 ```bash
+go run main.go admin user create --username bob --password <password> --email bob@example.com
+go run main.go admin user list --limit 20 --offset 0
+go run main.go admin user get --id <user_id>
+go run main.go admin user update --id <user_id> --nickname "Bob"
+go run main.go admin user delete --id <user_id>
 go run main.go admin database backup -o backup.json
 go run main.go admin database restore -i backup.json --force
 ```
 
+- `admin user` mirrors admin user CRUD endpoints. Created users are always normal `user` role accounts.
 - `admin database backup` exports a full database dump.
 - `admin database restore` restores a full database dump.
 - Use admin commands carefully because they operate beyond a single user's normal finance data surface.
+
+## User Commands
+
+```bash
+go run main.go user profile get --user <user_id>
+go run main.go user profile update --nickname "Alice" --gender female --user <user_id>
+go run main.go user configuration get --user <user_id>
+go run main.go user configuration upsert --currency-code USD --display-language en --active-theme-color "#2563eb" --user <user_id>
+go run main.go user password --old-password <old_password> --new-password <new_password> --user <user_id>
+go run main.go user email change --new-email new@example.com --verification-token <token> --user <user_id>
+go run main.go user email confirm --token <token> --password <password> --user <user_id>
+go run main.go user account --force --user <user_id>
+go run main.go user database backup --output user_backup.json --user <user_id>
+go run main.go user database restore --input user_backup.json --user <user_id>
+```
+
+User commands are user-scoped and mirror `/user/*` endpoints. The CLI currently uses explicit `--user` selection and falls back to the configured default admin user when omitted, matching the older user-scoped command convention.
 
 ## Cash Commands
 

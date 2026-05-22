@@ -1,0 +1,174 @@
+package open_cmd
+
+import (
+	"errors"
+	"fmt"
+
+	"github.com/macar-x/cashlenx-server/auth"
+	"github.com/macar-x/cashlenx-server/model"
+	"github.com/macar-x/cashlenx-server/service/refresh_token_service"
+	"github.com/macar-x/cashlenx-server/service/user_service"
+	"github.com/spf13/cobra"
+)
+
+const (
+	cliDeviceID   = "cashlenx-cli"
+	cliDeviceName = "CashLenX CLI"
+	cliIPAddress  = "127.0.0.1"
+	cliUserAgent  = "cashlenx-cli"
+)
+
+var authCmd = &cobra.Command{
+	Use:   "auth",
+	Short: "Authentication and password reset flows",
+}
+
+var (
+	loginUsername     string
+	loginPassword     string
+	loginRefreshToken string
+
+	registerUsername          string
+	registerPassword          string
+	registerEmail             string
+	registerVerificationToken string
+
+	logoutRefreshToken string
+	logoutAccessToken  string
+
+	resetEmailOrUsername string
+	resetToken           string
+	resetPassword        string
+)
+
+var loginCmd = &cobra.Command{
+	Use:   "login",
+	Short: "Login with username/password or refresh token",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		var accessToken, refreshToken string
+		var user model.UserEntity
+		var err error
+		if loginRefreshToken != "" {
+			accessToken, refreshToken, user, err = auth.Service.RefreshToken(loginRefreshToken, cliDeviceID, cliDeviceName, cliIPAddress, cliUserAgent)
+		} else {
+			if loginUsername == "" || loginPassword == "" {
+				return errors.New("username and password are required unless --refresh-token is provided")
+			}
+			accessToken, refreshToken, user, err = auth.Service.Authenticate(loginUsername, loginPassword, cliDeviceID, cliDeviceName, cliIPAddress, cliUserAgent)
+		}
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("User: %s (%s)\n", user.Username, user.Id.Hex())
+		fmt.Printf("Role: %s\n", user.Role)
+		fmt.Printf("Access Token: %s\n", accessToken)
+		fmt.Printf("Refresh Token: %s\n", refreshToken)
+		return nil
+	},
+}
+
+var registerCmd = &cobra.Command{
+	Use:   "register",
+	Short: "Register a new user",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if registerUsername == "" || registerPassword == "" || registerEmail == "" || registerVerificationToken == "" {
+			return errors.New("username, password, email, and verification token are required")
+		}
+		userId, err := user_service.RegisterPublicUser(registerUsername, registerPassword, registerEmail, registerVerificationToken)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("User registered successfully: %s (%s)\n", registerUsername, userId)
+		return nil
+	},
+}
+
+var logoutCmd = &cobra.Command{
+	Use:   "logout",
+	Short: "Logout by revoking refresh token or all tokens for an access token",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if logoutRefreshToken != "" {
+			refreshToken, err := refresh_token_service.GetRefreshTokenByToken(logoutRefreshToken, cliDeviceID, cliDeviceName, cliIPAddress, cliUserAgent)
+			if err != nil {
+				return err
+			}
+			if err := refresh_token_service.RevokeRefreshToken(logoutRefreshToken, refreshToken.UserId); err != nil {
+				return err
+			}
+			fmt.Println("Successfully logged out from this device")
+			return nil
+		}
+		if logoutAccessToken != "" {
+			claims, err := auth.Service.ValidateToken(logoutAccessToken)
+			if err != nil {
+				return err
+			}
+			if err := refresh_token_service.RevokeAllRefreshTokens(claims.UserID); err != nil {
+				return err
+			}
+			fmt.Println("Successfully logged out from all devices")
+			return nil
+		}
+		fmt.Println("Logout accepted")
+		return nil
+	},
+}
+
+var resetPasswordCmd = &cobra.Command{
+	Use:   "reset-password",
+	Short: "Request a password reset verification code",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if resetEmailOrUsername == "" {
+			return errors.New("email or username is required")
+		}
+		if err := user_service.RequestPasswordReset(resetEmailOrUsername, cliIPAddress); err != nil {
+			return err
+		}
+		fmt.Println("Password reset request accepted")
+		return nil
+	},
+}
+
+var resetPasswordConfirmCmd = &cobra.Command{
+	Use:   "reset-password-confirm",
+	Short: "Confirm password reset with a verification token",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if resetToken == "" || resetPassword == "" {
+			return errors.New("token and password are required")
+		}
+		if err := user_service.ConfirmPasswordReset(resetToken, resetPassword); err != nil {
+			return err
+		}
+		fmt.Println("Password reset successfully")
+		return nil
+	},
+}
+
+func init() {
+	authCmd.AddCommand(loginCmd)
+	authCmd.AddCommand(registerCmd)
+	authCmd.AddCommand(logoutCmd)
+	authCmd.AddCommand(resetPasswordCmd)
+	authCmd.AddCommand(resetPasswordConfirmCmd)
+
+	loginCmd.Flags().StringVarP(&loginUsername, "username", "u", "", "username")
+	loginCmd.Flags().StringVarP(&loginPassword, "password", "p", "", "password")
+	loginCmd.Flags().StringVar(&loginRefreshToken, "refresh-token", "", "refresh token")
+
+	registerCmd.Flags().StringVarP(&registerUsername, "username", "u", "", "username (required)")
+	registerCmd.Flags().StringVarP(&registerPassword, "password", "p", "", "password (required)")
+	registerCmd.Flags().StringVarP(&registerEmail, "email", "e", "", "email address (required)")
+	registerCmd.Flags().StringVarP(&registerVerificationToken, "verification-token", "t", "", "verification token from open verification verify (required)")
+
+	logoutCmd.Flags().StringVar(&logoutRefreshToken, "refresh-token", "", "refresh token to revoke")
+	logoutCmd.Flags().StringVar(&logoutAccessToken, "access-token", "", "access token whose user's refresh tokens should be revoked")
+
+	resetPasswordCmd.Flags().StringVarP(&resetEmailOrUsername, "email-or-username", "e", "", "email address or username (required)")
+	resetPasswordCmd.MarkFlagRequired("email-or-username")
+
+	resetPasswordConfirmCmd.Flags().StringVarP(&resetToken, "token", "t", "", "verification token (required)")
+	resetPasswordConfirmCmd.Flags().StringVarP(&resetPassword, "password", "p", "", "new password (required)")
+	resetPasswordConfirmCmd.MarkFlagRequired("token")
+	resetPasswordConfirmCmd.MarkFlagRequired("password")
+}
