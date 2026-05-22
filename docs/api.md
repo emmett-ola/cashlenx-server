@@ -53,6 +53,8 @@ System and auth:
 - `GET /open/version`
 - `POST /open/auth/login`
 - `POST /open/auth/register`
+- `POST /open/verification/code`
+- `POST /open/verification/verify`
 - `POST /open/auth/logout`
 - `GET /auth/tokens`
 - `POST /open/auth/reset-password`

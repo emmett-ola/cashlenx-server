@@ -39,15 +39,16 @@ func CreateService(requestBody model.UserDTO, creatorId *string) (string, error)
 
 	// Create the user entity
 	userEntity := model.UserEntity{
-		Id:           primitive.NewObjectID(),
-		Username:     requestBody.Username,
-		PasswordHash: string(hashedPassword),
-		IsActive:     true,
-		Role:         model.UserRoleUser, // Always create as normal user
-		Nickname:     requestBody.Nickname,
-		AvatarUrl:    requestBody.AvatarUrl,
-		EmailAddress: requestBody.EmailAddress,
-		Gender:       requestBody.Gender,
+		Id:              primitive.NewObjectID(),
+		Username:        requestBody.Username,
+		PasswordHash:    string(hashedPassword),
+		IsActive:        true,
+		Role:            model.UserRoleUser, // Always create as normal user
+		Nickname:        requestBody.Nickname,
+		AvatarUrl:       requestBody.AvatarUrl,
+		EmailAddress:    requestBody.EmailAddress,
+		IsEmailVerified: requestBody.IsEmailVerified,
+		Gender:          requestBody.Gender,
 		BaseEntity: model.BaseEntity{
 			CreateTime: util.GetCurrentTime(),
 			UpdateTime: util.GetCurrentTime(),

@@ -38,8 +38,9 @@ DROP TABLE IF EXISTS refresh_tokens;
 CREATE TABLE `refresh_tokens`
 (
     `id`             VARCHAR(24)  NOT NULL,
-    `user_id`        VARCHAR(24)  NOT NULL,
+    `user_id`        VARCHAR(24)  NULL,
     `token`          VARCHAR(255) NOT NULL,
+    `verification_token` VARCHAR(255) NULL,
     `expires_at`     TIMESTAMP    NOT NULL,
     `revoked_at`     TIMESTAMP    NULL,
     `revoked_by`     VARCHAR(24)  NULL,
@@ -47,9 +48,9 @@ CREATE TABLE `refresh_tokens`
     `device_name`    VARCHAR(100) NULL,
     `ip_address`     VARCHAR(45)  NULL,
     `user_agent`     VARCHAR(255) NULL,
-    `create_user_id` VARCHAR(24)  NOT NULL,
+    `create_user_id` VARCHAR(24)  NULL,
     `create_time`    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP(),
-    `update_user_id` VARCHAR(24)  NOT NULL,
+    `update_user_id` VARCHAR(24)  NULL,
     `update_time`    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP() ON UPDATE CURRENT_TIMESTAMP(),
     `delete_user_id` VARCHAR(24)           DEFAULT NULL,
     `delete_time`    TIMESTAMP             DEFAULT NULL,
@@ -83,11 +84,11 @@ CREATE TABLE `operation_confirm_codes`
     `delete_time`    TIMESTAMP             DEFAULT NULL,
     `is_delete`      BOOLEAN      NOT NULL DEFAULT FALSE,
     PRIMARY KEY (`id`),
-    UNIQUE INDEX operation_confirm_codes_token_unique_index (`token`),
+    INDEX operation_confirm_codes_token_index (`token`),
+    UNIQUE INDEX operation_confirm_codes_verification_token_unique_index (`verification_token`),
     INDEX operation_confirm_codes_user_id_index (`user_id`),
     INDEX operation_confirm_codes_operation_type_index (`operation_type`),
-    INDEX operation_confirm_codes_expires_at_index (`expires_at`),
-    CONSTRAINT operation_confirm_codes_user_id_fk FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+    INDEX operation_confirm_codes_expires_at_index (`expires_at`)
 ) ENGINE = InnoDB DEFAULT CHARSET = UTF8MB4 COMMENT ='Operation Confirmation Codes';
 
 -- -------------------

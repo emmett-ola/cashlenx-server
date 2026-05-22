@@ -33,7 +33,7 @@ func RequestPasswordReset(w http.ResponseWriter, r *http.Request) {
 
 	// For security reasons, always return success regardless of whether user exists
 	response := map[string]interface{}{
-		"message": "If the user exists, a password reset link will be sent to their email",
+		"message": "If the user exists, a password reset verification code will be sent to their email",
 	}
 	util.ComposeJSONResponse(w, http.StatusOK, response)
 }

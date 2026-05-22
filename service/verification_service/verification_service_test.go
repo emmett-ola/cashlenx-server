@@ -195,6 +195,24 @@ func (stub *codeRepoStub) GetCodeByToken(token string) model.OperationConfirmCod
 	return stub.codesByToken[token]
 }
 
+func (stub *codeRepoStub) GetCodeByVerificationToken(token string) model.OperationConfirmCode {
+	for _, code := range stub.codesByToken {
+		if code.VerificationToken == token {
+			return code
+		}
+	}
+	return model.OperationConfirmCode{}
+}
+
+func (stub *codeRepoStub) GetActiveCodeByPurposeAndPayload(operationType string, payload string) model.OperationConfirmCode {
+	for _, code := range stub.codesByToken {
+		if code.OperationType == operationType && code.Payload == payload && code.UsedTime == nil && !code.IsDelete {
+			return code
+		}
+	}
+	return model.OperationConfirmCode{}
+}
+
 func (stub *codeRepoStub) InvalidateActiveCodes(userId string, operationType string) error {
 	for token, code := range stub.codesByToken {
 		if code.UserId == userId && code.OperationType == operationType && code.UsedTime == nil {
@@ -205,6 +223,30 @@ func (stub *codeRepoStub) InvalidateActiveCodes(userId string, operationType str
 		}
 	}
 	return nil
+}
+
+func (stub *codeRepoStub) InvalidateActiveCodesByPurposeAndPayload(operationType string, payload string) error {
+	for token, code := range stub.codesByToken {
+		if code.OperationType == operationType && code.Payload == payload && code.UsedTime == nil {
+			usedTime := time.Now()
+			code.UsedTime = &usedTime
+			code.IsDelete = true
+			stub.codesByToken[token] = code
+			stub.usedIDs[code.Id] = true
+		}
+	}
+	return nil
+}
+
+func (stub *codeRepoStub) SetVerificationToken(id string, verificationToken string) error {
+	for token, code := range stub.codesByToken {
+		if code.Id == id {
+			code.VerificationToken = verificationToken
+			stub.codesByToken[token] = code
+			return nil
+		}
+	}
+	return errors.New("code not found")
 }
 
 func (stub *codeRepoStub) MarkCodeAsUsed(id string) error {

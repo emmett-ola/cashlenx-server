@@ -32,10 +32,8 @@ func RequestEmailChange(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ipAddress := util.GetClientIP(r)
-
 	// Call service
-	err := user_service.RequestEmailChange(userID, req.NewEmail, ipAddress)
+	err := user_service.RequestEmailChange(userID, req.NewEmail, req.VerificationToken)
 	if err != nil {
 		util.ComposeErrorResponse(w, r, err)
 		return
@@ -43,7 +41,7 @@ func RequestEmailChange(w http.ResponseWriter, r *http.Request) {
 
 	// Return success
 	response := map[string]string{
-		"message": "Verification code sent to new email address",
+		"message": "Email address updated successfully",
 	}
 	util.ComposeJSONResponse(w, http.StatusOK, response)
 }

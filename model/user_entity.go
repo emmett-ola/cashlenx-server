@@ -10,13 +10,13 @@ import (
 
 // UserEntity represents a user in the database
 type UserEntity struct {
-	Id           primitive.ObjectID `bson:"_id,omitempty"`
-	Username     string             `json:"username" bson:"username"`
-	PasswordHash string             `json:"-" bson:"password_hash"`
-	IsActive     bool               `json:"is_active" bson:"is_active"`
-	Role         string             `json:"role" bson:"role"`
-	Nickname     string             `json:"nickname,omitempty" bson:"nickname,omitempty"`
-	AvatarUrl    string             `json:"avatar_url,omitempty" bson:"avatar_url,omitempty"`
+	Id              primitive.ObjectID `bson:"_id,omitempty"`
+	Username        string             `json:"username" bson:"username"`
+	PasswordHash    string             `json:"-" bson:"password_hash"`
+	IsActive        bool               `json:"is_active" bson:"is_active"`
+	Role            string             `json:"role" bson:"role"`
+	Nickname        string             `json:"nickname,omitempty" bson:"nickname,omitempty"`
+	AvatarUrl       string             `json:"avatar_url,omitempty" bson:"avatar_url,omitempty"`
 	EmailAddress    string             `json:"email_address,omitempty" bson:"email_address,omitempty"`
 	IsEmailVerified bool               `json:"is_email_verified" bson:"is_email_verified"`
 	Gender          string             `json:"gender,omitempty" bson:"gender,omitempty"`
@@ -81,8 +81,8 @@ type UserDTO struct {
 	EmailAddress    string `json:"email_address,omitempty"`
 	IsEmailVerified bool   `json:"is_email_verified"`
 	Gender          string `json:"gender,omitempty"`
-	CreatedAt    string `json:"created_at,omitempty"` // ISO formatted string for API
-	UpdatedAt    string `json:"updated_at,omitempty"` // ISO formatted string for API
+	CreatedAt       string `json:"created_at,omitempty"` // ISO formatted string for API
+	UpdatedAt       string `json:"updated_at,omitempty"` // ISO formatted string for API
 }
 
 // UserLoginRequest represents a login request
@@ -94,14 +94,16 @@ type UserLoginRequest struct {
 
 // UserLoginResponse represents a login response with JWT token
 type UserLoginResponse struct {
-	Token string    `json:"token"`
+	Token string     `json:"token"`
 	User  UserEntity `json:"user"`
 }
 
 // UserRegistrationRequest represents a user registration request
 type UserRegistrationRequest struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Username          string `json:"username"`
+	Password          string `json:"password"`
+	EmailAddress      string `json:"email_address"`
+	VerificationToken string `json:"verification_token"`
 }
 
 // UserProfileUpdateRequest represents a request to update user profile
@@ -130,7 +132,8 @@ type UserChangePasswordRequest struct {
 
 // UserChangeEmailRequest represents a request to change email
 type UserChangeEmailRequest struct {
-	NewEmail string `json:"new_email"`
+	NewEmail          string `json:"new_email"`
+	VerificationToken string `json:"verification_token"`
 }
 
 // UserConfirmEmailChangeRequest represents a request to confirm email change

@@ -182,6 +182,23 @@ func ValidateRequired(field, value string) error {
 	return nil
 }
 
+// ValidateEmail validates a basic email address shape for account verification flows.
+func ValidateEmail(email string) error {
+	if email == "" {
+		return NewValidationError("email", "is required")
+	}
+
+	if len(email) > 255 {
+		return NewValidationError("email", "must be 255 characters or less")
+	}
+
+	if matched, _ := regexp.MatchString(`^[^@\s]+@[^@\s]+\.[^@\s]+$`, email); !matched {
+		return NewValidationError("email", "invalid email format")
+	}
+
+	return nil
+}
+
 // ValidatePassword validates password requirements
 func ValidatePassword(password string) error {
 	if password == "" {

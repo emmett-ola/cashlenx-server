@@ -26,6 +26,7 @@ func TestConfigContainsRuntimeKeys(t *testing.T) {
 		"snowflake.worker_id",
 		"default_categories.path",
 		"verification.code.expire_minutes",
+		"verification.code.send_interval_seconds",
 		"smtp.host",
 		"smtp.port",
 		"smtp.username",

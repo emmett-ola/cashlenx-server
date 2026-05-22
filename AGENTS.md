@@ -87,6 +87,7 @@ The repository is farther along than some older docs imply. These features are p
 - Admin bootstrap user initialization on server startup
 - User profile update, password change, email change request/confirm, and account deletion
 - Password reset request/confirm using verification codes
+- Purpose-scoped email verification code send/verify flow for sign-up, password reset, and email change
 - Login can also refresh tokens by passing `refresh_token` to `POST /open/auth/login`
 - Cash flow CRUD, date/range queries, summaries, pagination/filtering
 - Category CRUD plus tree/children/name lookup
@@ -154,6 +155,8 @@ Important: the server start command is currently `go run main.go open start -p 8
 - `POST /api/{version}/open/auth/register`
 - `POST /api/{version}/open/auth/logout`
 - `GET /api/{version}/auth/tokens`
+- `POST /api/{version}/open/verification/code`
+- `POST /api/{version}/open/verification/verify`
 - `POST /api/{version}/open/auth/reset-password`
 - `POST /api/{version}/open/auth/reset-password/confirm`
 
@@ -362,6 +365,7 @@ Important keys currently loaded there:
 - `snowflake.worker_id`
 - `default_categories.path`
 - `verification.code.expire_minutes`
+- `verification.code.send_interval_seconds`
 - `smtp.host`
 - `smtp.port`
 - `smtp.username`

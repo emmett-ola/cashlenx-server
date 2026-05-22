@@ -44,6 +44,9 @@ func UpdateService(plainId string, requestBody model.UserDTO) (model.UserEntity,
 	if requestBody.EmailAddress != "" {
 		existingUser.EmailAddress = requestBody.EmailAddress
 	}
+	if requestBody.IsEmailVerified {
+		existingUser.IsEmailVerified = true
+	}
 	if requestBody.Gender != "" {
 		if err := validation.ValidateGender(requestBody.Gender); err != nil {
 			return model.UserEntity{}, err

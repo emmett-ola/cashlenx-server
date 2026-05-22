@@ -11,6 +11,7 @@ import (
 	"github.com/macar-x/cashlenx-server/controller/manage_controller"
 	"github.com/macar-x/cashlenx-server/controller/statistic_controller"
 	"github.com/macar-x/cashlenx-server/controller/user_controller"
+	"github.com/macar-x/cashlenx-server/controller/verification_controller"
 	"github.com/macar-x/cashlenx-server/middleware"
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/service/user_service"
@@ -79,6 +80,8 @@ func registerOpenRoutes(r *mux.Router, prefix string) {
 	// Authentication routes
 	r.HandleFunc(prefix+"/open/auth/login", auth_controller.Login).Methods("POST")
 	r.HandleFunc(prefix+"/open/auth/register", auth_controller.Register).Methods("POST")
+	r.HandleFunc(prefix+"/open/verification/code", verification_controller.SendCode).Methods("POST")
+	r.HandleFunc(prefix+"/open/verification/verify", verification_controller.VerifyCode).Methods("POST")
 
 	// Protected auth routes (technically these shouldn't be in 'open' but kept for grouping logic)
 	// Note: They are protected by middleware checking for /api/open/ prefix exception
@@ -223,6 +226,8 @@ func versionInfo(w http.ResponseWriter, r *http.Request) {
 				"GET " + apiPrefix + "/open/version",
 				"POST " + apiPrefix + "/open/auth/login",
 				"POST " + apiPrefix + "/open/auth/register",
+				"POST " + apiPrefix + "/open/verification/code",
+				"POST " + apiPrefix + "/open/verification/verify",
 				"POST " + apiPrefix + "/open/auth/reset-password",
 				"POST " + apiPrefix + "/open/auth/reset-password/confirm",
 			},

@@ -11,6 +11,7 @@ import (
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/service/refresh_token_service"
 	"github.com/macar-x/cashlenx-server/service/user_service"
+	"github.com/macar-x/cashlenx-server/service/verification_service"
 	"github.com/macar-x/cashlenx-server/util"
 	"github.com/macar-x/cashlenx-server/validation"
 )
@@ -90,12 +91,25 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		util.ComposeJSONResponse(w, http.StatusBadRequest, errors.NewValidationError("password is required"))
 		return
 	}
+	if registerRequest.EmailAddress == "" {
+		util.ComposeJSONResponse(w, http.StatusBadRequest, errors.NewValidationError("email_address is required"))
+		return
+	}
+	if registerRequest.VerificationToken == "" {
+		util.ComposeJSONResponse(w, http.StatusBadRequest, errors.NewValidationError("verification_token is required"))
+		return
+	}
 
 	// Validate password requirements
 	if err := validation.ValidatePassword(registerRequest.Password); err != nil {
 		util.ComposeJSONResponse(w, http.StatusBadRequest, err)
 		return
 	}
+	if err := validation.ValidateEmail(registerRequest.EmailAddress); err != nil {
+		util.ComposeJSONResponse(w, http.StatusBadRequest, err)
+		return
+	}
+	registerRequest.EmailAddress = strings.ToLower(strings.TrimSpace(registerRequest.EmailAddress))
 
 	// Check if user already exists (including deleted users)
 	existingUser := user_mapper.INSTANCE.GetUserByUsernameIncludeDeleted(registerRequest.Username)
@@ -103,11 +117,28 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		util.ComposeJSONResponse(w, http.StatusConflict, errors.NewFieldAlreadyExistsError("username", "username already exists"))
 		return
 	}
+	existingEmailUser := user_mapper.INSTANCE.GetUserByEmail(registerRequest.EmailAddress)
+	if !existingEmailUser.Id.IsZero() {
+		util.ComposeJSONResponse(w, http.StatusConflict, errors.NewFieldAlreadyExistsError("email_address", "email address already exists"))
+		return
+	}
+
+	verification, err := verification_service.ConsumeVerifiedToken(registerRequest.VerificationToken, verification_service.OperationSignup)
+	if err != nil {
+		util.ComposeErrorResponse(w, r, err)
+		return
+	}
+	if !strings.EqualFold(verification.Payload, registerRequest.EmailAddress) {
+		util.ComposeJSONResponse(w, http.StatusBadRequest, errors.NewValidationError("verification token email does not match registration email"))
+		return
+	}
 
 	// Create user DTO
 	userDTO := model.UserDTO{
-		Username: registerRequest.Username,
-		Password: registerRequest.Password,
+		Username:        registerRequest.Username,
+		Password:        registerRequest.Password,
+		EmailAddress:    registerRequest.EmailAddress,
+		IsEmailVerified: true,
 	}
 
 	// Create user

@@ -153,6 +153,12 @@ func initDefaultValues() {
 	}
 	configurationMap["verification.code.expire_minutes"] = verificationCodeExpire
 
+	verificationSendInterval := os.Getenv("VERIFICATION_CODE_SEND_INTERVAL_SECONDS")
+	if verificationSendInterval == "" {
+		verificationSendInterval = "60"
+	}
+	configurationMap["verification.code.send_interval_seconds"] = verificationSendInterval
+
 	// SMTP email delivery configuration
 	configurationMap["smtp.host"] = os.Getenv("SMTP_HOST")
 	configurationMap["smtp.port"] = os.Getenv("SMTP_PORT")

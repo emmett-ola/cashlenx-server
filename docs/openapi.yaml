@@ -78,6 +78,42 @@ paths:
         '409':
           $ref: '#/components/responses/WrappedResponse'
 
+  /open/verification/code:
+    post:
+      summary: Send verification code
+      operationId: sendVerificationCode
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendVerificationCodeRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/WrappedResponse'
+        '400':
+          $ref: '#/components/responses/WrappedResponse'
+        '429':
+          $ref: '#/components/responses/WrappedResponse'
+
+  /open/verification/verify:
+    post:
+      summary: Verify code and return one-time token
+      operationId: verifyVerificationCode
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyVerificationCodeRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/WrappedResponse'
+        '400':
+          $ref: '#/components/responses/WrappedResponse'
+
   /open/auth/logout:
     post:
       summary: User logout
@@ -1065,7 +1101,38 @@ components:
           type: string
           minLength: 6
           maxLength: 100
-      required: [username, password]
+        email_address:
+          type: string
+          format: email
+        verification_token:
+          type: string
+      required: [username, password, email_address, verification_token]
+
+    SendVerificationCodeRequest:
+      type: object
+      properties:
+        purpose:
+          type: string
+          enum: [signup, password_reset, email_change]
+        email:
+          type: string
+          format: email
+      required: [purpose, email]
+
+    VerifyVerificationCodeRequest:
+      type: object
+      properties:
+        purpose:
+          type: string
+          enum: [signup, password_reset, email_change]
+        email:
+          type: string
+          format: email
+        code:
+          type: string
+          minLength: 6
+          maxLength: 6
+      required: [purpose, email, code]
 
     LogoutRequest:
       type: object
@@ -1168,7 +1235,10 @@ components:
       properties:
         new_email:
           type: string
-      required: [new_email]
+          format: email
+        verification_token:
+          type: string
+      required: [new_email, verification_token]
 
     UserConfirmEmailChangeRequest:
       type: object

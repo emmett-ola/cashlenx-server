@@ -38,9 +38,11 @@ db.refresh_tokens.createIndex({ is_delete: 1 });
 db.refresh_tokens.createIndex({ create_time: 1 });
 
 // Operation confirmation code indexes
-db.operation_confirm_codes.createIndex({ code: 1 }, { unique: true });
+db.operation_confirm_codes.createIndex({ code: 1 });
+db.operation_confirm_codes.createIndex({ verification_token: 1 }, { unique: true, sparse: true });
 db.operation_confirm_codes.createIndex({ user_id: 1 });
 db.operation_confirm_codes.createIndex({ operation_type: 1 });
+db.operation_confirm_codes.createIndex({ operation_type: 1, payload: 1 });
 db.operation_confirm_codes.createIndex({ expires_time: 1 });
 db.operation_confirm_codes.createIndex({ is_delete: 1 });
 db.operation_confirm_codes.createIndex({ create_time: 1 });

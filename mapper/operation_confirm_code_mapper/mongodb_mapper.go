@@ -30,20 +30,21 @@ func (mapper *OperationConfirmCodeMongoMapper) CreateCode(code model.OperationCo
 
 	// Prepare document
 	doc := bson.M{
-		"_id":            id,
-		"user_id":        code.UserId,
-		"code":           code.Code,
-		"operation_type": code.OperationType,
-		"payload":        code.Payload,
-		"expires_time":   code.ExpiresTime,
-		"used_time":      code.UsedTime,
-		"create_user_id": code.CreateUserId,
-		"create_time":    code.CreateTime,
-		"update_user_id": code.UpdateUserId,
-		"update_time":    code.UpdateTime,
-		"delete_user_id": code.DeleteUserId,
-		"delete_time":    code.DeleteTime,
-		"is_delete":      code.IsDelete,
+		"_id":                id,
+		"user_id":            code.UserId,
+		"code":               code.Code,
+		"verification_token": code.VerificationToken,
+		"operation_type":     code.OperationType,
+		"payload":            code.Payload,
+		"expires_time":       code.ExpiresTime,
+		"used_time":          code.UsedTime,
+		"create_user_id":     code.CreateUserId,
+		"create_time":        code.CreateTime,
+		"update_user_id":     code.UpdateUserId,
+		"update_time":        code.UpdateTime,
+		"delete_user_id":     code.DeleteUserId,
+		"delete_time":        code.DeleteTime,
+		"is_delete":          code.IsDelete,
 	}
 
 	_, err = collection.InsertOne(context.TODO(), doc)
@@ -56,6 +57,42 @@ func (mapper *OperationConfirmCodeMongoMapper) GetCodeByToken(token string) mode
 	filter := bson.M{
 		"code":      token,
 		"is_delete": false,
+	}
+
+	var result bson.M
+	err := collection.FindOne(context.TODO(), filter).Decode(&result)
+	if err != nil {
+		return model.OperationConfirmCode{}
+	}
+
+	return mapper.mapBsonToEntity(result)
+}
+
+func (mapper *OperationConfirmCodeMongoMapper) GetCodeByVerificationToken(token string) model.OperationConfirmCode {
+	collection := database.GetMongoCollection(model.OperationConfirmCode{}.CollectionName())
+
+	filter := bson.M{
+		"verification_token": token,
+		"is_delete":          false,
+	}
+
+	var result bson.M
+	err := collection.FindOne(context.TODO(), filter).Decode(&result)
+	if err != nil {
+		return model.OperationConfirmCode{}
+	}
+
+	return mapper.mapBsonToEntity(result)
+}
+
+func (mapper *OperationConfirmCodeMongoMapper) GetActiveCodeByPurposeAndPayload(operationType string, payload string) model.OperationConfirmCode {
+	collection := database.GetMongoCollection(model.OperationConfirmCode{}.CollectionName())
+
+	filter := bson.M{
+		"operation_type": operationType,
+		"payload":        payload,
+		"is_delete":      false,
+		"used_time":      nil,
 	}
 
 	var result bson.M
@@ -85,6 +122,47 @@ func (mapper *OperationConfirmCodeMongoMapper) InvalidateActiveCodes(userId stri
 	}
 
 	_, err := collection.UpdateMany(context.TODO(), filter, update)
+	return err
+}
+
+func (mapper *OperationConfirmCodeMongoMapper) InvalidateActiveCodesByPurposeAndPayload(operationType string, payload string) error {
+	collection := database.GetMongoCollection(model.OperationConfirmCode{}.CollectionName())
+
+	filter := bson.M{
+		"operation_type": operationType,
+		"payload":        payload,
+		"is_delete":      false,
+		"used_time":      nil,
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"is_delete":   true,
+			"delete_time": time.Now(),
+			"update_time": time.Now(),
+		},
+	}
+
+	_, err := collection.UpdateMany(context.TODO(), filter, update)
+	return err
+}
+
+func (mapper *OperationConfirmCodeMongoMapper) SetVerificationToken(id string, verificationToken string) error {
+	collection := database.GetMongoCollection(model.OperationConfirmCode{}.CollectionName())
+
+	objectId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"verification_token": verificationToken,
+			"update_time":        time.Now(),
+		},
+	}
+
+	_, err = collection.UpdateOne(context.TODO(), bson.M{"_id": objectId, "is_delete": false}, update)
 	return err
 }
 
@@ -140,6 +218,9 @@ func (mapper *OperationConfirmCodeMongoMapper) mapBsonToEntity(data bson.M) mode
 	}
 	if val, ok := data["code"].(string); ok {
 		entity.Code = val
+	}
+	if val, ok := data["verification_token"].(string); ok {
+		entity.VerificationToken = val
 	}
 	if val, ok := data["operation_type"].(string); ok {
 		entity.OperationType = val
