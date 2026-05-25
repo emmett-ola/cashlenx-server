@@ -9,8 +9,8 @@ import (
 )
 
 func TestSaveCurrentSessionAndClear(t *testing.T) {
-	authFile := filepath.Join(t.TempDir(), "cli_auth.json")
-	t.Setenv("CASHLENX_CLI_AUTH_FILE", authFile)
+	authFile := filepath.Join(t.TempDir(), ".cli", "session")
+	t.Setenv("CASHLENX_CLI_SESSION_FILE", authFile)
 
 	userID := primitive.NewObjectID()
 	user := model.UserEntity{

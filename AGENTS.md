@@ -553,7 +553,7 @@ Unit test guidance:
 - Mapper integration tests should be isolated from normal unit tests, use explicit integration naming/build tags or scripts, and run only against disposable test databases
 - API integration tests should exercise controller-to-database behavior separately from `go test ./...`, for example through the smoke script against Docker-backed services
 
-CLI auth note: `open auth login` saves access and refresh tokens through `cmd/cli_auth`. Non-open user-scoped commands derive their user ID from that saved session and reject mismatched `--user` values. Admin commands validate the saved JWT role before running service-layer operations.
+CLI auth note: `open auth login` saves access and refresh tokens through `cmd/cli_auth` in the user's config directory at `cashlenx/.cli/session` unless `CASHLENX_CLI_SESSION_FILE` overrides it. Non-open user-scoped commands derive their user ID from that saved session, refresh expired access tokens through the stored refresh token, replace the session after refresh, and reject mismatched `--user` values. Admin commands validate the saved JWT role before running service-layer operations.
 
 CLI/API parity note: CLI commands should behave as a translation layer into the same request shape and service calls used by controllers. When adding API fields, mirror them in the matching CLI flags rather than adding separate CLI-only business behavior.
 

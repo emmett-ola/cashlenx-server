@@ -61,7 +61,16 @@ func RequireUser() (*provider.Claims, error) {
 	if session.AccessToken != "" {
 		claims, err := auth.Service.ValidateToken(session.AccessToken)
 		if err == nil && claims != nil {
-			return claims, nil
+			user, err := auth.Service.GetUserFromToken(session.AccessToken)
+			if err != nil {
+				return nil, err
+			}
+			if session.UserID != user.Id.Hex() || session.Username != user.Username || session.Role != user.Role {
+				if err := Save(session.AccessToken, session.RefreshToken, user); err != nil {
+					return nil, err
+				}
+			}
+			return claimsFromUser(user), nil
 		}
 	}
 
@@ -77,7 +86,7 @@ func RequireUser() (*provider.Claims, error) {
 	if err := Save(accessToken, refreshToken, user); err != nil {
 		return nil, err
 	}
-	return auth.Service.ValidateToken(accessToken)
+	return claimsFromUser(user), nil
 }
 
 func RequireAdmin() (*provider.Claims, error) {
@@ -147,6 +156,9 @@ func writeSession(session StoredSession) error {
 }
 
 func sessionPath() (string, error) {
+	if path := os.Getenv("CASHLENX_CLI_SESSION_FILE"); path != "" {
+		return path, nil
+	}
 	if path := os.Getenv("CASHLENX_CLI_AUTH_FILE"); path != "" {
 		return path, nil
 	}
@@ -154,9 +166,17 @@ func sessionPath() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(configDir, "cashlenx", "cli_auth.json"), nil
+	return filepath.Join(configDir, "cashlenx", ".cli", "session"), nil
 }
 
 func notLoggedInError() error {
 	return errors.NewUnauthorizedError(fmt.Sprintf("not logged in; run `%s` first", "cashlenx open auth login --username <username> --password <password>"))
+}
+
+func claimsFromUser(user model.UserEntity) *provider.Claims {
+	return &provider.Claims{
+		UserID:   user.Id.Hex(),
+		Username: user.Username,
+		Role:     user.Role,
+	}
 }

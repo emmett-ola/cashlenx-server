@@ -116,7 +116,7 @@ go run main.go open auth reset-password-confirm --token <token> --password <new_
 - `open auth logout` revokes the saved refresh token when available and clears the local CLI session.
 - `open auth` and `open verification` mirror public authentication and verification endpoints.
 
-CLI sessions are stored in the user's config directory as `cashlenx/cli_auth.json` with file mode `0600`. Set `CASHLENX_CLI_AUTH_FILE` to override the path for tests or isolated local runs.
+CLI sessions are stored in the user's config directory as `cashlenx/.cli/session` with file mode `0600`. Set `CASHLENX_CLI_SESSION_FILE` to override the path for tests or isolated local runs.
 
 ## Auth Commands
 
