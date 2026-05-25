@@ -12,17 +12,17 @@ var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: "update existing category",
 	Long: `Update an existing category by its ID.
-You can update the category name, type, and parent.`,
+You can update the category name, type, remark, and parent.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if plainId == "" {
 			return errors.New("id is required for update operation")
 		}
 
-		if categoryName == "" && parentPlainId == "" && catType == "" {
-			return errors.New("at least one field to update must be provided (name, type, or parent)")
+		if categoryName == "" && parentPlainId == "" && catType == "" && categoryRemark == "" {
+			return errors.New("at least one field to update must be provided (name, type, remark, or parent)")
 		}
 
-		_, err := category_service.UpdateByIdForUser(plainId, categoryName, catType, "", parentPlainId, userId)
+		_, err := category_service.UpdateByIdForUser(plainId, categoryName, catType, categoryRemark, parentPlainId, userId)
 		if err != nil {
 			return err
 		}
@@ -39,6 +39,8 @@ func init() {
 		&categoryName, "name", "n", "", "new category name (optional)")
 	updateCmd.Flags().StringVarP(
 		&catType, "type", "t", "", "new category type (optional, must be 'income' or 'expense')")
+	updateCmd.Flags().StringVarP(
+		&categoryRemark, "remark", "r", "", "new category remark")
 	updateCmd.Flags().StringVarP(
 		&parentPlainId, "parent", "p", "", "new parent category id (optional)")
 

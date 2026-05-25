@@ -30,7 +30,7 @@ var queryCmd = &cobra.Command{
 		}
 
 		if parentPlainId != "" {
-			categories, err := category_service.GetChildCategoriesForUser(parentPlainId, userId, "")
+			categories, err := category_service.GetChildCategoriesForUser(parentPlainId, userId, catType)
 			if err != nil {
 				return err
 			}
@@ -51,5 +51,7 @@ func init() {
 		&parentPlainId, "parent", "p", "", "query by parent id")
 	queryCmd.Flags().StringVarP(
 		&categoryName, "name", "n", "", "query by name")
+	queryCmd.Flags().StringVarP(
+		&catType, "type", "t", "", "category type filter for children lookup")
 	CategoryCmd.AddCommand(queryCmd)
 }

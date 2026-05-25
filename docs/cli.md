@@ -139,6 +139,7 @@ go run main.go admin database restore -i backup.json --force
 ```
 
 - `admin user` mirrors admin user CRUD endpoints. Created users are always normal `user` role accounts.
+- `admin user create` uses the logged-in admin user as creator, matching the API request context.
 - `admin database backup` exports a full database dump.
 - `admin database restore` restores a full database dump.
 - Admin commands require a saved CLI session whose JWT role is `admin`, matching `/admin/*` API access checks.
@@ -179,16 +180,17 @@ Cash commands use the saved CLI session's user ID; if `--user` is supplied it mu
 ## Category Commands
 
 ```bash
-go run main.go category create -n "Food" -t expense
+go run main.go category create -n "Food" -t expense --remark "Daily meals"
 go run main.go category list --type expense
 go run main.go category query --id <category_id>
 go run main.go category query --name "Food"
+go run main.go category query --parent <category_id> --type expense
 go run main.go category tree --type expense --deep 3
-go run main.go category update --id <category_id> --name "Dining"
+go run main.go category update --id <category_id> --name "Dining" --remark "Restaurants"
 go run main.go category delete --id <category_id>
 ```
 
-Category commands support `income` and `expense` category types. The category root command also supports a persistent `--user` flag for user-scoped operations.
+Category commands support `income` and `expense` category types plus the same create/update `remark` field used by the API. The category root command also supports a persistent `--user` flag for user-scoped operations.
 
 ## Statistic Commands
 
@@ -202,11 +204,13 @@ go run main.go statistic chart income-expense --period monthly --date 2026-01 --
 go run main.go statistic chart category-distribution --period monthly --date 2026-01 --type expense --user <user_id>
 go run main.go statistic chart monthly-comparison --year 2026 --user <user_id>
 go run main.go statistic chart spending-heatmap --year 2026 --user <user_id>
-go run main.go statistic export --from 20260101 --to 20260131 --output export.xlsx --user <user_id>
+go run main.go statistic export --from 20260101 --to 20260131 --format xlsx --output export.xlsx --user <user_id>
+go run main.go statistic export --from 20260101 --to 20260131 --format csv --output export.csv --user <user_id>
+go run main.go statistic export --from 20260101 --to 20260131 --format pdf --output export.pdf --user <user_id>
 go run main.go statistic import --input export.xlsx --user <user_id>
 ```
 
-Statistic commands are user-scoped and use the saved CLI session's user ID; if `--user` is supplied it must match the logged-in user. Period flags use the service-level values `daily`, `monthly`, and `yearly`.
+Statistic commands are user-scoped and use the saved CLI session's user ID; if `--user` is supplied it must match the logged-in user. Period flags use the service-level values `daily`, `monthly`, and `yearly`. Export supports the same formats as the API: `xlsx`, `csv`, and `pdf`.
 
 ## Build
 

@@ -17,7 +17,6 @@ var userCmd = &cobra.Command{
 
 var (
 	adminUserId              string
-	adminUserCreatorId       string
 	adminUserUsername        string
 	adminUserPassword        string
 	adminUserNickname        string
@@ -46,15 +45,13 @@ var userCreateCmd = &cobra.Command{
 			Gender:          adminUserGender,
 			IsEmailVerified: adminUserEmailVerified,
 		}
-		var creator *string
-		if adminUserCreatorId != "" {
-			creator = &adminUserCreatorId
-		}
-		createdId, err := user_service.CreateService(request, creator)
+		createdId, err := user_service.CreateService(request, &adminSessionUserId)
 		if err != nil {
 			return err
 		}
-		fmt.Printf("User created successfully: %s\n", createdId)
+		createdUser := user_service.GetUserByObjectId(createdId)
+		fmt.Println("User created successfully")
+		printAdminUser(createdUser)
 		return nil
 	},
 }
@@ -87,7 +84,7 @@ var userGetCmd = &cobra.Command{
 		if adminUserId == "" {
 			return errors.New("id is required")
 		}
-		user := user_service.GetUser(adminUserId)
+		user := user_service.GetUserByObjectId(adminUserId)
 		if user.Id.IsZero() {
 			return errors.New("user not found")
 		}
@@ -168,7 +165,6 @@ func init() {
 	userCmd.AddCommand(userUpdateCmd)
 	userCmd.AddCommand(userDeleteCmd)
 
-	userCreateCmd.Flags().StringVar(&adminUserCreatorId, "creator", "", "creator/admin user ID")
 	userCreateCmd.Flags().StringVar(&adminUserUsername, "username", "", "username (required)")
 	userCreateCmd.Flags().StringVar(&adminUserPassword, "password", "", "password (required)")
 	userCreateCmd.Flags().StringVar(&adminUserNickname, "nickname", "", "nickname")

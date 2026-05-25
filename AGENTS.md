@@ -555,6 +555,8 @@ Unit test guidance:
 
 CLI auth note: `open auth login` saves access and refresh tokens through `cmd/cli_auth`. Non-open user-scoped commands derive their user ID from that saved session and reject mismatched `--user` values. Admin commands validate the saved JWT role before running service-layer operations.
 
+CLI/API parity note: CLI commands should behave as a translation layer into the same request shape and service calls used by controllers. When adding API fields, mirror them in the matching CLI flags rather than adding separate CLI-only business behavior.
+
 ## Development Commands
 
 Use these as the code-accurate defaults:

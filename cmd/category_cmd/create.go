@@ -11,7 +11,7 @@ var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: "create new category",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		createdCategory, err := category_service.CreateForUser(categoryName, catType, "", parentPlainId, userId)
+		createdCategory, err := category_service.CreateForUser(categoryName, catType, categoryRemark, parentPlainId, userId)
 		if err != nil {
 			return err
 		}
@@ -27,6 +27,9 @@ func init() {
 		&categoryName, "name", "n", "", "category's name (required)")
 	createCmd.Flags().StringVarP(
 		&catType, "type", "t", "", "category's type (required, must be 'income' or 'expense')")
+	createCmd.Flags().StringVarP(
+		&categoryRemark, "remark", "r", "", "category remark")
+	createCmd.MarkFlagRequired("name")
 	createCmd.MarkFlagRequired("type")
 	CategoryCmd.AddCommand(createCmd)
 }

@@ -5,6 +5,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var adminSessionUserId string
+
 var AdminCmd = &cobra.Command{
 	Use:   "admin",
 	Short: "Admin-only commands (requires admin privileges)",
@@ -16,7 +18,10 @@ Available sub-commands:
   backup  - Create database backup
   restore - Restore database from backup`,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		_, err := cli_auth.RequireAdmin()
+		claims, err := cli_auth.RequireAdmin()
+		if err == nil {
+			adminSessionUserId = claims.UserID
+		}
 		return err
 	},
 }

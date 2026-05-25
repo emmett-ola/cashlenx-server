@@ -11,20 +11,38 @@ var (
 	exportFromDate string
 	exportToDate   string
 	exportFilePath string
+	exportFormat   string
 	exportUserId   string // For CLI, will be required parameter or from config
 )
 
 var exportCmd = &cobra.Command{
 	Use:   "export",
-	Short: "Export your data to Excel",
-	Long: `Export your own cash flow data to Excel file for the specified date range.
+	Short: "Export your data",
+	Long: `Export your own cash flow data for the specified date range.
 Only exports data that belongs to your account.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if err := ensureStatisticUser(&exportUserId); err != nil {
 			return err
 		}
 
-		err := statistic_service.ExportForUser(exportFromDate, exportToDate, exportFilePath, exportUserId)
+		if exportFormat == "" {
+			exportFormat = "xlsx"
+		}
+		if exportFilePath == "" {
+			exportFilePath = "./export." + exportFormat
+		}
+
+		var err error
+		switch exportFormat {
+		case "xlsx":
+			err = statistic_service.ExportForUser(exportFromDate, exportToDate, exportFilePath, exportUserId)
+		case "csv":
+			err = statistic_service.ExportToCSVForUser(exportFromDate, exportToDate, exportFilePath, exportUserId)
+		case "pdf":
+			err = statistic_service.ExportToPDFForUser(exportFromDate, exportToDate, exportFilePath, exportUserId)
+		default:
+			return fmt.Errorf("format must be xlsx, csv, or pdf")
+		}
 		if err != nil {
 			return fmt.Errorf("export failed: %w", err)
 		}
@@ -38,6 +56,7 @@ Only exports data that belongs to your account.`,
 func init() {
 	exportCmd.Flags().StringVarP(&exportFromDate, "from", "f", "", "from date (include), e.g. 20240101")
 	exportCmd.Flags().StringVarP(&exportToDate, "to", "t", "", "to date (include), e.g. 20241231")
-	exportCmd.Flags().StringVarP(&exportFilePath, "output", "o", "./export.xlsx", "output path (default: ./export.xlsx)")
+	exportCmd.Flags().StringVar(&exportFormat, "format", "xlsx", "export format: xlsx, csv, or pdf")
+	exportCmd.Flags().StringVarP(&exportFilePath, "output", "o", "", "output path (default: ./export.<format>)")
 	exportCmd.Flags().StringVarP(&exportUserId, "user", "u", "", "user ID; must match the logged-in user")
 }

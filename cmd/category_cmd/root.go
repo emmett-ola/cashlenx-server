@@ -8,11 +8,12 @@ import (
 )
 
 var (
-	plainId       string
-	parentPlainId string
-	categoryName  string
-	catType       string
-	userId        string
+	plainId        string
+	parentPlainId  string
+	categoryName   string
+	catType        string
+	categoryRemark string
+	userId         string
 )
 
 var CategoryCmd = &cobra.Command{
