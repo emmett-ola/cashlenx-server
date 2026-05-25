@@ -2,6 +2,7 @@ package auth_controller
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -26,6 +27,81 @@ func TestLogoutWithoutTokenReturnsOK(t *testing.T) {
 	assertOKResponse(t, rec)
 	if mapper.revokedToken != "" || mapper.revokedAllUserID != "" {
 		t.Fatalf("expected no revocation, got revokedToken=%q revokedAllUserID=%q", mapper.revokedToken, mapper.revokedAllUserID)
+	}
+}
+
+func TestLoginRejectsInvalidRequestBodies(t *testing.T) {
+	tests := []struct {
+		name string
+		body string
+	}{
+		{name: "invalid json", body: `{"username":`},
+		{name: "missing credentials", body: `{}`},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPost, "/api/v0/open/auth/login", bytes.NewBufferString(tt.body))
+			req.Header.Set("Content-Type", "application/json")
+			rec := httptest.NewRecorder()
+
+			Login(rec, req)
+
+			if rec.Code != http.StatusBadRequest {
+				t.Fatalf("status = %d, want %d; body=%s", rec.Code, http.StatusBadRequest, rec.Body.String())
+			}
+		})
+	}
+}
+
+func TestRegisterRejectsInvalidJSON(t *testing.T) {
+	req := httptest.NewRequest(http.MethodPost, "/api/v0/open/auth/register", bytes.NewBufferString(`{"username":`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+
+	Register(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d; body=%s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
+func TestGetTokensRequiresUserContext(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/api/v0/auth/tokens", nil)
+	rec := httptest.NewRecorder()
+
+	GetTokens(rec, req)
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want %d; body=%s", rec.Code, http.StatusUnauthorized, rec.Body.String())
+	}
+}
+
+func TestGetTokensReturnsUserTokens(t *testing.T) {
+	mapper := installRefreshTokenMapperStub(t)
+	mapper.tokens["refresh-token"] = model.RefreshToken{
+		Id:        "token-id",
+		UserId:    "user-id",
+		Token:     "refresh-token",
+		ExpiresAt: time.Now().Add(time.Hour),
+	}
+	req := httptest.NewRequest(http.MethodGet, "/api/v0/auth/tokens", nil)
+	req = req.WithContext(context.WithValue(req.Context(), "user_id", "user-id"))
+	rec := httptest.NewRecorder()
+
+	GetTokens(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d; body=%s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+}
+
+func TestUserIDFromAuthorizationHeaderRejectsMalformedHeader(t *testing.T) {
+	req := httptest.NewRequest(http.MethodPost, "/api/v0/open/auth/logout", nil)
+	req.Header.Set("Authorization", "Basic token")
+
+	if got := userIDFromAuthorizationHeader(req); got != "" {
+		t.Fatalf("userIDFromAuthorizationHeader() = %q, want empty", got)
 	}
 }
 

@@ -627,6 +627,7 @@ Use this section as a lightweight backlog of mismatches between implementation, 
 - [ ] Decide on the future provider strategy for email delivery, likely a third-party provider such as Mailgun, and document the intended integration approach
 - [x] Replace statistic CLI import/export default-admin fallback with an explicit user/auth model before treating those commands as production-ready multi-user workflows
 - [ ] Expand CI and/or local verification to cover more than `./errors` and `./validation`, especially DB-backed service paths as the project matures
+- [ ] Continue entry-layer coverage work by adding explicit service seams/fakes for Cobra command handlers and controllers; guard-path tests exist, but many success/error branches still couple directly to package-level services or mapper globals
 - [ ] Review legacy DB helper behavior that still uses package-global state plus `panic`/`log.Fatal`, and gradually normalize error handling
 - [ ] Confirm whether MongoDB-only eager initialization in the Cobra root command is still the intended default lifecycle, or if DB initialization should be made more explicit and symmetric across backends
 - [ ] Keep `/docs/roadmap.md` synchronized with the actual working branch/version plan as collaboration decisions evolve
