@@ -33,9 +33,9 @@ These are collaboration defaults provided by the project owner and should be tre
 - Default development database is MongoDB
 - Users may still choose MongoDB or MySQL when bootstrapping their environment
 - This is an under-development project, so use practical baseline validation effort rather than assuming strict release-grade test gates
-- We are currently developing on the `dev/v0.6.0` branch line
+- We are currently developing on the `dev/v0.8.0` branch line
 - The branch line maps to the feature/version batch currently in progress
-- Once planned work for `v0.6.0` is complete, it is intended to be merged/promoted to `main`, then development moves to the next branch line such as `dev/v0.7.0`
+- Once planned work for the current development branch is complete, it is intended to be merged/promoted to `main`, then development moves to the next branch line
 - API versioning stays under `/api/v0` during active development
 - A stable release is expected to introduce `/api/v1` alongside a stable application version such as `v1.0.0`
 - User-facing feature/function completion takes priority over enhancement work such as observability, performance, migration tooling, cloud hardening, and release automation
@@ -75,8 +75,20 @@ These are collaboration defaults provided by the project owner and should be tre
 
 - `main.go` calls `cmd.Execute()`
 - `cmd/root.go` wires the CLI and initializes the MongoDB pool in `PersistentPreRun`
+- `cmd/cli_auth/auth.go` owns CLI session persistence and refresh behavior
 - `cmd/open_cmd/start.go` starts the HTTP server by calling `controller.StartServer(port)`
 - `controller/server.go` registers versioned API routes under `/api/{version}`
+
+## Entry Layer Conventions
+
+The repository has two entry layers: Cobra commands under `cmd/` and Gorilla Mux HTTP handlers under `controller/`.
+
+- Controllers translate HTTP requests into service calls and must keep auth/user context from middleware as the source of truth.
+- CLI commands translate flags plus saved CLI session context into the same request shape and service calls used by controllers.
+- Keep token/session handling centralized in `cmd/cli_auth`; non-open commands should use `RequireUser`, `RequireUserID`, or `RequireAdmin`.
+- Keep command handlers thin. CLI-only logic should be limited to terminal output, local file paths, prompts, and session persistence.
+- When an API request field or query parameter is added, mirror it in the matching CLI flags instead of creating separate CLI business behavior.
+- When route or command shape changes, update `controller/server.go`, `docs/openapi.yaml`, `docs/api.md`, `docs/cli.md`, and this guide as needed.
 
 ## What Is Actually Implemented
 
@@ -552,10 +564,6 @@ Unit test guidance:
 - Service unit tests should instantiate service structs with in-memory fake mapper implementations instead of overriding mapper globals
 - Mapper integration tests should be isolated from normal unit tests, use explicit integration naming/build tags or scripts, and run only against disposable test databases
 - API integration tests should exercise controller-to-database behavior separately from `go test ./...`, for example through the smoke script against Docker-backed services
-
-CLI auth note: `open auth login` saves access and refresh tokens through `cmd/cli_auth` in the user's config directory at `cashlenx/.cli/session` unless `CASHLENX_CLI_SESSION_FILE` overrides it. Non-open user-scoped commands derive their user ID from that saved session, refresh expired access tokens through the stored refresh token, replace the session after refresh, and reject mismatched `--user` values. Admin commands validate the saved JWT role before running service-layer operations.
-
-CLI/API parity note: CLI commands should behave as a translation layer into the same request shape and service calls used by controllers. When adding API fields, mirror them in the matching CLI flags rather than adding separate CLI-only business behavior.
 
 ## Development Commands
 

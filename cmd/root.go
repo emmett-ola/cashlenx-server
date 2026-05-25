@@ -43,7 +43,6 @@ Use 'cashlenx [command] --help' for more information about a command.`,
 func Execute() {
 	cobra.EnableTraverseRunHooks = true
 
-	// Setup graceful shutdown
 	setupGracefulShutdown()
 
 	cobra.CheckErr(rootCmd.Execute())
@@ -69,16 +68,9 @@ func setupGracefulShutdown() {
 }
 
 func init() {
-	// Public commands (no auth required)
 	rootCmd.AddCommand(open_cmd.OpenCmd)
-
-	// Authenticated token commands
 	rootCmd.AddCommand(auth_cmd.AuthCmd)
-
-	// Admin-only commands
 	rootCmd.AddCommand(admin_cmd.AdminCmd)
-
-	// User-specific commands (auth required)
 	rootCmd.AddCommand(user_cmd.UserCmd)
 	rootCmd.AddCommand(cash_flow_cmd.CashCmd)
 	rootCmd.AddCommand(category_cmd.CategoryCmd)

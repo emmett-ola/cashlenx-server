@@ -25,9 +25,3 @@ Available sub-commands:
 		return err
 	},
 }
-
-func init() {
-	// Register all admin commands directly
-	// AdminCmd.AddCommand(backupCmd) // Moved to database subcommand
-	// AdminCmd.AddCommand(restoreBackupCmd) // Moved to database subcommand
-}

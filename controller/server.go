@@ -19,12 +19,9 @@ import (
 )
 
 func StartServer(port int32) {
-	// Explicitly load timezone at server startup to ensure it's configured
-	// and logged immediately
 	tz := util.GetTimezone()
 	fmt.Printf("Loaded timezone: %v\n", tz)
 
-	// Initialize Snowflake ID generator
 	workerID := util.GetConfigInt("snowflake.worker_id", 0)
 	if err := util.InitSnowflakeGenerator(workerID); err != nil {
 		util.Logger.Warnf("Failed to initialize Snowflake generator with worker ID %d: %v, using default", workerID, err)
@@ -32,29 +29,26 @@ func StartServer(port int32) {
 		fmt.Printf("Snowflake ID generator initialized with worker ID: %d\n", workerID)
 	}
 
-	// Initialize admin user if needed
 	user_service.InitAdminUser()
 
 	r := mux.NewRouter()
 
-	// Register routes with new structure
 	apiVersion := util.GetConfigByKey("api.version")
 	if apiVersion == "" {
 		apiVersion = "v0"
 	}
 	apiPrefix := "/api/" + apiVersion
 
-	registerOpenRoutes(r, apiPrefix) // Public endpoints (no auth)
+	registerOpenRoutes(r, apiPrefix)
 
-	// Create admin subrouter with Admin middleware
 	adminRouter := r.PathPrefix(apiPrefix + "/admin").Subrouter()
 	adminRouter.Use(middleware.Admin)
-	registerAdminRoutes(adminRouter) // Admin-only endpoints
+	registerAdminRoutes(adminRouter)
 
-	registerUserRoutes(r, apiPrefix)     // User-specific profile endpoints
-	registerCashRoute(r, apiPrefix)      // User-specific cash flow endpoints
-	registerCategoryRoute(r, apiPrefix)  // User-specific category endpoints
-	registerStatisticRoute(r, apiPrefix) // User-specific statistic endpoints
+	registerUserRoutes(r, apiPrefix)
+	registerCashRoute(r, apiPrefix)
+	registerCategoryRoute(r, apiPrefix)
+	registerStatisticRoute(r, apiPrefix)
 
 	// Apply middleware. CORS stays outermost so browser preflight requests are
 	// answered before auth or schema validation can reject them.
@@ -68,48 +62,39 @@ func StartServer(port int32) {
 		displayHost = host
 	}
 	fmt.Printf("API server is running on http://%s:%d\n", displayHost, port)
-	http.ListenAndServe(addr, handler)
+	if err := http.ListenAndServe(addr, handler); err != nil {
+		util.Logger.Fatalw("API server stopped", "error", err)
+	}
 }
 
-// registerOpenRoutes registers public endpoints that don't require authentication
 func registerOpenRoutes(r *mux.Router, prefix string) {
-	// System health and version
 	r.HandleFunc(prefix+"/open/health", healthCheck).Methods("GET")
 	r.HandleFunc(prefix+"/open/version", versionInfo).Methods("GET")
 
-	// Authentication routes
 	r.HandleFunc(prefix+"/open/auth/login", auth_controller.Login).Methods("POST")
 	r.HandleFunc(prefix+"/open/auth/register", auth_controller.Register).Methods("POST")
+	r.HandleFunc(prefix+"/open/auth/logout", auth_controller.Logout).Methods("POST")
+	r.HandleFunc(prefix+"/open/auth/reset-password", user_controller.RequestPasswordReset).Methods("POST")
+	r.HandleFunc(prefix+"/open/auth/reset-password/confirm", user_controller.ConfirmPasswordReset).Methods("POST")
+
 	r.HandleFunc(prefix+"/open/verification/code", verification_controller.SendCode).Methods("POST")
 	r.HandleFunc(prefix+"/open/verification/verify", verification_controller.VerifyCode).Methods("POST")
 
-	// Protected auth routes (technically these shouldn't be in 'open' but kept for grouping logic)
-	// Note: They are protected by middleware checking for /api/open/ prefix exception
-	r.HandleFunc(prefix+"/open/auth/logout", auth_controller.Logout).Methods("POST")
 	r.HandleFunc(prefix+"/auth/tokens", auth_controller.GetTokens).Methods("GET")
-
-	// Password reset routes
-	r.HandleFunc(prefix+"/open/auth/reset-password", user_controller.RequestPasswordReset).Methods("POST")
-	r.HandleFunc(prefix+"/open/auth/reset-password/confirm", user_controller.ConfirmPasswordReset).Methods("POST")
 }
 
-// registerAdminRoutes registers admin-only endpoints
 func registerAdminRoutes(r *mux.Router) {
-	// User management - admin only
 	r.HandleFunc("/user", user_controller.Create).Methods("POST")
 	r.HandleFunc("/user", user_controller.ListAll).Methods("GET")
 	r.HandleFunc("/user/{id}", user_controller.Get).Methods("GET")
 	r.HandleFunc("/user/{id}", user_controller.Update).Methods("PUT")
 	r.HandleFunc("/user/{id}", user_controller.Delete).Methods("DELETE")
 
-	// Database management - admin only
 	r.HandleFunc("/database/backup", manage_controller.DumpDatabase).Methods("GET")
 	r.HandleFunc("/database/restore", manage_controller.RestoreDatabase).Methods("POST")
 }
 
-// registerUserRoutes registers user-specific endpoints (authenticated users can access their own profiles)
 func registerUserRoutes(r *mux.Router, prefix string) {
-	// User profile management
 	r.HandleFunc(prefix+"/user/profile", user_controller.GetProfile).Methods("GET")
 	r.HandleFunc(prefix+"/user/profile", user_controller.UpdateProfile).Methods("PUT")
 	r.HandleFunc(prefix+"/user/configuration", user_controller.GetConfiguration).Methods("GET")
@@ -120,80 +105,59 @@ func registerUserRoutes(r *mux.Router, prefix string) {
 	r.HandleFunc(prefix+"/user/email/confirm", user_controller.ConfirmEmailChange).Methods("POST")
 	r.HandleFunc(prefix+"/user/account", user_controller.DeleteAccount).Methods("DELETE")
 
-	// User data management
 	r.HandleFunc(prefix+"/user/database/backup", manage_controller.ExportUserData).Methods("GET")
 	r.HandleFunc(prefix+"/user/database/restore", manage_controller.ImportUserData).Methods("POST")
 }
 
 func registerCashRoute(r *mux.Router, prefix string) {
-	// Create
 	r.HandleFunc(prefix+"/cash/expense", cash_flow_controller.CreateExpense).Methods("POST")
 	r.HandleFunc(prefix+"/cash/income", cash_flow_controller.CreateIncome).Methods("POST")
 
-	// Read
 	r.HandleFunc(prefix+"/cash", cash_flow_controller.ListAll).Methods("GET")
 	r.HandleFunc(prefix+"/cash/range", cash_flow_controller.QueryByDateRange).Methods("GET")
 	r.HandleFunc(prefix+"/cash/date/{date}", cash_flow_controller.QueryByDate).Methods("GET")
 	r.HandleFunc(prefix+"/cash/date/{date}", cash_flow_controller.DeleteByDate).Methods("DELETE")
 	r.HandleFunc(prefix+"/cash/{id}", cash_flow_controller.QueryById).Methods("GET")
 
-	// Summary endpoints
 	r.HandleFunc(prefix+"/cash/summary/daily/{date}", cash_flow_controller.GetDailySummary).Methods("GET")
 	r.HandleFunc(prefix+"/cash/summary/monthly/{month}", cash_flow_controller.GetMonthlySummary).Methods("GET")
 	r.HandleFunc(prefix+"/cash/summary/yearly/{year}", cash_flow_controller.GetYearlySummary).Methods("GET")
 
-	// Update
 	r.HandleFunc(prefix+"/cash/{id}", cash_flow_controller.UpdateById).Methods("PUT")
-
-	// Delete
 	r.HandleFunc(prefix+"/cash/{id}", cash_flow_controller.DeleteById).Methods("DELETE")
 }
 
 func registerCategoryRoute(r *mux.Router, prefix string) {
-	// Create
 	r.HandleFunc(prefix+"/category", category_controller.Create).Methods("POST")
-	// Read all categories with filtering
 	r.HandleFunc(prefix+"/category", category_controller.ListAll).Methods("GET")
-	// Read children categories - RESTful design: parent/{id}/children
 	r.HandleFunc(prefix+"/category/name/{name}", category_controller.QueryByName).Methods("GET")
 	r.HandleFunc(prefix+"/category/{parent_id}/children", category_controller.QueryChildren).Methods("GET")
 	r.HandleFunc(prefix+"/category/tree", category_controller.Tree).Methods("GET")
-	// Read specific category - must be after specific paths
 	r.HandleFunc(prefix+"/category/{id}", category_controller.QueryById).Methods("GET")
-
-	// Update
 	r.HandleFunc(prefix+"/category/{id}", category_controller.UpdateById).Methods("PUT")
-
-	// Delete
 	r.HandleFunc(prefix+"/category/{id}", category_controller.DeleteById).Methods("DELETE")
 }
 
 func registerStatisticRoute(r *mux.Router, prefix string) {
-	// Export/Import user-specific data
 	r.HandleFunc(prefix+"/statistic/export", statistic_controller.ExportData).Methods("GET")
 	r.HandleFunc(prefix+"/statistic/import", statistic_controller.ImportData).Methods("POST")
 
-	// Summary endpoints
 	r.HandleFunc(prefix+"/statistic/summary/daily/{date}", statistic_controller.GetDailySummary).Methods("GET")
 	r.HandleFunc(prefix+"/statistic/summary/monthly/{month}", statistic_controller.GetMonthlySummary).Methods("GET")
 	r.HandleFunc(prefix+"/statistic/summary/yearly/{year}", statistic_controller.GetYearlySummary).Methods("GET")
 
-	// Breakdown endpoints
 	r.HandleFunc(prefix+"/statistic/breakdown/daily/{date}", statistic_controller.GetDailyBreakdown).Methods("GET")
 	r.HandleFunc(prefix+"/statistic/breakdown/monthly/{month}", statistic_controller.GetMonthlyBreakdown).Methods("GET")
 	r.HandleFunc(prefix+"/statistic/breakdown/yearly/{year}", statistic_controller.GetYearlyBreakdown).Methods("GET")
 
-	// Trends endpoints
 	r.HandleFunc(prefix+"/statistic/trends/daily/{date}", statistic_controller.GetDailyTrends).Methods("GET")
 	r.HandleFunc(prefix+"/statistic/trends/monthly/{month}", statistic_controller.GetMonthlyTrends).Methods("GET")
 	r.HandleFunc(prefix+"/statistic/trends/yearly/{year}", statistic_controller.GetYearlyTrends).Methods("GET")
 
-	// Top expenses endpoints
 	r.HandleFunc(prefix+"/statistic/top/daily/{date}", statistic_controller.GetDailyTopExpenses).Methods("GET")
 	r.HandleFunc(prefix+"/statistic/top/monthly/{month}", statistic_controller.GetMonthlyTopExpenses).Methods("GET")
 	r.HandleFunc(prefix+"/statistic/top/yearly/{year}", statistic_controller.GetYearlyTopExpenses).Methods("GET")
 
-	// Dashboard visualization endpoints
 	r.HandleFunc(prefix+"/statistic/dashboard/{period}/{date}", statistic_controller.GetDashboardOverview).Methods("GET")
 	r.HandleFunc(prefix+"/statistic/chart/income-expense/{period}/{date}", statistic_controller.GetIncomeExpenseChartData).Methods("GET")
 	r.HandleFunc(prefix+"/statistic/chart/category-distribution/{period}/{date}", statistic_controller.GetCategoryDistributionData).Methods("GET")
@@ -201,7 +165,6 @@ func registerStatisticRoute(r *mux.Router, prefix string) {
 	r.HandleFunc(prefix+"/statistic/chart/spending-heatmap/{year}", statistic_controller.GetSpendingHeatmapData).Methods("GET")
 }
 
-// Health check endpoint
 func healthCheck(w http.ResponseWriter, r *http.Request) {
 	response := map[string]interface{}{
 		"status":  "healthy",
@@ -211,7 +174,6 @@ func healthCheck(w http.ResponseWriter, r *http.Request) {
 	util.ComposeJSONResponse(w, http.StatusOK, response)
 }
 
-// Version info endpoint
 func versionInfo(w http.ResponseWriter, r *http.Request) {
 	apiVersion := util.GetConfigByKey("api.version")
 	if apiVersion == "" {
@@ -229,15 +191,20 @@ func versionInfo(w http.ResponseWriter, r *http.Request) {
 				"GET " + apiPrefix + "/open/version",
 				"POST " + apiPrefix + "/open/auth/login",
 				"POST " + apiPrefix + "/open/auth/register",
+				"POST " + apiPrefix + "/open/auth/logout",
 				"POST " + apiPrefix + "/open/verification/code",
 				"POST " + apiPrefix + "/open/verification/verify",
 				"POST " + apiPrefix + "/open/auth/reset-password",
 				"POST " + apiPrefix + "/open/auth/reset-password/confirm",
 			},
+			"auth": {
+				"GET " + apiPrefix + "/auth/tokens",
+			},
 			"admin": {
 				"POST " + apiPrefix + "/admin/user",
 				"GET " + apiPrefix + "/admin/user",
 				"GET " + apiPrefix + "/admin/user/{id}",
+				"PUT " + apiPrefix + "/admin/user/{id}",
 				"DELETE " + apiPrefix + "/admin/user/{id}",
 				"GET " + apiPrefix + "/admin/database/backup",
 				"POST " + apiPrefix + "/admin/database/restore",
@@ -245,6 +212,9 @@ func versionInfo(w http.ResponseWriter, r *http.Request) {
 			"user": {
 				"GET " + apiPrefix + "/user/profile",
 				"PUT " + apiPrefix + "/user/profile",
+				"GET " + apiPrefix + "/user/configuration",
+				"POST " + apiPrefix + "/user/configuration",
+				"PUT " + apiPrefix + "/user/configuration",
 				"PUT " + apiPrefix + "/user/password",
 				"POST " + apiPrefix + "/user/email/change",
 				"POST " + apiPrefix + "/user/email/confirm",
