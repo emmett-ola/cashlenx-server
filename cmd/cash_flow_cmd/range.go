@@ -7,14 +7,12 @@ import (
 
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/service/cash_flow_service"
-	"github.com/macar-x/cashlenx-server/service/user_service"
 	"github.com/spf13/cobra"
 )
 
 var (
 	fromDate string
 	toDate   string
-	rangeUserId string
 )
 
 var rangeCmd = &cobra.Command{
@@ -23,19 +21,14 @@ var rangeCmd = &cobra.Command{
 	Long: `Query cash flow records within a date range.
 Displays all transactions between from-date and to-date (inclusive).`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := ensureCashUser(); err != nil {
+			return err
+		}
 		if fromDate == "" || toDate == "" {
 			return errors.New("both from-date and to-date are required")
 		}
 
-		if rangeUserId == "" {
-			var err error
-			rangeUserId, err = user_service.GetDefaultAdminUserId()
-			if err != nil {
-				return err
-			}
-		}
-
-		cashFlowEntityList, err := cash_flow_service.QueryByDateRangeForUser(fromDate, toDate, rangeUserId)
+		cashFlowEntityList, err := cash_flow_service.QueryByDateRangeForUser(fromDate, toDate, cashUserId)
 		if err != nil {
 			return err
 		}
@@ -71,8 +64,6 @@ func init() {
 		&fromDate, "from", "f", "", "start date (YYYY-MM-DD) (required)")
 	rangeCmd.Flags().StringVarP(
 		&toDate, "to", "t", "", "end date (YYYY-MM-DD) (required)")
-	rangeCmd.Flags().StringVarP(
-		&rangeUserId, "user", "u", "", "user ID (optional)")
 
 	rangeCmd.MarkFlagRequired("from")
 	rangeCmd.MarkFlagRequired("to")

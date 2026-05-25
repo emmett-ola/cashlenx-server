@@ -23,6 +23,9 @@ Examples:
   cashlenx cash summary --period monthly --date 2024-01
   cashlenx cash summary --period yearly --date 2024`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := ensureCashUser(); err != nil {
+			return err
+		}
 		if summaryPeriod == "" {
 			return errors.New("period is required (daily, monthly, yearly)")
 		}
@@ -31,7 +34,7 @@ Examples:
 			return errors.New("date is required (format depends on period)")
 		}
 
-		summary, err := cash_flow_service.GetSummary(summaryPeriod, summaryDate)
+		summary, err := cash_flow_service.GetSummaryForUser(summaryPeriod, summaryDate, cashUserId)
 		if err != nil {
 			return err
 		}

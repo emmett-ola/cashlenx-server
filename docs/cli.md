@@ -161,7 +161,7 @@ User commands are user-scoped and mirror `/user/*` endpoints. The CLI currently 
 ```bash
 go run main.go cash expense -c "Food" -a 45.50 -d "Lunch"
 go run main.go cash income -c "Salary" -a 5000
-go run main.go cash list --limit 20 --offset 0 --type expense
+go run main.go cash list --limit 20 --offset 0 --type expense --category-id <category_id> --from-date 2026-01-01 --to-date 2026-01-31 --user <user_id>
 go run main.go cash query --id <cash_flow_id>
 go run main.go cash query --date 2026-01-01
 go run main.go cash range --from 2026-01-01 --to 2026-01-31
@@ -170,7 +170,7 @@ go run main.go cash update --id <cash_flow_id> --amount 50
 go run main.go cash delete --id <cash_flow_id>
 ```
 
-Cash command flags are code-defined in `cmd/cash_flow_cmd/`. CLI date flags generally use dashed formats such as `YYYY-MM-DD`, `YYYY-MM`, or `YYYY`, depending on the command.
+Cash commands use a persistent `--user` flag and fall back to the configured default admin user when omitted. `cash list` mirrors `GET /cash` filters with `--type`, `--category-id`, `--description`, `--exact-description`, `--from-date`, `--to-date`, `--limit`, `--offset`, and `--page`. CLI date flags generally use dashed formats such as `YYYY-MM-DD`, `YYYY-MM`, or `YYYY`, depending on the command.
 
 ## Category Commands
 

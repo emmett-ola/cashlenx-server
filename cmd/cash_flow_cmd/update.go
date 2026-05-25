@@ -14,6 +14,9 @@ var updateCmd = &cobra.Command{
 	Long: `Update an existing cash flow record by its ID.
 You can update amount, category, date, and description.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := ensureCashUser(); err != nil {
+			return err
+		}
 		plainId, _ := cmd.Flags().GetString("id")
 		belongsDate, _ := cmd.Flags().GetString("date")
 		categoryName, _ := cmd.Flags().GetString("category")
@@ -29,7 +32,7 @@ You can update amount, category, date, and description.`,
 			return errors.New("at least one field to update must be provided (amount, category, date, or description)")
 		}
 
-		cashFlowEntity, err := cash_flow_service.UpdateById(plainId, belongsDate, categoryName, amount, descriptionExact)
+		cashFlowEntity, err := cash_flow_service.UpdateByIdForUser(plainId, belongsDate, categoryName, amount, descriptionExact, cashUserId)
 		if err != nil {
 			return err
 		}

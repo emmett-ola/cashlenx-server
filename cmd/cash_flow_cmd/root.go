@@ -3,12 +3,14 @@ package cash_flow_cmd
 import (
 	"errors"
 
+	"github.com/macar-x/cashlenx-server/service/user_service"
 	"github.com/spf13/cobra"
 )
 
 var (
 	plainId          string
 	descriptionFuzzy string
+	cashUserId       string
 )
 
 var CashCmd = &cobra.Command{
@@ -29,4 +31,17 @@ Available sub-commands:
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return errors.New("must provide a valid sub command")
 	},
+}
+
+func ensureCashUser() error {
+	if cashUserId != "" {
+		return nil
+	}
+	var err error
+	cashUserId, err = user_service.GetDefaultAdminUserId()
+	return err
+}
+
+func init() {
+	CashCmd.PersistentFlags().StringVarP(&cashUserId, "user", "u", "", "user ID (required)")
 }

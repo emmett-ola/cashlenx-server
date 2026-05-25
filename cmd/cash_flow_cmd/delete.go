@@ -12,6 +12,9 @@ var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "delete cash_flow by specific type",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := ensureCashUser(); err != nil {
+			return err
+		}
 		// Get command line arguments
 		plainId, err := cmd.Flags().GetString("id")
 		if err != nil {
@@ -28,7 +31,7 @@ var deleteCmd = &cobra.Command{
 
 		if plainId != "" {
 
-			cashFlowEntity, err := cash_flow_service.DeleteById(plainId)
+			cashFlowEntity, err := cash_flow_service.DeleteByIdForUser(plainId, cashUserId)
 			if err != nil {
 				return err
 			}
@@ -37,7 +40,7 @@ var deleteCmd = &cobra.Command{
 		}
 
 		if belongsDate != "" {
-			cashFlowEntityList, err := cash_flow_service.DeleteByDate(belongsDate)
+			cashFlowEntityList, err := cash_flow_service.DeleteByDateForUser(belongsDate, cashUserId)
 			if err != nil {
 				return err
 			}

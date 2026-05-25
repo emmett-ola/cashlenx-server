@@ -12,6 +12,9 @@ var queryCmd = &cobra.Command{
 	Use:   "query",
 	Short: "query for cash_flow data",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := ensureCashUser(); err != nil {
+			return err
+		}
 		plainId, _ := cmd.Flags().GetString("id")
 		belongsDate, _ := cmd.Flags().GetString("date")
 		descriptionExact, _ := cmd.Flags().GetString("exact")
@@ -24,7 +27,7 @@ var queryCmd = &cobra.Command{
 
 		// if id is not empty, use it for query.
 		if plainId != "" {
-			cashFlowEntity, err := cash_flow_service.QueryById(plainId)
+			cashFlowEntity, err := cash_flow_service.QueryByIdForUser(plainId, cashUserId)
 			if err != nil {
 				return err
 			}
@@ -34,7 +37,7 @@ var queryCmd = &cobra.Command{
 
 		// else if date is not empty, use it for query.
 		if belongsDate != "" {
-			cashFlowEntityList, err := cash_flow_service.QueryByDate(belongsDate)
+			cashFlowEntityList, err := cash_flow_service.QueryByDateForUser(belongsDate, cashUserId)
 			if err != nil {
 				return err
 			}
@@ -50,7 +53,7 @@ var queryCmd = &cobra.Command{
 
 		// else if exact_desc is not empty, use it for query.
 		if descriptionExact != "" {
-			cashFlowEntityList, err := cash_flow_service.QueryByExactDescription(descriptionExact)
+			cashFlowEntityList, _, err := cash_flow_service.QueryAllForUser(cashUserId, "", "", "", descriptionExact, "", "", 0, 0)
 			if err != nil {
 				return err
 			}
@@ -66,7 +69,7 @@ var queryCmd = &cobra.Command{
 
 		// else if fuzzy_desc is not empty, use it for query.
 		if descriptionFuzzy != "" {
-			cashFlowEntityList, err := cash_flow_service.QueryByFuzzyDescription(descriptionFuzzy)
+			cashFlowEntityList, _, err := cash_flow_service.QueryAllForUser(cashUserId, "", "", descriptionFuzzy, "", "", "", 0, 0)
 			if err != nil {
 				return err
 			}
