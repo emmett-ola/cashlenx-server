@@ -1,6 +1,7 @@
 package admin_cmd
 
 import (
+	"github.com/macar-x/cashlenx-server/cmd/cli_auth"
 	"github.com/spf13/cobra"
 )
 
@@ -14,6 +15,10 @@ Available sub-commands:
   user    - Manage users
   backup  - Create database backup
   restore - Restore database from backup`,
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		_, err := cli_auth.RequireAdmin()
+		return err
+	},
 }
 
 func init() {

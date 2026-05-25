@@ -1,6 +1,7 @@
 package statistic_cmd
 
 import (
+	"github.com/macar-x/cashlenx-server/cmd/cli_auth"
 	"github.com/spf13/cobra"
 )
 
@@ -31,4 +32,8 @@ func init() {
 	StatisticCmd.AddCommand(topCmd)
 	StatisticCmd.AddCommand(dashboardCmd)
 	StatisticCmd.AddCommand(chartCmd)
+}
+
+func ensureStatisticUser(userId *string) error {
+	return cli_auth.RequireUserID(userId)
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/macar-x/cashlenx-server/service/statistic_service"
-	"github.com/macar-x/cashlenx-server/service/user_service"
 	"github.com/spf13/cobra"
 )
 
@@ -19,14 +18,8 @@ var importCmd = &cobra.Command{
 	Long: `Import cash flow data from Excel file to your account.
 All imported records will be associated with your user account.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// TODO: Get userId from authentication/config
-		// For now, require userId as parameter
-		if importUserId == "" {
-			var err error
-			importUserId, err = user_service.GetDefaultAdminUserId()
-			if err != nil {
-				return err
-			}
+		if err := ensureStatisticUser(&importUserId); err != nil {
+			return err
 		}
 
 		err := statistic_service.ImportForUser(importFilePath, importUserId)
@@ -42,6 +35,6 @@ All imported records will be associated with your user account.`,
 
 func init() {
 	importCmd.Flags().StringVarP(&importFilePath, "input", "i", "", "input path, e.g. ~/export.xlsx (required)")
-	importCmd.Flags().StringVarP(&importUserId, "user", "u", "", "user ID (required)")
+	importCmd.Flags().StringVarP(&importUserId, "user", "u", "", "user ID; must match the logged-in user")
 	importCmd.MarkFlagRequired("input")
 }

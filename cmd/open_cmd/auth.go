@@ -5,17 +5,11 @@ import (
 	"fmt"
 
 	"github.com/macar-x/cashlenx-server/auth"
+	"github.com/macar-x/cashlenx-server/cmd/cli_auth"
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/service/refresh_token_service"
 	"github.com/macar-x/cashlenx-server/service/user_service"
 	"github.com/spf13/cobra"
-)
-
-const (
-	cliDeviceID   = "cashlenx-cli"
-	cliDeviceName = "CashLenX CLI"
-	cliIPAddress  = "127.0.0.1"
-	cliUserAgent  = "cashlenx-cli"
 )
 
 var authCmd = &cobra.Command{
@@ -49,14 +43,17 @@ var loginCmd = &cobra.Command{
 		var user model.UserEntity
 		var err error
 		if loginRefreshToken != "" {
-			accessToken, refreshToken, user, err = auth.Service.RefreshToken(loginRefreshToken, cliDeviceID, cliDeviceName, cliIPAddress, cliUserAgent)
+			accessToken, refreshToken, user, err = auth.Service.RefreshToken(loginRefreshToken, cli_auth.DeviceID, cli_auth.DeviceName, cli_auth.IPAddress, cli_auth.UserAgent)
 		} else {
 			if loginUsername == "" || loginPassword == "" {
 				return errors.New("username and password are required unless --refresh-token is provided")
 			}
-			accessToken, refreshToken, user, err = auth.Service.Authenticate(loginUsername, loginPassword, cliDeviceID, cliDeviceName, cliIPAddress, cliUserAgent)
+			accessToken, refreshToken, user, err = auth.Service.Authenticate(loginUsername, loginPassword, cli_auth.DeviceID, cli_auth.DeviceName, cli_auth.IPAddress, cli_auth.UserAgent)
 		}
 		if err != nil {
+			return err
+		}
+		if err := cli_auth.Save(accessToken, refreshToken, user); err != nil {
 			return err
 		}
 
@@ -64,6 +61,7 @@ var loginCmd = &cobra.Command{
 		fmt.Printf("Role: %s\n", user.Role)
 		fmt.Printf("Access Token: %s\n", accessToken)
 		fmt.Printf("Refresh Token: %s\n", refreshToken)
+		fmt.Println("CLI session saved")
 		return nil
 	},
 }
@@ -88,14 +86,21 @@ var logoutCmd = &cobra.Command{
 	Use:   "logout",
 	Short: "Logout by revoking refresh token or all tokens for an access token",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if logoutRefreshToken == "" && logoutAccessToken == "" {
+			session, err := cli_auth.CurrentSession()
+			if err == nil {
+				logoutRefreshToken = session.RefreshToken
+			}
+		}
 		if logoutRefreshToken != "" {
-			refreshToken, err := refresh_token_service.GetRefreshTokenByToken(logoutRefreshToken, cliDeviceID, cliDeviceName, cliIPAddress, cliUserAgent)
+			refreshToken, err := refresh_token_service.GetRefreshTokenByToken(logoutRefreshToken, cli_auth.DeviceID, cli_auth.DeviceName, cli_auth.IPAddress, cli_auth.UserAgent)
 			if err != nil {
 				return err
 			}
 			if err := refresh_token_service.RevokeRefreshToken(logoutRefreshToken, refreshToken.UserId); err != nil {
 				return err
 			}
+			_ = cli_auth.Clear()
 			fmt.Println("Successfully logged out from this device")
 			return nil
 		}
@@ -107,9 +112,11 @@ var logoutCmd = &cobra.Command{
 			if err := refresh_token_service.RevokeAllRefreshTokens(claims.UserID); err != nil {
 				return err
 			}
+			_ = cli_auth.Clear()
 			fmt.Println("Successfully logged out from all devices")
 			return nil
 		}
+		_ = cli_auth.Clear()
 		fmt.Println("Logout accepted")
 		return nil
 	},
@@ -122,7 +129,7 @@ var resetPasswordCmd = &cobra.Command{
 		if resetEmailOrUsername == "" {
 			return errors.New("email or username is required")
 		}
-		if err := user_service.RequestPasswordReset(resetEmailOrUsername, cliIPAddress); err != nil {
+		if err := user_service.RequestPasswordReset(resetEmailOrUsername, cli_auth.IPAddress); err != nil {
 			return err
 		}
 		fmt.Println("Password reset request accepted")

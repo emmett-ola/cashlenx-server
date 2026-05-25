@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/macar-x/cashlenx-server/service/statistic_service"
-	"github.com/macar-x/cashlenx-server/service/user_service"
 	"github.com/spf13/cobra"
 )
 
@@ -22,12 +21,8 @@ Only includes your own transactions.`,
 	Example: `  cashlenx statistic dashboard -p monthly -d 2026-01 -u <userId>
   cashlenx statistic dashboard -p yearly -d 2026 -u <userId>`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if dashboardUserId == "" {
-			var err error
-			dashboardUserId, err = user_service.GetDefaultAdminUserId()
-			if err != nil {
-				return err
-			}
+		if err := ensureStatisticUser(&dashboardUserId); err != nil {
+			return err
 		}
 
 		dashboard, err := statistic_service.GetDashboardOverviewForUser(dashboardPeriod, dashboardDate, dashboardUserId)
@@ -65,6 +60,6 @@ Only includes your own transactions.`,
 func init() {
 	dashboardCmd.Flags().StringVarP(&dashboardPeriod, "period", "p", "monthly", "period type: daily, monthly, yearly")
 	dashboardCmd.Flags().StringVarP(&dashboardDate, "date", "d", "", "date for dashboard (required)")
-	dashboardCmd.Flags().StringVarP(&dashboardUserId, "user", "u", "", "user ID (required)")
+	dashboardCmd.Flags().StringVarP(&dashboardUserId, "user", "u", "", "user ID; must match the logged-in user")
 	dashboardCmd.MarkFlagRequired("date")
 }

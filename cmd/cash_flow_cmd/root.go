@@ -3,7 +3,7 @@ package cash_flow_cmd
 import (
 	"errors"
 
-	"github.com/macar-x/cashlenx-server/service/user_service"
+	"github.com/macar-x/cashlenx-server/cmd/cli_auth"
 	"github.com/spf13/cobra"
 )
 
@@ -34,14 +34,9 @@ Available sub-commands:
 }
 
 func ensureCashUser() error {
-	if cashUserId != "" {
-		return nil
-	}
-	var err error
-	cashUserId, err = user_service.GetDefaultAdminUserId()
-	return err
+	return cli_auth.RequireUserID(&cashUserId)
 }
 
 func init() {
-	CashCmd.PersistentFlags().StringVarP(&cashUserId, "user", "u", "", "user ID (required)")
+	CashCmd.PersistentFlags().StringVarP(&cashUserId, "user", "u", "", "user ID; must match the logged-in user")
 }

@@ -3,7 +3,7 @@ package category_cmd
 import (
 	"errors"
 
-	"github.com/macar-x/cashlenx-server/service/user_service"
+	"github.com/macar-x/cashlenx-server/cmd/cli_auth"
 	"github.com/spf13/cobra"
 )
 
@@ -25,17 +25,10 @@ Available sub-commands:
   update - Update existing category
   delete - Delete category
   query  - Query categories by filters
-  list   - List all categories`,
+ list   - List all categories`,
 
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		if userId == "" {
-			var err error
-			userId, err = user_service.GetDefaultAdminUserId()
-			if err != nil {
-				return err
-			}
-		}
-		return nil
+		return cli_auth.RequireUserID(&userId)
 	},
 
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -44,5 +37,5 @@ Available sub-commands:
 }
 
 func init() {
-	CategoryCmd.PersistentFlags().StringVarP(&userId, "user", "u", "", "user ID (required)")
+	CategoryCmd.PersistentFlags().StringVarP(&userId, "user", "u", "", "user ID; must match the logged-in user")
 }

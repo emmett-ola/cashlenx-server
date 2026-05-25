@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/macar-x/cashlenx-server/service/statistic_service"
-	"github.com/macar-x/cashlenx-server/service/user_service"
 	"github.com/spf13/cobra"
 )
 
@@ -38,12 +37,8 @@ var incomeExpenseChartCmd = &cobra.Command{
 	Example: `  cashlenx statistic chart income-expense -p monthly -d 2026-01 -u <userId>
   cashlenx statistic chart income-expense -p yearly -d 2026 -u <userId>`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if incomeExpenseUserId == "" {
-			var err error
-			incomeExpenseUserId, err = user_service.GetDefaultAdminUserId()
-			if err != nil {
-				return err
-			}
+		if err := ensureStatisticUser(&incomeExpenseUserId); err != nil {
+			return err
 		}
 
 		chartData, err := statistic_service.GetIncomeExpenseChartDataForUser(incomeExpensePeriod, incomeExpenseDate, incomeExpenseUserId)
@@ -70,12 +65,8 @@ var categoryDistributionChartCmd = &cobra.Command{
 	Example: `  cashlenx statistic chart category-distribution -p monthly -d 2026-01 -t expense -u <userId>
   cashlenx statistic chart category-distribution -p yearly -d 2026 -t income -u <userId>`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if categoryDistributionUserId == "" {
-			var err error
-			categoryDistributionUserId, err = user_service.GetDefaultAdminUserId()
-			if err != nil {
-				return err
-			}
+		if err := ensureStatisticUser(&categoryDistributionUserId); err != nil {
+			return err
 		}
 
 		distribution, err := statistic_service.GetCategoryDistributionForUser(categoryDistributionPeriod, categoryDistributionDate, categoryDistributionType, categoryDistributionUserId)
@@ -101,12 +92,8 @@ var monthlyComparisonChartCmd = &cobra.Command{
 	Short:   "Show monthly comparison chart data",
 	Example: `  cashlenx statistic chart monthly-comparison -y 2026 -u <userId>`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if monthlyComparisonUserId == "" {
-			var err error
-			monthlyComparisonUserId, err = user_service.GetDefaultAdminUserId()
-			if err != nil {
-				return err
-			}
+		if err := ensureStatisticUser(&monthlyComparisonUserId); err != nil {
+			return err
 		}
 
 		comparison, err := statistic_service.GetMonthlyComparisonForUser(monthlyComparisonYear, monthlyComparisonUserId)
@@ -131,12 +118,8 @@ var spendingHeatmapChartCmd = &cobra.Command{
 	Short:   "Show spending heatmap chart data",
 	Example: `  cashlenx statistic chart spending-heatmap -y 2026 -u <userId>`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if spendingHeatmapUserId == "" {
-			var err error
-			spendingHeatmapUserId, err = user_service.GetDefaultAdminUserId()
-			if err != nil {
-				return err
-			}
+		if err := ensureStatisticUser(&spendingHeatmapUserId); err != nil {
+			return err
 		}
 
 		heatmap, err := statistic_service.GetSpendingHeatmapForUser(spendingHeatmapYear, spendingHeatmapUserId)
@@ -164,20 +147,20 @@ func init() {
 
 	incomeExpenseChartCmd.Flags().StringVarP(&incomeExpensePeriod, "period", "p", "monthly", "period type: daily, monthly, yearly")
 	incomeExpenseChartCmd.Flags().StringVarP(&incomeExpenseDate, "date", "d", "", "date for chart (required)")
-	incomeExpenseChartCmd.Flags().StringVarP(&incomeExpenseUserId, "user", "u", "", "user ID (required)")
+	incomeExpenseChartCmd.Flags().StringVarP(&incomeExpenseUserId, "user", "u", "", "user ID; must match the logged-in user")
 	incomeExpenseChartCmd.MarkFlagRequired("date")
 
 	categoryDistributionChartCmd.Flags().StringVarP(&categoryDistributionPeriod, "period", "p", "monthly", "period type: daily, monthly, yearly")
 	categoryDistributionChartCmd.Flags().StringVarP(&categoryDistributionDate, "date", "d", "", "date for chart (required)")
 	categoryDistributionChartCmd.Flags().StringVarP(&categoryDistributionType, "type", "t", "expense", "flow type: income or expense")
-	categoryDistributionChartCmd.Flags().StringVarP(&categoryDistributionUserId, "user", "u", "", "user ID (required)")
+	categoryDistributionChartCmd.Flags().StringVarP(&categoryDistributionUserId, "user", "u", "", "user ID; must match the logged-in user")
 	categoryDistributionChartCmd.MarkFlagRequired("date")
 
 	monthlyComparisonChartCmd.Flags().StringVarP(&monthlyComparisonYear, "year", "y", "", "year for monthly comparison (required)")
-	monthlyComparisonChartCmd.Flags().StringVarP(&monthlyComparisonUserId, "user", "u", "", "user ID (required)")
+	monthlyComparisonChartCmd.Flags().StringVarP(&monthlyComparisonUserId, "user", "u", "", "user ID; must match the logged-in user")
 	monthlyComparisonChartCmd.MarkFlagRequired("year")
 
 	spendingHeatmapChartCmd.Flags().StringVarP(&spendingHeatmapYear, "year", "y", "", "year for spending heatmap (required)")
-	spendingHeatmapChartCmd.Flags().StringVarP(&spendingHeatmapUserId, "user", "u", "", "user ID (required)")
+	spendingHeatmapChartCmd.Flags().StringVarP(&spendingHeatmapUserId, "user", "u", "", "user ID; must match the logged-in user")
 	spendingHeatmapChartCmd.MarkFlagRequired("year")
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/macar-x/cashlenx-server/service/statistic_service"
-	"github.com/macar-x/cashlenx-server/service/user_service"
 	"github.com/spf13/cobra"
 )
 
@@ -28,12 +27,8 @@ Periods:
   cashlenx statistic summary -p monthly -d 2024-01 -u <userId>
   cashlenx statistic summary -p yearly -d 2024 -u <userId>`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if summaryUserId == "" {
-			var err error
-			summaryUserId, err = user_service.GetDefaultAdminUserId()
-			if err != nil {
-				return err
-			}
+		if err := ensureStatisticUser(&summaryUserId); err != nil {
+			return err
 		}
 
 		summary, err := statistic_service.GetSummaryForUser(summaryPeriod, summaryDate, summaryUserId)
@@ -71,6 +66,6 @@ Periods:
 func init() {
 	summaryCmd.Flags().StringVarP(&summaryPeriod, "period", "p", "monthly", "period type: daily, monthly, yearly")
 	summaryCmd.Flags().StringVarP(&summaryDate, "date", "d", "", "date for summary (required)")
-	summaryCmd.Flags().StringVarP(&summaryUserId, "user", "u", "", "user ID (required)")
+	summaryCmd.Flags().StringVarP(&summaryUserId, "user", "u", "", "user ID; must match the logged-in user")
 	summaryCmd.MarkFlagRequired("date")
 }

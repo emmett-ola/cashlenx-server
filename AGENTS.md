@@ -553,7 +553,7 @@ Unit test guidance:
 - Mapper integration tests should be isolated from normal unit tests, use explicit integration naming/build tags or scripts, and run only against disposable test databases
 - API integration tests should exercise controller-to-database behavior separately from `go test ./...`, for example through the smoke script against Docker-backed services
 
-CLI statistic import/export note: `cmd/statistic_cmd/export.go` and `cmd/statistic_cmd/import.go` accept `--user`, but currently fall back to `user_service.GetDefaultAdminUserId()` when it is omitted. Treat this as a development convenience, not a finished multi-user CLI auth story.
+CLI auth note: `open auth login` saves access and refresh tokens through `cmd/cli_auth`. Non-open user-scoped commands derive their user ID from that saved session and reject mismatched `--user` values. Admin commands validate the saved JWT role before running service-layer operations.
 
 ## Development Commands
 
@@ -612,10 +612,10 @@ Use this section as a lightweight backlog of mismatches between implementation, 
 
 - [ ] Keep `README.md`, `docs/openapi.yaml`, `docs/roadmap.md`, and `model/version.go` synchronized when the active milestone or API contract changes
 - [x] Treat `/open/auth/logout` as a public idempotent compatibility path; it only revokes sessions when a valid token is supplied
-- [ ] Treat `/auth/tokens` as authenticated token-management API; keep OpenAPI/docs explicit about its auth expectation
+- [x] Treat `/auth/tokens` as authenticated token-management API; keep OpenAPI/docs explicit about its auth expectation
 - [ ] Smoke test SMTP-backed password reset and email-change flows with a real provider before beta
 - [ ] Decide on the future provider strategy for email delivery, likely a third-party provider such as Mailgun, and document the intended integration approach
-- [ ] Replace statistic CLI import/export default-admin fallback with an explicit user/auth model before treating those commands as production-ready multi-user workflows
+- [x] Replace statistic CLI import/export default-admin fallback with an explicit user/auth model before treating those commands as production-ready multi-user workflows
 - [ ] Expand CI and/or local verification to cover more than `./errors` and `./validation`, especially DB-backed service paths as the project matures
 - [ ] Review legacy DB helper behavior that still uses package-global state plus `panic`/`log.Fatal`, and gradually normalize error handling
 - [ ] Confirm whether MongoDB-only eager initialization in the Cobra root command is still the intended default lifecycle, or if DB initialization should be made more explicit and symmetric across backends
@@ -637,6 +637,7 @@ Start here for most work:
 - CLI wiring: `cmd/root.go`
 - Server routing: `controller/server.go`
 - Auth behavior: `auth/provider/local_auth.go`
+- CLI token/session behavior: `cmd/cli_auth/auth.go`
 - User flows: `controller/user_controller/` and `service/user_service/`
 - Cash flows: `controller/cash_flow_controller/` and `service/cash_flow_service/`
 - Statistics/export: `controller/statistic_controller/` and `service/statistic_service/`

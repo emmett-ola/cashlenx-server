@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/macar-x/cashlenx-server/service/statistic_service"
-	"github.com/macar-x/cashlenx-server/service/user_service"
 	"github.com/spf13/cobra"
 )
 
@@ -21,12 +20,8 @@ var trendsCmd = &cobra.Command{
 Only includes your own transactions.`,
 	Example: `  cashlenx statistic trends -p yearly -d 2024 -u <userId>`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if trendsUserId == "" {
-			var err error
-			trendsUserId, err = user_service.GetDefaultAdminUserId()
-			if err != nil {
-				return err
-			}
+		if err := ensureStatisticUser(&trendsUserId); err != nil {
+			return err
 		}
 
 		trends, err := statistic_service.GetTrendsForUser(trendsPeriod, trendsDate, trendsUserId)
@@ -57,6 +52,6 @@ Only includes your own transactions.`,
 func init() {
 	trendsCmd.Flags().StringVarP(&trendsPeriod, "period", "p", "yearly", "period type: daily, monthly, yearly")
 	trendsCmd.Flags().StringVarP(&trendsDate, "date", "d", "", "date (required)")
-	trendsCmd.Flags().StringVarP(&trendsUserId, "user", "u", "", "user ID (required)")
+	trendsCmd.Flags().StringVarP(&trendsUserId, "user", "u", "", "user ID; must match the logged-in user")
 	trendsCmd.MarkFlagRequired("date")
 }

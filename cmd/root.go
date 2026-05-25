@@ -41,6 +41,8 @@ Use 'cashlenx [command] --help' for more information about a command.`,
 }
 
 func Execute() {
+	cobra.EnableTraverseRunHooks = true
+
 	// Setup graceful shutdown
 	setupGracefulShutdown()
 

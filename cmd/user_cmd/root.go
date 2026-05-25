@@ -1,7 +1,7 @@
 package user_cmd
 
 import (
-	"github.com/macar-x/cashlenx-server/service/user_service"
+	"github.com/macar-x/cashlenx-server/cmd/cli_auth"
 	"github.com/spf13/cobra"
 )
 
@@ -12,19 +12,12 @@ var UserCmd = &cobra.Command{
 	Short: "User profile, configuration, account, and backup commands",
 	Long:  `User-scoped commands that mirror /api/user/* endpoints.`,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		if userId == "" {
-			var err error
-			userId, err = user_service.GetDefaultAdminUserId()
-			if err != nil {
-				return err
-			}
-		}
-		return nil
+		return cli_auth.RequireUserID(&userId)
 	},
 }
 
 func init() {
-	UserCmd.PersistentFlags().StringVarP(&userId, "user", "u", "", "user ID (required)")
+	UserCmd.PersistentFlags().StringVarP(&userId, "user", "u", "", "user ID; must match the logged-in user")
 
 	UserCmd.AddCommand(profileCmd)
 	UserCmd.AddCommand(configurationCmd)

@@ -104,7 +104,7 @@ go run main.go open verification verify --purpose signup --email user@example.co
 go run main.go open auth register --username alice --password <password> --email user@example.com --verification-token <token>
 go run main.go open auth login --username alice --password <password>
 go run main.go open auth login --refresh-token <refresh_token>
-go run main.go open auth logout --refresh-token <refresh_token>
+go run main.go open auth logout
 go run main.go open auth reset-password --email-or-username user@example.com
 go run main.go open auth reset-password-confirm --token <token> --password <new_password>
 ```
@@ -112,15 +112,19 @@ go run main.go open auth reset-password-confirm --token <token> --password <new_
 - `open start` starts the REST API server.
 - `open health` calls the local health endpoint.
 - `open version` prints version, build time, git commit, Go version, and OS/architecture.
+- `open auth login` mirrors `POST /open/auth/login` and saves the returned access token and refresh token for later CLI commands.
+- `open auth logout` revokes the saved refresh token when available and clears the local CLI session.
 - `open auth` and `open verification` mirror public authentication and verification endpoints.
+
+CLI sessions are stored in the user's config directory as `cashlenx/cli_auth.json` with file mode `0600`. Set `CASHLENX_CLI_AUTH_FILE` to override the path for tests or isolated local runs.
 
 ## Auth Commands
 
 ```bash
-go run main.go auth tokens --user <user_id>
+go run main.go auth tokens
 ```
 
-- `auth tokens` lists refresh tokens for a user. The current CLI uses explicit `--user` rather than bearer-token context.
+- `auth tokens` lists refresh tokens for the currently logged-in CLI user, matching authenticated `/auth/tokens` behavior.
 
 ## Admin Commands
 
@@ -137,7 +141,7 @@ go run main.go admin database restore -i backup.json --force
 - `admin user` mirrors admin user CRUD endpoints. Created users are always normal `user` role accounts.
 - `admin database backup` exports a full database dump.
 - `admin database restore` restores a full database dump.
-- Use admin commands carefully because they operate beyond a single user's normal finance data surface.
+- Admin commands require a saved CLI session whose JWT role is `admin`, matching `/admin/*` API access checks.
 
 ## User Commands
 
@@ -154,7 +158,7 @@ go run main.go user database backup --output user_backup.json --user <user_id>
 go run main.go user database restore --input user_backup.json --user <user_id>
 ```
 
-User commands are user-scoped and mirror `/user/*` endpoints. The CLI currently uses explicit `--user` selection and falls back to the configured default admin user when omitted, matching the older user-scoped command convention.
+User commands are user-scoped and mirror `/user/*` endpoints. They use the saved CLI session's user ID; if `--user` is supplied it must match the logged-in user.
 
 ## Cash Commands
 
@@ -170,7 +174,7 @@ go run main.go cash update --id <cash_flow_id> --amount 50
 go run main.go cash delete --id <cash_flow_id>
 ```
 
-Cash commands use a persistent `--user` flag and fall back to the configured default admin user when omitted. `cash list` mirrors `GET /cash` filters with `--type`, `--category-id`, `--description`, `--exact-description`, `--from-date`, `--to-date`, `--limit`, `--offset`, and `--page`. CLI date flags generally use dashed formats such as `YYYY-MM-DD`, `YYYY-MM`, or `YYYY`, depending on the command.
+Cash commands use the saved CLI session's user ID; if `--user` is supplied it must match the logged-in user. `cash list` mirrors `GET /cash` filters with `--type`, `--category-id`, `--description`, `--exact-description`, `--from-date`, `--to-date`, `--limit`, `--offset`, and `--page`. CLI date flags generally use dashed formats such as `YYYY-MM-DD`, `YYYY-MM`, or `YYYY`, depending on the command.
 
 ## Category Commands
 
@@ -202,7 +206,7 @@ go run main.go statistic export --from 20260101 --to 20260131 --output export.xl
 go run main.go statistic import --input export.xlsx --user <user_id>
 ```
 
-Statistic commands are user-scoped. Period flags use the service-level values `daily`, `monthly`, and `yearly`.
+Statistic commands are user-scoped and use the saved CLI session's user ID; if `--user` is supplied it must match the logged-in user. Period flags use the service-level values `daily`, `monthly`, and `yearly`.
 
 ## Build
 

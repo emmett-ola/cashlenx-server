@@ -26,7 +26,7 @@ var treeCmd = &cobra.Command{
 
 		// Print the tree structure
 		for _, root := range categoryTree {
-			printCategoryTreeNode(root, "", true)
+			printCategoryTreeNode(root, "", true, 1)
 		}
 
 		return nil
@@ -34,9 +34,13 @@ var treeCmd = &cobra.Command{
 }
 
 // printCategoryTreeNode recursively prints the category tree with indentation
-func printCategoryTreeNode(node model.CategoryTree, indent string, isLast bool) {
+func printCategoryTreeNode(node model.CategoryTree, indent string, isLast bool, depth int) {
 	// Print current node
 	fmt.Printf("%s%s%s\n", indent, getBranchSymbol(isLast), node.Name)
+
+	if treeDeep > 0 && depth >= treeDeep {
+		return
+	}
 
 	// Print children
 	childIndent := indent
@@ -47,7 +51,7 @@ func printCategoryTreeNode(node model.CategoryTree, indent string, isLast bool) 
 	}
 
 	for i, child := range node.Children {
-		printCategoryTreeNode(child, childIndent, i == len(node.Children)-1)
+		printCategoryTreeNode(child, childIndent, i == len(node.Children)-1, depth+1)
 	}
 }
 

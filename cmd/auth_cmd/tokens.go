@@ -3,8 +3,8 @@ package auth_cmd
 import (
 	"fmt"
 
+	"github.com/macar-x/cashlenx-server/cmd/cli_auth"
 	"github.com/macar-x/cashlenx-server/service/refresh_token_service"
-	"github.com/macar-x/cashlenx-server/service/user_service"
 	"github.com/spf13/cobra"
 )
 
@@ -14,13 +14,14 @@ var tokensCmd = &cobra.Command{
 	Use:   "tokens",
 	Short: "List refresh tokens for a user",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if tokensUserId == "" {
-			var err error
-			tokensUserId, err = user_service.GetDefaultAdminUserId()
-			if err != nil {
-				return err
-			}
+		claims, err := cli_auth.RequireUser()
+		if err != nil {
+			return err
 		}
+		if tokensUserId != "" && tokensUserId != claims.UserID {
+			return fmt.Errorf("user flag must match logged-in user")
+		}
+		tokensUserId = claims.UserID
 
 		tokens := refresh_token_service.GetUserRefreshTokens(tokensUserId)
 		if len(tokens) == 0 {
@@ -44,7 +45,7 @@ var tokensCmd = &cobra.Command{
 }
 
 func init() {
-	tokensCmd.Flags().StringVarP(&tokensUserId, "user", "u", "", "user ID (required)")
+	tokensCmd.Flags().StringVarP(&tokensUserId, "user", "u", "", "user ID; must match the logged-in user")
 }
 
 func truncate(value string, limit int) string {

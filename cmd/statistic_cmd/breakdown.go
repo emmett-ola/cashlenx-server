@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/macar-x/cashlenx-server/service/statistic_service"
-	"github.com/macar-x/cashlenx-server/service/user_service"
 	"github.com/spf13/cobra"
 )
 
@@ -22,12 +21,8 @@ Only includes your own transactions.`,
 	Example: `  cashlenx statistic breakdown -p monthly -d 2024-01 -u <userId>
   cashlenx statistic breakdown -p yearly -d 2024 -u <userId>`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if breakdownUserId == "" {
-			var err error
-			breakdownUserId, err = user_service.GetDefaultAdminUserId()
-			if err != nil {
-				return err
-			}
+		if err := ensureStatisticUser(&breakdownUserId); err != nil {
+			return err
 		}
 
 		breakdown, err := statistic_service.GetBreakdownForUser(breakdownPeriod, breakdownDate, breakdownUserId)
@@ -63,6 +58,6 @@ Only includes your own transactions.`,
 func init() {
 	breakdownCmd.Flags().StringVarP(&breakdownPeriod, "period", "p", "monthly", "period type: daily, monthly, yearly")
 	breakdownCmd.Flags().StringVarP(&breakdownDate, "date", "d", "", "date (required)")
-	breakdownCmd.Flags().StringVarP(&breakdownUserId, "user", "u", "", "user ID (required)")
+	breakdownCmd.Flags().StringVarP(&breakdownUserId, "user", "u", "", "user ID; must match the logged-in user")
 	breakdownCmd.MarkFlagRequired("date")
 }
