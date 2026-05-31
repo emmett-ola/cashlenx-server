@@ -119,6 +119,7 @@ func registerCashRoute(r *mux.Router, prefix string) {
 	r.HandleFunc(prefix+"/cash/date/{date}", cash_flow_controller.DeleteByDate).Methods("DELETE")
 	r.HandleFunc(prefix+"/cash/{id}", cash_flow_controller.QueryById).Methods("GET")
 
+	r.HandleFunc(prefix+"/cash/summary/total", cash_flow_controller.GetTotalSummary).Methods("GET")
 	r.HandleFunc(prefix+"/cash/summary/daily/{date}", cash_flow_controller.GetDailySummary).Methods("GET")
 	r.HandleFunc(prefix+"/cash/summary/monthly/{month}", cash_flow_controller.GetMonthlySummary).Methods("GET")
 	r.HandleFunc(prefix+"/cash/summary/yearly/{year}", cash_flow_controller.GetYearlySummary).Methods("GET")
@@ -230,6 +231,7 @@ func versionInfo(w http.ResponseWriter, r *http.Request) {
 				"GET " + apiPrefix + "/cash/{id}",
 				"GET " + apiPrefix + "/cash/date/{date}",
 				"GET " + apiPrefix + "/cash/range?from=YYYYMMDD&to=YYYYMMDD",
+				"GET " + apiPrefix + "/cash/summary/total",
 				"GET " + apiPrefix + "/cash/summary/daily/{date}",
 				"GET " + apiPrefix + "/cash/summary/monthly/{month}",
 				"GET " + apiPrefix + "/cash/summary/yearly/{year}",

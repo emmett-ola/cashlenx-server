@@ -9,6 +9,23 @@ import (
 	"github.com/macar-x/cashlenx-server/util"
 )
 
+// GetTotalSummary returns summary across all active cash flows for the current user.
+func GetTotalSummary(w http.ResponseWriter, r *http.Request) {
+	userId, ok := r.Context().Value("user_id").(string)
+	if !ok || userId == "" {
+		util.ComposeJSONResponse(w, http.StatusUnauthorized, errors.NewUnauthorizedError("user not authenticated"))
+		return
+	}
+
+	summary, err := cash_flow_service.GetTotalSummaryForUser(userId)
+	if err != nil {
+		util.ComposeErrorResponse(w, r, err)
+		return
+	}
+
+	util.ComposeJSONResponse(w, http.StatusOK, summary)
+}
+
 // GetDailySummary returns summary for a specific day
 func GetDailySummary(w http.ResponseWriter, r *http.Request) {
 	// Get user ID from request context

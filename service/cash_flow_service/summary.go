@@ -133,6 +133,27 @@ func GetSummaryForUser(period, date string, userId string) (*Summary, error) {
 	return defaultCashFlowService().GetSummaryForUser(period, date, userId)
 }
 
+// GetTotalSummaryForUser returns financial summary across all active cash flows for a user.
+func GetTotalSummaryForUser(userId string) (*Summary, error) {
+	return defaultCashFlowService().GetTotalSummaryForUser(userId)
+}
+
+func (s *CashFlowService) GetTotalSummaryForUser(userId string) (*Summary, error) {
+	userObjectId := util.Convert2ObjectId(userId)
+	if userObjectId == primitive.NilObjectID {
+		return nil, errors.New("invalid user ID")
+	}
+
+	cashFlows, err := s.cashFlowMapper.GetCashFlowsByFilter(model.CashFlowFilter{
+		UserId: userObjectId,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return s.buildSummary(cashFlows), nil
+}
+
 func (s *CashFlowService) GetSummaryForUser(period, date string, userId string) (*Summary, error) {
 	validPeriods := map[string]bool{
 		"daily":   true,
@@ -188,13 +209,16 @@ func (s *CashFlowService) GetSummaryForUser(period, date string, userId string) 
 		toDate = fromDate.AddDate(1, 0, -1) // Last day of year
 	}
 
-	// Query transactions for period using user-specific methods
+	// Use date range query for efficiency instead of iterating day by day
+	cashFlows := s.cashFlowMapper.GetCashFlowsByDateRangeAndUser(fromDate, toDate, userObjectId)
+
+	return s.buildSummary(cashFlows), nil
+}
+
+func (s *CashFlowService) buildSummary(cashFlows []model.CashFlowEntity) *Summary {
 	summary := &Summary{
 		CategoryBreakdown: make(map[string]float64),
 	}
-
-	// Use date range query for efficiency instead of iterating day by day
-	cashFlows := s.cashFlowMapper.GetCashFlowsByDateRangeAndUser(fromDate, toDate, userObjectId)
 
 	for _, cashFlow := range cashFlows {
 		summary.TransactionCount++
@@ -235,5 +259,5 @@ func (s *CashFlowService) GetSummaryForUser(period, date string, userId string) 
 		summary.CategoryBreakdown[k] = util.RoundFloat(v, 2)
 	}
 
-	return summary, nil
+	return summary
 }

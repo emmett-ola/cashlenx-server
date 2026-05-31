@@ -92,6 +92,7 @@ Cash flow:
 - `GET /cash/{id}`
 - `PUT /cash/{id}`
 - `DELETE /cash/{id}`
+- `GET /cash/summary/total`
 - `GET /cash/summary/daily/{date}`
 - `GET /cash/summary/monthly/{month}`
 - `GET /cash/summary/yearly/{year}`

@@ -530,6 +530,15 @@ paths:
         '200':
           $ref: '#/components/responses/WrappedResponse'
 
+  /cash/summary/total:
+    get:
+      summary: Get total cash summary
+      operationId: getTotalSummary
+      tags: [Cash Flow]
+      responses:
+        '200':
+          $ref: '#/components/responses/WrappedResponse'
+
   /cash/summary/monthly/{month}:
     get:
       summary: Get monthly cash summary

@@ -100,6 +100,68 @@ func TestCashFlowServiceQueryAllForUserEnrichesAndFiltersByType(t *testing.T) {
 	}
 }
 
+func TestCashFlowServiceGetTotalSummaryForUserAggregatesActiveUserFlows(t *testing.T) {
+	cashMapper := newCashFlowMapperFake()
+	categoryMapper := newCashFlowCategoryMapperFake()
+	userID := primitive.NewObjectID()
+	otherUserID := primitive.NewObjectID()
+	foodID := primitive.NewObjectID()
+	salaryID := primitive.NewObjectID()
+	categoryMapper.categories[foodID] = model.CategoryEntity{Id: foodID, BelongsUserId: userID, Name: "Food", Type: model.FlowTypeExpense}
+	categoryMapper.categories[salaryID] = model.CategoryEntity{Id: salaryID, BelongsUserId: userID, Name: "Salary", Type: model.FlowTypeIncome}
+	cashMapper.flows[primitive.NewObjectID().Hex()] = model.CashFlowEntity{
+		Id:            primitive.NewObjectID(),
+		BelongsUserId: userID,
+		CategoryId:    foodID,
+		BelongsDate:   time.Date(2026, time.May, 12, 0, 0, 0, 0, time.UTC),
+		Amount:        12.345,
+	}
+	cashMapper.flows[primitive.NewObjectID().Hex()] = model.CashFlowEntity{
+		Id:            primitive.NewObjectID(),
+		BelongsUserId: userID,
+		CategoryId:    salaryID,
+		BelongsDate:   time.Date(2026, time.May, 13, 0, 0, 0, 0, time.UTC),
+		Amount:        100,
+	}
+	cashMapper.flows[primitive.NewObjectID().Hex()] = model.CashFlowEntity{
+		Id:            primitive.NewObjectID(),
+		BelongsUserId: otherUserID,
+		CategoryId:    foodID,
+		BelongsDate:   time.Date(2026, time.May, 14, 0, 0, 0, 0, time.UTC),
+		Amount:        99,
+	}
+	cashMapper.flows[primitive.NewObjectID().Hex()] = model.CashFlowEntity{
+		Id:            primitive.NewObjectID(),
+		BelongsUserId: userID,
+		CategoryId:    foodID,
+		BelongsDate:   time.Date(2026, time.May, 15, 0, 0, 0, 0, time.UTC),
+		Amount:        20,
+		BaseEntity:    model.BaseEntity{IsDelete: true},
+	}
+	service := NewCashFlowService(cashMapper, categoryMapper)
+
+	summary, err := service.GetTotalSummaryForUser(userID.Hex())
+	if err != nil {
+		t.Fatalf("GetTotalSummaryForUser returned error: %v", err)
+	}
+
+	if summary.TotalIncome != 100 {
+		t.Fatalf("TotalIncome = %.2f, want 100.00", summary.TotalIncome)
+	}
+	if summary.TotalExpense != 12.35 {
+		t.Fatalf("TotalExpense = %.2f, want 12.35", summary.TotalExpense)
+	}
+	if summary.Balance != 87.66 {
+		t.Fatalf("Balance = %.2f, want 87.66", summary.Balance)
+	}
+	if summary.TransactionCount != 2 {
+		t.Fatalf("TransactionCount = %d, want 2", summary.TransactionCount)
+	}
+	if summary.CategoryBreakdown["Food"] != 12.35 {
+		t.Fatalf("Food category = %.2f, want 12.35", summary.CategoryBreakdown["Food"])
+	}
+}
+
 func TestCashFlowServiceUpdateByIdForUserUsesUserScopedCategory(t *testing.T) {
 	cashMapper := newCashFlowMapperFake()
 	categoryMapper := newCashFlowCategoryMapperFake()
@@ -312,6 +374,9 @@ func (fake *cashFlowMapperFake) UpdateCashFlowByEntityAndUser(plainId string, up
 func (fake *cashFlowMapperFake) GetCashFlowsByFilter(filter model.CashFlowFilter) ([]model.CashFlowEntity, error) {
 	var flows []model.CashFlowEntity
 	for _, flow := range fake.flows {
+		if flow.IsDelete {
+			continue
+		}
 		if !filter.UserId.IsZero() && flow.BelongsUserId != filter.UserId {
 			continue
 		}

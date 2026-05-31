@@ -223,7 +223,7 @@ Mounted on a subrouter with `middleware.Admin`:
   - `GET /api/{version}/cash/{id}`
   - `PUT /api/{version}/cash/{id}`
   - `DELETE /api/{version}/cash/{id}`
-  - Summary endpoints for daily/monthly/yearly
+  - Summary endpoints for total/daily/monthly/yearly
 - Category:
   - `POST /api/{version}/category`
   - `GET /api/{version}/category`

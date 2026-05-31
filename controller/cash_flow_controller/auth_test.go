@@ -28,6 +28,7 @@ func TestCashHandlersRequireAuthenticatedUser(t *testing.T) {
 		{"update by id", UpdateById, http.MethodPut, "/cash/id", "", map[string]string{"id": "id"}},
 		{"delete by id", DeleteById, http.MethodDelete, "/cash/id", "", map[string]string{"id": "id"}},
 		{"delete by date", DeleteByDate, http.MethodDelete, "/cash/date/2026-05-25", "", map[string]string{"date": "2026-05-25"}},
+		{"total summary", GetTotalSummary, http.MethodGet, "/cash/summary/total", "", nil},
 		{"daily summary", GetDailySummary, http.MethodGet, "/cash/summary/daily/2026-05-25", "", map[string]string{"date": "2026-05-25"}},
 		{"monthly summary", GetMonthlySummary, http.MethodGet, "/cash/summary/monthly/2026-05", "", map[string]string{"month": "2026-05"}},
 		{"yearly summary", GetYearlySummary, http.MethodGet, "/cash/summary/yearly/2026", "", map[string]string{"year": "2026"}},
