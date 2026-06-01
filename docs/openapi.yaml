@@ -62,6 +62,7 @@ paths:
   /open/auth/register:
     post:
       summary: User registration
+      description: Completes public self-registration after email verification. Clients must first call `/open/verification/code` with `purpose=signup`, then `/open/verification/verify`, and submit the returned `verification_token` here. This endpoint creates a normal active user account and returns the created user record; it does not issue login tokens.
       operationId: register
       tags: [Authentication]
       requestBody:
@@ -75,12 +76,15 @@ paths:
           $ref: '#/components/responses/WrappedResponse'
         '400':
           $ref: '#/components/responses/WrappedResponse'
+        '403':
+          $ref: '#/components/responses/WrappedResponse'
         '409':
           $ref: '#/components/responses/WrappedResponse'
 
   /open/verification/code:
     post:
       summary: Send verification code
+      description: Sends a purpose-scoped verification code to the supplied email address. For self-registration, use `purpose=signup`. The signup flow rejects email addresses that already belong to an account.
       operationId: sendVerificationCode
       tags: [Authentication]
       requestBody:
@@ -94,12 +98,17 @@ paths:
           $ref: '#/components/responses/WrappedResponse'
         '400':
           $ref: '#/components/responses/WrappedResponse'
+        '409':
+          $ref: '#/components/responses/WrappedResponse'
         '429':
+          $ref: '#/components/responses/WrappedResponse'
+        '500':
           $ref: '#/components/responses/WrappedResponse'
 
   /open/verification/verify:
     post:
       summary: Verify code and return one-time token
+      description: Verifies a previously emailed code and returns a one-time `token` plus `expires_at`. For signup, that returned token must be passed to `/open/auth/register` as `verification_token`.
       operationId: verifyVerificationCode
       tags: [Authentication]
       requestBody:
@@ -1142,47 +1151,74 @@ components:
 
     UserRegistrationRequest:
       type: object
+      description: Final step of public signup. Requires a `verification_token` returned by `/open/verification/verify` for the same email address using `purpose=signup`.
       properties:
         username:
           type: string
           minLength: 3
           maxLength: 50
+          example: alice
         password:
           type: string
           minLength: 6
           maxLength: 100
+          example: secret123
         email_address:
           type: string
           format: email
+          example: alice@example.com
         verification_token:
           type: string
+          description: One-time token returned from `/open/verification/verify`.
+          example: 8f4d20f52f4bc85f9bca2414b3aa0e7fa5c7d2d7e78fd7a5fa3df0d9f5fd4c70
       required: [username, password, email_address, verification_token]
 
     SendVerificationCodeRequest:
       type: object
+      description: Request body for sending a verification code. Use `purpose=signup` before calling public registration.
       properties:
         purpose:
           type: string
           enum: [signup, password_reset, email_change]
+          example: signup
         email:
           type: string
           format: email
+          example: alice@example.com
       required: [purpose, email]
 
     VerifyVerificationCodeRequest:
       type: object
+      description: Request body for verifying a previously emailed code. The returned token is then used by the matching flow, such as public registration.
       properties:
         purpose:
           type: string
           enum: [signup, password_reset, email_change]
+          example: signup
         email:
           type: string
           format: email
+          example: alice@example.com
         code:
           type: string
           minLength: 6
           maxLength: 6
+          example: a1b2c3
       required: [purpose, email, code]
+
+    VerifyVerificationCodeResponse:
+      type: object
+      description: One-time verification token returned after a successful code check.
+      properties:
+        token:
+          type: string
+          description: One-time token for the same purpose and email address.
+          example: 8f4d20f52f4bc85f9bca2414b3aa0e7fa5c7d2d7e78fd7a5fa3df0d9f5fd4c70
+        expires_at:
+          type: string
+          format: date-time
+          example: 2026-06-01T10:30:00Z
+      required: [token, expires_at]
 
     LogoutRequest:
       type: object
