@@ -75,7 +75,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	userId, err := user_service.RegisterPublicUser(
 		registerRequest.Username,
 		registerRequest.Password,
-		registerRequest.EmailAddress,
+		registerRequest.Email,
 		registerRequest.VerificationToken,
 	)
 	if err != nil {

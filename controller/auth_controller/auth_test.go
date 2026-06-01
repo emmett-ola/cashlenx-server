@@ -66,6 +66,22 @@ func TestRegisterRejectsInvalidJSON(t *testing.T) {
 	}
 }
 
+func TestRegisterAcceptsEmailFieldName(t *testing.T) {
+	originalRegistrationEnabled := util.GetConfigByKey("auth.registration.enabled")
+	defer util.SetConfigByKey("auth.registration.enabled", originalRegistrationEnabled)
+	util.SetConfigByKey("auth.registration.enabled", "false")
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v0/open/auth/register", bytes.NewBufferString(`{"username":"alice","password":"secret123","email":"alice@example.com","verification_token":"token"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+
+	Register(rec, req)
+
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want %d; body=%s", rec.Code, http.StatusForbidden, rec.Body.String())
+	}
+}
+
 func TestGetTokensRequiresUserContext(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/api/v0/auth/tokens", nil)
 	rec := httptest.NewRecorder()

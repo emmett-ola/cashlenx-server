@@ -62,7 +62,7 @@ paths:
   /open/auth/register:
     post:
       summary: User registration
-      description: Completes public self-registration after email verification. Clients must first call `/open/verification/code` with `purpose=signup`, then `/open/verification/verify`, and submit the returned `verification_token` here. This endpoint creates a normal active user account and returns the created user record; it does not issue login tokens.
+      description: Completes public self-registration after email verification. Clients must first call `/open/verification/code` with `purpose=signup`, then `/open/verification/verify`, and submit the returned `verification_token` here. Use the same `email` field name as the verification endpoints. This endpoint creates a normal active user account and returns the created user record; it does not issue login tokens.
       operationId: register
       tags: [Authentication]
       requestBody:
@@ -1163,7 +1163,7 @@ components:
           minLength: 6
           maxLength: 100
           example: secret123
-        email_address:
+        email:
           type: string
           format: email
           example: alice@example.com
@@ -1171,7 +1171,7 @@ components:
           type: string
           description: One-time token returned from `/open/verification/verify`.
           example: 8f4d20f52f4bc85f9bca2414b3aa0e7fa5c7d2d7e78fd7a5fa3df0d9f5fd4c70
-      required: [username, password, email_address, verification_token]
+      required: [username, password, email, verification_token]
 
     SendVerificationCodeRequest:
       type: object

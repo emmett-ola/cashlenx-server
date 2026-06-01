@@ -102,7 +102,7 @@ type UserLoginResponse struct {
 type UserRegistrationRequest struct {
 	Username          string `json:"username"`
 	Password          string `json:"password"`
-	EmailAddress      string `json:"email_address"`
+	Email             string `json:"email"`
 	VerificationToken string `json:"verification_token"`
 }
 

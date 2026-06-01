@@ -24,7 +24,7 @@ func RegisterPublicUser(username, password, emailAddress, verificationToken stri
 		return "", errors.NewValidationError("password is required")
 	}
 	if emailAddress == "" {
-		return "", errors.NewValidationError("email_address is required")
+		return "", errors.NewValidationError("email is required")
 	}
 	if verificationToken == "" {
 		return "", errors.NewValidationError("verification_token is required")
@@ -43,7 +43,7 @@ func RegisterPublicUser(username, password, emailAddress, verificationToken stri
 	}
 	existingEmailUser := user_mapper.INSTANCE.GetUserByEmail(emailAddress)
 	if !existingEmailUser.Id.IsZero() {
-		return "", errors.NewFieldAlreadyExistsError("email_address", "email address already exists")
+		return "", errors.NewFieldAlreadyExistsError("email", "email address already exists")
 	}
 
 	verification, err := verification_service.ConsumeVerifiedToken(verificationToken, verification_service.OperationSignup)

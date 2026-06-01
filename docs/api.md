@@ -137,7 +137,7 @@ Register:
 ```bash
 curl -X POST http://localhost:8080/api/v0/open/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"username":"testuser","password":"test123"}'
+  -d '{"username":"testuser","password":"test123","email":"test@example.com","verification_token":"<token>"}'
 ```
 
 Login:
