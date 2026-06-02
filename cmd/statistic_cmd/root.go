@@ -1,9 +1,6 @@
 package statistic_cmd
 
-import (
-	"github.com/macar-x/cashlenx-server/cmd/cli_auth"
-	"github.com/spf13/cobra"
-)
+import "github.com/spf13/cobra"
 
 var StatisticCmd = &cobra.Command{
 	Use:   "statistic",
@@ -35,5 +32,5 @@ func init() {
 }
 
 func ensureStatisticUser(userId *string) error {
-	return cli_auth.RequireUserID(userId)
+	return requireStatisticUser(userId)
 }

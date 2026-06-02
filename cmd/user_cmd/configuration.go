@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/macar-x/cashlenx-server/model"
-	"github.com/macar-x/cashlenx-server/service/user_service"
 	"github.com/spf13/cobra"
 )
 
@@ -23,7 +22,7 @@ var configurationGetCmd = &cobra.Command{
 	Use:   "get",
 	Short: "Get configuration",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		config, err := user_service.GetConfigurationService(userId)
+		config, err := getUserConfig(userId)
 		if err != nil {
 			return err
 		}
@@ -47,7 +46,7 @@ var configurationUpsertCmd = &cobra.Command{
 			request.ActiveThemeColor = &configTheme
 		}
 
-		config, err := user_service.UpsertConfigurationService(userId, request)
+		config, err := upsertUserConfig(userId, request)
 		if err != nil {
 			return err
 		}

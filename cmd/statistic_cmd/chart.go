@@ -3,7 +3,6 @@ package statistic_cmd
 import (
 	"fmt"
 
-	"github.com/macar-x/cashlenx-server/service/statistic_service"
 	"github.com/spf13/cobra"
 )
 
@@ -41,7 +40,7 @@ var incomeExpenseChartCmd = &cobra.Command{
 			return err
 		}
 
-		chartData, err := statistic_service.GetIncomeExpenseChartDataForUser(incomeExpensePeriod, incomeExpenseDate, incomeExpenseUserId)
+		chartData, err := getIncomeExpenseChartForUser(incomeExpensePeriod, incomeExpenseDate, incomeExpenseUserId)
 		if err != nil {
 			return fmt.Errorf("failed to get income/expense chart data: %w", err)
 		}
@@ -69,7 +68,7 @@ var categoryDistributionChartCmd = &cobra.Command{
 			return err
 		}
 
-		distribution, err := statistic_service.GetCategoryDistributionForUser(categoryDistributionPeriod, categoryDistributionDate, categoryDistributionType, categoryDistributionUserId)
+		distribution, err := getCategoryDistributionForUser(categoryDistributionPeriod, categoryDistributionDate, categoryDistributionType, categoryDistributionUserId)
 		if err != nil {
 			return fmt.Errorf("failed to get category distribution chart data: %w", err)
 		}
@@ -96,7 +95,7 @@ var monthlyComparisonChartCmd = &cobra.Command{
 			return err
 		}
 
-		comparison, err := statistic_service.GetMonthlyComparisonForUser(monthlyComparisonYear, monthlyComparisonUserId)
+		comparison, err := getMonthlyComparisonForUser(monthlyComparisonYear, monthlyComparisonUserId)
 		if err != nil {
 			return fmt.Errorf("failed to get monthly comparison chart data: %w", err)
 		}
@@ -122,7 +121,7 @@ var spendingHeatmapChartCmd = &cobra.Command{
 			return err
 		}
 
-		heatmap, err := statistic_service.GetSpendingHeatmapForUser(spendingHeatmapYear, spendingHeatmapUserId)
+		heatmap, err := getSpendingHeatmapForUser(spendingHeatmapYear, spendingHeatmapUserId)
 		if err != nil {
 			return fmt.Errorf("failed to get spending heatmap chart data: %w", err)
 		}

@@ -31,7 +31,7 @@ var deleteCmd = &cobra.Command{
 
 		if plainId != "" {
 
-			cashFlowEntity, err := cash_flow_service.DeleteByIdForUser(plainId, cashUserId)
+			cashFlowEntity, err := deleteCashByIDForUser(plainId, cashUserId)
 			if err != nil {
 				return err
 			}
@@ -40,7 +40,7 @@ var deleteCmd = &cobra.Command{
 		}
 
 		if belongsDate != "" {
-			cashFlowEntityList, err := cash_flow_service.DeleteByDateForUser(belongsDate, cashUserId)
+			cashFlowEntityList, err := deleteCashByDateForUser(belongsDate, cashUserId)
 			if err != nil {
 				return err
 			}

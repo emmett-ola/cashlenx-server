@@ -3,7 +3,6 @@ package statistic_cmd
 import (
 	"fmt"
 
-	"github.com/macar-x/cashlenx-server/service/statistic_service"
 	"github.com/spf13/cobra"
 )
 
@@ -26,7 +25,7 @@ Only includes your own transactions.`,
 			return err
 		}
 
-		topExpenses, err := statistic_service.GetTopExpensesForUser(topLimit, topPeriod, topDate, topUserId)
+		topExpenses, err := getStatisticTopExpensesForUser(topLimit, topPeriod, topDate, topUserId)
 		if err != nil {
 			return fmt.Errorf("failed to get top expenses: %w", err)
 		}

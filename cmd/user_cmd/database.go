@@ -26,7 +26,7 @@ var databaseBackupCmd = &cobra.Command{
 		if userBackupPath == "" {
 			userBackupPath = fmt.Sprintf("cashlenx_user_%s_backup_%s.json", userId, time.Now().Format("20060102_150405"))
 		}
-		stats, err := manage_service.UserExportData(userId, userBackupPath)
+		stats, err := exportUserData(userId, userBackupPath)
 		if err != nil {
 			return err
 		}
@@ -43,7 +43,7 @@ var databaseRestoreCmd = &cobra.Command{
 		if userRestorePath == "" {
 			return errors.New("backup file path is required")
 		}
-		stats, err := manage_service.UserImportData(userId, userRestorePath)
+		stats, err := importUserData(userId, userRestorePath)
 		if err != nil {
 			return err
 		}

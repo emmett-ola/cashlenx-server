@@ -160,3 +160,183 @@ func TestProfileUpdateCommandPassesFlagsToService(t *testing.T) {
 		t.Fatalf("service request = %+v", got)
 	}
 }
+
+func TestUserConfigurationCommandsPassUserAndRequestToServices(t *testing.T) {
+	userID := primitive.NewObjectID()
+	var getUserID string
+	var upsertUserID string
+	var upsertReq model.UserConfigurationRequest
+	originalGet := getUserConfig
+	getUserConfig = func(serviceUserID string) (model.UserConfigurationEntity, error) {
+		getUserID = serviceUserID
+		return testUserConfig(userID), nil
+	}
+	originalUpsert := upsertUserConfig
+	upsertUserConfig = func(serviceUserID string, req model.UserConfigurationRequest) (model.UserConfigurationEntity, error) {
+		upsertUserID = serviceUserID
+		upsertReq = req
+		return testUserConfig(userID), nil
+	}
+	t.Cleanup(func() {
+		getUserConfig = originalGet
+		upsertUserConfig = originalUpsert
+		resetUserCommandState()
+		_ = configurationUpsertCmd.Flags().Set("display-language", "")
+		_ = configurationUpsertCmd.Flags().Set("currency-code", "")
+		_ = configurationUpsertCmd.Flags().Set("active-theme-color", "")
+	})
+
+	userId = userID.Hex()
+	if err := configurationGetCmd.RunE(configurationGetCmd, nil); err != nil {
+		t.Fatalf("configuration get RunE returned error: %v", err)
+	}
+	_ = configurationUpsertCmd.Flags().Set("display-language", "en-US")
+	_ = configurationUpsertCmd.Flags().Set("currency-code", "USD")
+	_ = configurationUpsertCmd.Flags().Set("active-theme-color", "blue")
+	if err := configurationUpsertCmd.RunE(configurationUpsertCmd, nil); err != nil {
+		t.Fatalf("configuration upsert RunE returned error: %v", err)
+	}
+
+	if getUserID != userID.Hex() || upsertUserID != userID.Hex() {
+		t.Fatalf("user ids = get %q, upsert %q", getUserID, upsertUserID)
+	}
+	if upsertReq.DisplayLanguage == nil || *upsertReq.DisplayLanguage != "en-US" || upsertReq.CurrencyCode == nil || *upsertReq.CurrencyCode != "USD" || upsertReq.ActiveThemeColor == nil || *upsertReq.ActiveThemeColor != "blue" {
+		t.Fatalf("upsert request = %+v", upsertReq)
+	}
+}
+
+func TestUserPasswordEmailAccountAndDatabaseCommandsPassUserToServices(t *testing.T) {
+	userID := primitive.NewObjectID()
+	var passwordArgs, emailChangeArgs, emailConfirmArgs struct {
+		userID string
+		first  string
+		second string
+	}
+	var deletedUserID string
+	var exportArgs, importArgs struct {
+		userID string
+		path   string
+	}
+
+	originalPassword := changeUserPassword
+	changeUserPassword = func(serviceUserID, oldPass, newPass string) error {
+		passwordArgs.userID = serviceUserID
+		passwordArgs.first = oldPass
+		passwordArgs.second = newPass
+		return nil
+	}
+	originalEmailChange := requestUserEmailChange
+	requestUserEmailChange = func(serviceUserID, newEmail, verificationToken string) error {
+		emailChangeArgs.userID = serviceUserID
+		emailChangeArgs.first = newEmail
+		emailChangeArgs.second = verificationToken
+		return nil
+	}
+	originalEmailConfirm := confirmUserEmailChange
+	confirmUserEmailChange = func(serviceUserID, token, password string) error {
+		emailConfirmArgs.userID = serviceUserID
+		emailConfirmArgs.first = token
+		emailConfirmArgs.second = password
+		return nil
+	}
+	originalDelete := deleteUserAccount
+	deleteUserAccount = func(serviceUserID string) error {
+		deletedUserID = serviceUserID
+		return nil
+	}
+	originalExport := exportUserData
+	exportUserData = func(serviceUserID, path string) (manage_service.OperationStats, error) {
+		exportArgs.userID = serviceUserID
+		exportArgs.path = path
+		return manage_service.OperationStats{CashFlows: manage_service.EntityStats{Success: 1}}, nil
+	}
+	originalImport := importUserData
+	importUserData = func(serviceUserID, path string) (manage_service.OperationStats, error) {
+		importArgs.userID = serviceUserID
+		importArgs.path = path
+		return manage_service.OperationStats{Categories: manage_service.EntityStats{Success: 1}}, nil
+	}
+	t.Cleanup(func() {
+		changeUserPassword = originalPassword
+		requestUserEmailChange = originalEmailChange
+		confirmUserEmailChange = originalEmailConfirm
+		deleteUserAccount = originalDelete
+		exportUserData = originalExport
+		importUserData = originalImport
+		resetUserCommandState()
+	})
+
+	userId = userID.Hex()
+	oldPassword, newPassword = "old-secret", "new-secret"
+	if err := passwordCmd.RunE(passwordCmd, nil); err != nil {
+		t.Fatalf("password RunE returned error: %v", err)
+	}
+	emailNewEmail, emailVerificationToken = "new@example.test", "verification-token"
+	if err := emailChangeCmd.RunE(emailChangeCmd, nil); err != nil {
+		t.Fatalf("email change RunE returned error: %v", err)
+	}
+	emailConfirmToken, emailConfirmPassword = "confirm-token", "password"
+	if err := emailConfirmCmd.RunE(emailConfirmCmd, nil); err != nil {
+		t.Fatalf("email confirm RunE returned error: %v", err)
+	}
+	accountForce = true
+	if err := accountCmd.RunE(accountCmd, nil); err != nil {
+		t.Fatalf("account RunE returned error: %v", err)
+	}
+	userBackupPath = "backup.json"
+	if err := databaseBackupCmd.RunE(databaseBackupCmd, nil); err != nil {
+		t.Fatalf("database backup RunE returned error: %v", err)
+	}
+	userRestorePath = "restore.json"
+	if err := databaseRestoreCmd.RunE(databaseRestoreCmd, nil); err != nil {
+		t.Fatalf("database restore RunE returned error: %v", err)
+	}
+
+	if passwordArgs.userID != userID.Hex() || passwordArgs.first != "old-secret" || passwordArgs.second != "new-secret" {
+		t.Fatalf("password args = %+v", passwordArgs)
+	}
+	if emailChangeArgs.userID != userID.Hex() || emailChangeArgs.first != "new@example.test" || emailChangeArgs.second != "verification-token" {
+		t.Fatalf("email change args = %+v", emailChangeArgs)
+	}
+	if emailConfirmArgs.userID != userID.Hex() || emailConfirmArgs.first != "confirm-token" || emailConfirmArgs.second != "password" {
+		t.Fatalf("email confirm args = %+v", emailConfirmArgs)
+	}
+	if deletedUserID != userID.Hex() {
+		t.Fatalf("deleted user id = %q", deletedUserID)
+	}
+	if exportArgs.userID != userID.Hex() || exportArgs.path != "backup.json" {
+		t.Fatalf("export args = %+v", exportArgs)
+	}
+	if importArgs.userID != userID.Hex() || importArgs.path != "restore.json" {
+		t.Fatalf("import args = %+v", importArgs)
+	}
+}
+
+func testUserConfig(userID primitive.ObjectID) model.UserConfigurationEntity {
+	return model.UserConfigurationEntity{
+		Id:               primitive.NewObjectID(),
+		BelongsUserId:    userID,
+		DisplayLanguage:  "en-US",
+		CurrencyCode:     "USD",
+		ActiveThemeColor: "blue",
+	}
+}
+
+func resetUserCommandState() {
+	userId = ""
+	configLanguage = ""
+	configCurrency = ""
+	configTheme = ""
+	oldPassword = ""
+	newPassword = ""
+	emailNewEmail = ""
+	emailVerificationToken = ""
+	emailConfirmToken = ""
+	emailConfirmPassword = ""
+	accountForce = false
+	userBackupPath = ""
+	userRestorePath = ""
+	profileNickname = ""
+	profileAvatar = ""
+	profileGender = ""
+}

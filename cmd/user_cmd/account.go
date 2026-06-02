@@ -6,7 +6,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/macar-x/cashlenx-server/service/user_service"
 	"github.com/spf13/cobra"
 )
 
@@ -26,7 +25,7 @@ var accountCmd = &cobra.Command{
 				return nil
 			}
 		}
-		if err := user_service.DeleteService(userId); err != nil {
+		if err := deleteUserAccount(userId); err != nil {
 			return err
 		}
 		fmt.Println("Account deleted successfully")

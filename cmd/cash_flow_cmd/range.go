@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/macar-x/cashlenx-server/model"
-	"github.com/macar-x/cashlenx-server/service/cash_flow_service"
 	"github.com/spf13/cobra"
 )
 
@@ -28,7 +27,7 @@ Displays all transactions between from-date and to-date (inclusive).`,
 			return errors.New("both from-date and to-date are required")
 		}
 
-		cashFlowEntityList, err := cash_flow_service.QueryByDateRangeForUser(fromDate, toDate, cashUserId)
+		cashFlowEntityList, err := queryCashRangeForUser(fromDate, toDate, cashUserId)
 		if err != nil {
 			return err
 		}

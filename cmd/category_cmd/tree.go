@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/macar-x/cashlenx-server/model"
-	"github.com/macar-x/cashlenx-server/service/category_service"
 	"github.com/spf13/cobra"
 )
 
@@ -19,7 +18,7 @@ var treeCmd = &cobra.Command{
 	Long:  `List all categories in a hierarchical tree structure with optional depth control.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Get category tree from service
-		categoryTree, err := category_service.GetCategoryTreeByUser(userId, treeCategoryType)
+		categoryTree, err := queryCategoryTreeForUser(userId, treeCategoryType)
 		if err != nil {
 			return err
 		}

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/macar-x/cashlenx-server/service/user_service"
 	"github.com/spf13/cobra"
 )
 
@@ -27,7 +26,7 @@ var emailChangeCmd = &cobra.Command{
 		if emailNewEmail == "" || emailVerificationToken == "" {
 			return errors.New("new-email and verification-token are required")
 		}
-		if err := user_service.RequestEmailChange(userId, emailNewEmail, emailVerificationToken); err != nil {
+		if err := requestUserEmailChange(userId, emailNewEmail, emailVerificationToken); err != nil {
 			return err
 		}
 		fmt.Println("Email changed successfully")
@@ -42,7 +41,7 @@ var emailConfirmCmd = &cobra.Command{
 		if emailConfirmToken == "" || emailConfirmPassword == "" {
 			return errors.New("token and password are required")
 		}
-		if err := user_service.ConfirmEmailChange(userId, emailConfirmToken, emailConfirmPassword); err != nil {
+		if err := confirmUserEmailChange(userId, emailConfirmToken, emailConfirmPassword); err != nil {
 			return err
 		}
 		fmt.Println("Email changed successfully")

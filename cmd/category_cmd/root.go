@@ -3,7 +3,6 @@ package category_cmd
 import (
 	"errors"
 
-	"github.com/macar-x/cashlenx-server/cmd/cli_auth"
 	"github.com/spf13/cobra"
 )
 
@@ -29,7 +28,7 @@ Available sub-commands:
  list   - List all categories`,
 
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		return cli_auth.RequireUserID(&userId)
+		return requireCategoryUser(&userId)
 	},
 
 	RunE: func(cmd *cobra.Command, args []string) error {

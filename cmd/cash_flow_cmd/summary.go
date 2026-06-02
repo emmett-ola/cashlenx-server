@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/macar-x/cashlenx-server/service/cash_flow_service"
 	"github.com/spf13/cobra"
 )
 
@@ -34,7 +33,7 @@ Examples:
 			return errors.New("date is required (format depends on period)")
 		}
 
-		summary, err := cash_flow_service.GetSummaryForUser(summaryPeriod, summaryDate, cashUserId)
+		summary, err := getCashSummaryForUser(summaryPeriod, summaryDate, cashUserId)
 		if err != nil {
 			return err
 		}

@@ -3,14 +3,13 @@ package category_cmd
 import (
 	"fmt"
 
-	"github.com/macar-x/cashlenx-server/service/category_service"
 	"github.com/spf13/cobra"
 )
 
 var (
-	categoryLimit  int
-	categoryOffset int
-	listCategoryType   string
+	categoryLimit    int
+	categoryOffset   int
+	listCategoryType string
 )
 
 var listCmd = &cobra.Command{
@@ -21,7 +20,7 @@ var listCmd = &cobra.Command{
 		if userId == "" {
 			return fmt.Errorf("user ID is required")
 		}
-		categoryEntityList, _, err := category_service.QueryAllForUser(userId, listCategoryType, categoryLimit, categoryOffset)
+		categoryEntityList, _, err := queryCategoriesForUser(userId, listCategoryType, categoryLimit, categoryOffset)
 		if err != nil {
 			return err
 		}

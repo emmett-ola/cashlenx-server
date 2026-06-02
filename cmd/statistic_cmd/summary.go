@@ -3,7 +3,6 @@ package statistic_cmd
 import (
 	"fmt"
 
-	"github.com/macar-x/cashlenx-server/service/statistic_service"
 	"github.com/spf13/cobra"
 )
 
@@ -31,7 +30,7 @@ Periods:
 			return err
 		}
 
-		summary, err := statistic_service.GetSummaryForUser(summaryPeriod, summaryDate, summaryUserId)
+		summary, err := getStatisticSummaryForUser(summaryPeriod, summaryDate, summaryUserId)
 		if err != nil {
 			return fmt.Errorf("failed to get summary: %w", err)
 		}

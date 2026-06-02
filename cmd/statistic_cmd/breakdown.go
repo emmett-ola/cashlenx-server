@@ -3,7 +3,6 @@ package statistic_cmd
 import (
 	"fmt"
 
-	"github.com/macar-x/cashlenx-server/service/statistic_service"
 	"github.com/spf13/cobra"
 )
 
@@ -25,7 +24,7 @@ Only includes your own transactions.`,
 			return err
 		}
 
-		breakdown, err := statistic_service.GetBreakdownForUser(breakdownPeriod, breakdownDate, breakdownUserId)
+		breakdown, err := getStatisticBreakdownForUser(breakdownPeriod, breakdownDate, breakdownUserId)
 		if err != nil {
 			return fmt.Errorf("failed to get breakdown: %w", err)
 		}

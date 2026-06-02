@@ -3,7 +3,6 @@ package statistic_cmd
 import (
 	"fmt"
 
-	"github.com/macar-x/cashlenx-server/service/statistic_service"
 	"github.com/spf13/cobra"
 )
 
@@ -25,7 +24,7 @@ Only includes your own transactions.`,
 			return err
 		}
 
-		dashboard, err := statistic_service.GetDashboardOverviewForUser(dashboardPeriod, dashboardDate, dashboardUserId)
+		dashboard, err := getStatisticDashboardForUser(dashboardPeriod, dashboardDate, dashboardUserId)
 		if err != nil {
 			return fmt.Errorf("failed to get dashboard overview: %w", err)
 		}

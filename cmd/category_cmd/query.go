@@ -3,7 +3,6 @@ package category_cmd
 import (
 	"fmt"
 
-	"github.com/macar-x/cashlenx-server/service/category_service"
 	"github.com/spf13/cobra"
 )
 
@@ -12,7 +11,7 @@ var queryCmd = &cobra.Command{
 	Short: "query for category data",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if plainId != "" {
-			category, err := category_service.QueryByIdForUser(plainId, userId)
+			category, err := queryCategoryByIDForUser(plainId, userId)
 			if err != nil {
 				return err
 			}
@@ -21,7 +20,7 @@ var queryCmd = &cobra.Command{
 		}
 
 		if categoryName != "" {
-			category, err := category_service.QueryByNameForUser(categoryName, userId)
+			category, err := queryCategoryByNameForUser(categoryName, userId)
 			if err != nil {
 				return err
 			}
@@ -30,7 +29,7 @@ var queryCmd = &cobra.Command{
 		}
 
 		if parentPlainId != "" {
-			categories, err := category_service.GetChildCategoriesForUser(parentPlainId, userId, catType)
+			categories, err := queryCategoryChildrenForUser(parentPlainId, userId, catType)
 			if err != nil {
 				return err
 			}

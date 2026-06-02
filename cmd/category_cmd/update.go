@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/macar-x/cashlenx-server/service/category_service"
 	"github.com/spf13/cobra"
 )
 
@@ -22,7 +21,7 @@ You can update the category name, type, remark, and parent.`,
 			return errors.New("at least one field to update must be provided (name, type, remark, or parent)")
 		}
 
-		_, err := category_service.UpdateByIdForUser(plainId, categoryName, catType, categoryRemark, parentPlainId, userId)
+		_, err := updateCategoryForUser(plainId, categoryName, catType, categoryRemark, parentPlainId, userId)
 		if err != nil {
 			return err
 		}

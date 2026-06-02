@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/macar-x/cashlenx-server/service/user_service"
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +19,7 @@ var passwordCmd = &cobra.Command{
 		if oldPassword == "" || newPassword == "" {
 			return errors.New("old-password and new-password are required")
 		}
-		if err := user_service.ChangePasswordService(userId, oldPassword, newPassword); err != nil {
+		if err := changeUserPassword(userId, oldPassword, newPassword); err != nil {
 			return err
 		}
 		fmt.Println("Password changed successfully. Please login again.")

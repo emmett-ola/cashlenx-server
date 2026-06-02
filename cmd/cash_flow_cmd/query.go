@@ -27,7 +27,7 @@ var queryCmd = &cobra.Command{
 
 		// if id is not empty, use it for query.
 		if plainId != "" {
-			cashFlowEntity, err := cash_flow_service.QueryByIdForUser(plainId, cashUserId)
+			cashFlowEntity, err := queryCashByIDForUser(plainId, cashUserId)
 			if err != nil {
 				return err
 			}
@@ -37,7 +37,7 @@ var queryCmd = &cobra.Command{
 
 		// else if date is not empty, use it for query.
 		if belongsDate != "" {
-			cashFlowEntityList, err := cash_flow_service.QueryByDateForUser(belongsDate, cashUserId)
+			cashFlowEntityList, err := queryCashByDateForUser(belongsDate, cashUserId)
 			if err != nil {
 				return err
 			}
@@ -53,7 +53,7 @@ var queryCmd = &cobra.Command{
 
 		// else if exact_desc is not empty, use it for query.
 		if descriptionExact != "" {
-			cashFlowEntityList, _, err := cash_flow_service.QueryAllForUser(cashUserId, "", "", "", descriptionExact, "", "", 0, 0)
+			cashFlowEntityList, _, err := queryCashForUser(cashUserId, "", "", "", descriptionExact, "", "", 0, 0)
 			if err != nil {
 				return err
 			}
@@ -69,7 +69,7 @@ var queryCmd = &cobra.Command{
 
 		// else if fuzzy_desc is not empty, use it for query.
 		if descriptionFuzzy != "" {
-			cashFlowEntityList, _, err := cash_flow_service.QueryAllForUser(cashUserId, "", "", descriptionFuzzy, "", "", "", 0, 0)
+			cashFlowEntityList, _, err := queryCashForUser(cashUserId, "", "", descriptionFuzzy, "", "", "", 0, 0)
 			if err != nil {
 				return err
 			}

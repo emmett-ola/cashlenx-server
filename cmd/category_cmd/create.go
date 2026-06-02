@@ -3,7 +3,6 @@ package category_cmd
 import (
 	"fmt"
 
-	"github.com/macar-x/cashlenx-server/service/category_service"
 	"github.com/spf13/cobra"
 )
 
@@ -11,7 +10,7 @@ var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: "create new category",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		createdCategory, err := category_service.CreateForUser(categoryName, catType, categoryRemark, parentPlainId, userId)
+		createdCategory, err := createCategoryForUser(categoryName, catType, categoryRemark, parentPlainId, userId)
 		if err != nil {
 			return err
 		}
