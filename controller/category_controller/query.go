@@ -5,7 +5,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/macar-x/cashlenx-server/errors"
-	"github.com/macar-x/cashlenx-server/service/category_service"
 	"github.com/macar-x/cashlenx-server/util"
 )
 
@@ -26,7 +25,7 @@ func QueryById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	category, err := category_service.QueryByIdForUser(id, userId)
+	category, err := queryCategoryByIDForUser(id, userId)
 	if err != nil {
 		if err.Error() == "category not found or access denied" {
 			util.ComposeJSONResponse(w, http.StatusNotFound, errors.NewNotFoundError(err.Error()))
@@ -56,7 +55,7 @@ func QueryByName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	category, err := category_service.QueryByNameForUser(name, userId)
+	category, err := queryCategoryByNameForUser(name, userId)
 	if err != nil {
 		if err.Error() == "category not found or access denied" {
 			util.ComposeJSONResponse(w, http.StatusNotFound, errors.NewNotFoundError(err.Error()))
@@ -89,7 +88,7 @@ func QueryChildren(w http.ResponseWriter, r *http.Request) {
 	// Get category type filter from query parameter
 	categoryType := r.URL.Query().Get("type")
 
-	categories, err := category_service.GetChildCategoriesForUser(parentId, userId, categoryType)
+	categories, err := queryChildCategoriesForUser(parentId, userId, categoryType)
 	if err != nil {
 		if err.Error() == "parent category not found or access denied" {
 			util.ComposeJSONResponse(w, http.StatusNotFound, errors.NewNotFoundError(err.Error()))

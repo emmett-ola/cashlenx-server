@@ -5,7 +5,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/macar-x/cashlenx-server/errors"
-	"github.com/macar-x/cashlenx-server/service/cash_flow_service"
 	"github.com/macar-x/cashlenx-server/util"
 )
 
@@ -17,7 +16,7 @@ func GetTotalSummary(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	summary, err := cash_flow_service.GetTotalSummaryForUser(userId)
+	summary, err := getCashTotalSummary(userId)
 	if err != nil {
 		util.ComposeErrorResponse(w, r, err)
 		return
@@ -43,7 +42,7 @@ func GetDailySummary(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	summary, err := cash_flow_service.GetSummaryForUser("daily", date, userId)
+	summary, err := getCashPeriodSummary("daily", date, userId)
 	if err != nil {
 		util.ComposeErrorResponse(w, r, err)
 		return
@@ -69,7 +68,7 @@ func GetMonthlySummary(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	summary, err := cash_flow_service.GetSummaryForUser("monthly", month, userId)
+	summary, err := getCashPeriodSummary("monthly", month, userId)
 	if err != nil {
 		util.ComposeErrorResponse(w, r, err)
 		return
@@ -95,7 +94,7 @@ func GetYearlySummary(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	summary, err := cash_flow_service.GetSummaryForUser("yearly", year, userId)
+	summary, err := getCashPeriodSummary("yearly", year, userId)
 	if err != nil {
 		util.ComposeErrorResponse(w, r, err)
 		return

@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/macar-x/cashlenx-server/errors"
-	"github.com/macar-x/cashlenx-server/service/cash_flow_service"
 	"github.com/macar-x/cashlenx-server/util"
 )
 
@@ -27,7 +26,7 @@ func QueryByDateRange(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Call user-specific service to get records in range
-	cashFlowEntities, err := cash_flow_service.QueryByDateRangeForUser(fromDate, toDate, userId)
+	cashFlowEntities, err := queryCashRangeForUser(fromDate, toDate, userId)
 	if err != nil {
 		util.ComposeErrorResponse(w, r, err)
 		return

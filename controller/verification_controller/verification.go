@@ -5,7 +5,6 @@ import (
 
 	"github.com/macar-x/cashlenx-server/errors"
 	"github.com/macar-x/cashlenx-server/model"
-	"github.com/macar-x/cashlenx-server/service/verification_service"
 	"github.com/macar-x/cashlenx-server/util"
 )
 
@@ -16,7 +15,7 @@ func SendCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := verification_service.SendVerificationCode(req.Purpose, req.Email, util.GetClientIP(r)); err != nil {
+	if err := sendVerificationCode(req.Purpose, req.Email, util.GetClientIP(r)); err != nil {
 		util.ComposeErrorResponse(w, r, err)
 		return
 	}
@@ -33,7 +32,7 @@ func VerifyCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, err := verification_service.VerifyCode(req.Purpose, req.Email, req.Code)
+	response, err := verifyCodeForPurpose(req.Purpose, req.Email, req.Code)
 	if err != nil {
 		util.ComposeErrorResponse(w, r, err)
 		return

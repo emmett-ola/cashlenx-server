@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/macar-x/cashlenx-server/errors"
-	"github.com/macar-x/cashlenx-server/service/category_service"
 	"github.com/macar-x/cashlenx-server/util"
 )
 
@@ -32,7 +31,7 @@ func Tree(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get category tree with user ID and type filter
-	tree, err := category_service.GetCategoryTreeByUser(userStrId, categoryType)
+	tree, err := queryCategoryTreeForUser(userStrId, categoryType)
 	if err != nil {
 		util.ComposeErrorResponse(w, r, err)
 		return

@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/macar-x/cashlenx-server/errors"
-	"github.com/macar-x/cashlenx-server/service/manage_service"
 	"github.com/macar-x/cashlenx-server/util"
 )
 
@@ -43,7 +42,7 @@ func RestoreDatabase(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Restore from the temporary file
-	stats, err := manage_service.AdminRestoreDatabase(tempFile.Name())
+	stats, err := adminRestoreDatabase(tempFile.Name())
 	if err != nil {
 		// Return error along with statistics
 		util.ComposeJSONResponse(w, http.StatusInternalServerError, map[string]interface{}{
@@ -101,7 +100,7 @@ func ImportUserData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Import from the temporary file
-	stats, err := manage_service.UserImportData(userId, tempFile.Name())
+	stats, err := userImportData(userId, tempFile.Name())
 	if err != nil {
 		// Return error along with statistics
 		util.ComposeJSONResponse(w, http.StatusInternalServerError, map[string]interface{}{

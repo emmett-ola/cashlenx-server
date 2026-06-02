@@ -5,7 +5,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/macar-x/cashlenx-server/errors"
-	"github.com/macar-x/cashlenx-server/service/cash_flow_service"
 	"github.com/macar-x/cashlenx-server/util"
 )
 
@@ -23,7 +22,7 @@ func QueryById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cashFlowEntity, err := cash_flow_service.QueryByIdForUser(id, userId)
+	cashFlowEntity, err := queryCashByIDForUser(id, userId)
 	if err != nil {
 		if err.Error() == "cash_flow not found or access denied" {
 			util.ComposeJSONResponse(w, http.StatusNotFound, errors.NewNotFoundError(err.Error()))
@@ -49,7 +48,7 @@ func QueryByDate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cashFlowEntityList, err := cash_flow_service.QueryByDateForUser(date, userId)
+	cashFlowEntityList, err := queryCashByDateForUser(date, userId)
 	if err != nil {
 		util.ComposeErrorResponse(w, r, err)
 		return

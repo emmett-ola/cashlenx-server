@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"github.com/macar-x/cashlenx-server/errors"
-	"github.com/macar-x/cashlenx-server/service/category_service"
 	"github.com/macar-x/cashlenx-server/util"
 )
 
@@ -41,7 +40,7 @@ func ListAll(w http.ResponseWriter, r *http.Request) {
 	categoryType := r.URL.Query().Get("type")
 
 	// Call user-specific service to get paginated results
-	categories, totalCount, err := category_service.QueryAllForUser(userId, categoryType, limit, offset)
+	categories, totalCount, err := queryCategoriesForUser(userId, categoryType, limit, offset)
 	if err != nil {
 		util.ComposeErrorResponse(w, r, err)
 		return

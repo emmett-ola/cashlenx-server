@@ -6,7 +6,6 @@ import (
 
 	"github.com/macar-x/cashlenx-server/errors"
 	"github.com/macar-x/cashlenx-server/model"
-	"github.com/macar-x/cashlenx-server/service/category_service"
 	"github.com/macar-x/cashlenx-server/util"
 )
 
@@ -26,7 +25,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create category using user-specific service
-	createdCategory, err := category_service.CreateForUser(req.Name, req.Type, req.Remark, req.ParentId, userIdStr)
+	createdCategory, err := createCategoryForUser(req.Name, req.Type, req.Remark, req.ParentId, userIdStr)
 	if err != nil {
 		util.ComposeErrorResponse(w, r, err)
 		return

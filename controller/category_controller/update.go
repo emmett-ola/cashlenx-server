@@ -5,7 +5,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/macar-x/cashlenx-server/errors"
-	"github.com/macar-x/cashlenx-server/service/category_service"
 	"github.com/macar-x/cashlenx-server/util"
 )
 
@@ -40,7 +39,7 @@ func UpdateById(w http.ResponseWriter, r *http.Request) {
 	remark, _ := requestBody["remark"].(string)
 
 	// Call user-specific service to update
-	updatedCategory, err := category_service.UpdateByIdForUser(plainId, categoryName, categoryType, remark, parentPlainId, userId)
+	updatedCategory, err := updateCategoryForUser(plainId, categoryName, categoryType, remark, parentPlainId, userId)
 	if err != nil {
 		if err.Error() == "category not found or access denied" {
 			util.ComposeJSONResponse(w, http.StatusNotFound, errors.NewNotFoundError(err.Error()))

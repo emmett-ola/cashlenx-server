@@ -6,10 +6,17 @@ import (
 )
 
 var (
-	saveExpenseForUser = cash_flow_service.SaveExpense
-	saveIncomeForUser  = cash_flow_service.SaveIncome
-	updateCashForUser  = cash_flow_service.UpdateByIdForUser
-	queryCashForUser   = cash_flow_service.QueryAllForUser
+	saveExpenseForUser      = cash_flow_service.SaveExpense
+	saveIncomeForUser       = cash_flow_service.SaveIncome
+	updateCashForUser       = cash_flow_service.UpdateByIdForUser
+	queryCashForUser        = cash_flow_service.QueryAllForUser
+	queryCashByIDForUser    = cash_flow_service.QueryByIdForUser
+	queryCashByDateForUser  = cash_flow_service.QueryByDateForUser
+	queryCashRangeForUser   = cash_flow_service.QueryByDateRangeForUser
+	deleteCashByIDForUser   = cash_flow_service.DeleteByIdForUser
+	deleteCashByDateForUser = cash_flow_service.DeleteByDateForUser
+	getCashTotalSummary     = cash_flow_service.GetTotalSummaryForUser
+	getCashPeriodSummary    = cash_flow_service.GetSummaryForUser
 )
 
 type queryCashForUserFunc func(

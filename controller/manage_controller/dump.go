@@ -6,19 +6,21 @@ import (
 	"os"
 
 	"github.com/macar-x/cashlenx-server/errors"
-	"github.com/macar-x/cashlenx-server/service/manage_service"
 	"github.com/macar-x/cashlenx-server/util"
 )
 
 // DumpDatabase creates a database dump and returns it as a download
 func DumpDatabase(w http.ResponseWriter, r *http.Request) {
+	file, err := os.CreateTemp("", "cashlenx_dump_*.json")
+	if err != nil {
+		util.ComposeJSONResponse(w, http.StatusInternalServerError, errors.NewInternalError("Failed to create temporary file", err))
+		return
+	}
+	filePath := file.Name()
+	file.Close()
+	defer os.Remove(filePath)
 
-	// Create a temporary file for the dump
-	filePath := "temp_dump.json"
-	defer os.Remove(filePath) // Clean up after response
-
-	// Create the dump
-	_, err := manage_service.AdminDumpDatabase(filePath)
+	_, err = adminDumpDatabase(filePath)
 	if err != nil {
 		util.ComposeErrorResponse(w, r, err)
 		return
@@ -35,11 +37,14 @@ func DumpDatabase(w http.ResponseWriter, r *http.Request) {
 
 	// Send the file
 	w.WriteHeader(http.StatusOK)
-	file, _ := os.Open(filePath)
-	defer file.Close()
+	outputFile, err := os.Open(filePath)
+	if err != nil {
+		return
+	}
+	defer outputFile.Close()
 
 	// Copy file content to response
-	util.SendFile(w, file)
+	util.SendFile(w, outputFile)
 }
 
 // ExportUserData exports user data to a JSON file (renamed from DumpUserDatabase)
@@ -51,12 +56,16 @@ func ExportUserData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create a temporary file for the dump
-	filePath := fmt.Sprintf("temp_export_%s.json", userId)
-	defer os.Remove(filePath) // Clean up after response
+	file, err := os.CreateTemp("", fmt.Sprintf("cashlenx_export_%s_*.json", userId))
+	if err != nil {
+		util.ComposeJSONResponse(w, http.StatusInternalServerError, errors.NewInternalError("Failed to create temporary file", err))
+		return
+	}
+	filePath := file.Name()
+	file.Close()
+	defer os.Remove(filePath)
 
-	// Create the dump
-	_, err := manage_service.UserExportData(userId, filePath)
+	_, err = userExportData(userId, filePath)
 	if err != nil {
 		util.ComposeErrorResponse(w, r, err)
 		return
@@ -73,9 +82,12 @@ func ExportUserData(w http.ResponseWriter, r *http.Request) {
 
 	// Send the file
 	w.WriteHeader(http.StatusOK)
-	file, _ := os.Open(filePath)
-	defer file.Close()
+	outputFile, err := os.Open(filePath)
+	if err != nil {
+		return
+	}
+	defer outputFile.Close()
 
 	// Copy file content to response
-	util.SendFile(w, file)
+	util.SendFile(w, outputFile)
 }

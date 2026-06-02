@@ -5,7 +5,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/macar-x/cashlenx-server/errors"
-	"github.com/macar-x/cashlenx-server/service/category_service"
 	"github.com/macar-x/cashlenx-server/util"
 )
 
@@ -30,7 +29,7 @@ func DeleteById(w http.ResponseWriter, r *http.Request) {
 	force := r.URL.Query().Get("force") == "true"
 
 	// Delete the category using user-specific service
-	deletedCategory, err := category_service.DeleteByIdForUser(id, userId, force)
+	deletedCategory, err := deleteCategoryForUser(id, userId, force)
 	if err != nil {
 		if err.Error() == "category not found or access denied" {
 			util.ComposeJSONResponse(w, http.StatusNotFound, errors.NewNotFoundError(err.Error()))
