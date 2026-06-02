@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/macar-x/cashlenx-server/model"
-	"github.com/macar-x/cashlenx-server/service/cash_flow_service"
 	"github.com/spf13/cobra"
 )
 
@@ -35,7 +34,7 @@ Use --type to filter by income/expense, --limit for pagination.`,
 			effectiveOffset = (page - 1) * limit
 		}
 
-		cashFlowEntityList, totalCount, err := cash_flow_service.QueryAllForUser(
+		cashFlowEntityList, totalCount, err := queryCashForUser(
 			cashUserId,
 			cashType,
 			listCategoryId,

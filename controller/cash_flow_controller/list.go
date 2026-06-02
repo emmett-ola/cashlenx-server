@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"github.com/macar-x/cashlenx-server/errors"
-	"github.com/macar-x/cashlenx-server/service/cash_flow_service"
 	"github.com/macar-x/cashlenx-server/util"
 )
 
@@ -54,7 +53,7 @@ func ListAll(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Call user-specific service to get paginated and filtered results
-	cashFlows, totalCount, err := cash_flow_service.QueryAllForUser(
+	cashFlows, totalCount, err := queryCashForUser(
 		userId,
 		cashType,
 		categoryId,

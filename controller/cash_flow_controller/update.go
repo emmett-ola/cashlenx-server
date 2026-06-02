@@ -6,7 +6,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/macar-x/cashlenx-server/errors"
-	"github.com/macar-x/cashlenx-server/service/cash_flow_service"
 	"github.com/macar-x/cashlenx-server/util"
 )
 
@@ -49,7 +48,7 @@ func UpdateById(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Call user-specific service to update
-	updatedEntity, err := cash_flow_service.UpdateByIdForUser(plainId, belongsDate, categoryName, amount, description, userId)
+	updatedEntity, err := updateCashForUser(plainId, belongsDate, categoryName, amount, description, userId)
 	if err != nil {
 		if err.Error() == "cash_flow not found or access denied" {
 			util.ComposeJSONResponse(w, http.StatusNotFound, errors.NewNotFoundError(err.Error()))

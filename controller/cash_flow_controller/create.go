@@ -23,7 +23,7 @@ func CreateExpense(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cashFlowEntity, err := cash_flow_service.SaveExpense(requestBody.BelongsDate, requestBody.CategoryName, requestBody.Amount, requestBody.Description, userId)
+	cashFlowEntity, err := saveExpenseForUser(requestBody.BelongsDate, requestBody.CategoryName, requestBody.Amount, requestBody.Description, userId)
 	if err != nil {
 		util.ComposeErrorResponse(w, r, err)
 		return
@@ -45,7 +45,7 @@ func CreateIncome(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cashFlowEntity, err := cash_flow_service.SaveIncome(requestBody.BelongsDate, requestBody.CategoryName, requestBody.Amount, requestBody.Description, userId)
+	cashFlowEntity, err := saveIncomeForUser(requestBody.BelongsDate, requestBody.CategoryName, requestBody.Amount, requestBody.Description, userId)
 	if err != nil {
 		util.ComposeErrorResponse(w, r, err)
 		return

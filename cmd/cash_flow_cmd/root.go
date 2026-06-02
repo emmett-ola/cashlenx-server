@@ -11,6 +11,7 @@ var (
 	plainId          string
 	descriptionFuzzy string
 	cashUserId       string
+	requireCashUser  = cli_auth.RequireUserID
 )
 
 var CashCmd = &cobra.Command{
@@ -34,7 +35,7 @@ Available sub-commands:
 }
 
 func ensureCashUser() error {
-	return cli_auth.RequireUserID(&cashUserId)
+	return requireCashUser(&cashUserId)
 }
 
 func init() {

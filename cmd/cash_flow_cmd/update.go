@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/macar-x/cashlenx-server/service/cash_flow_service"
 	"github.com/spf13/cobra"
 )
 
@@ -32,7 +31,7 @@ You can update amount, category, date, and description.`,
 			return errors.New("at least one field to update must be provided (amount, category, date, or description)")
 		}
 
-		cashFlowEntity, err := cash_flow_service.UpdateByIdForUser(plainId, belongsDate, categoryName, amount, descriptionExact, cashUserId)
+		cashFlowEntity, err := updateCashForUser(plainId, belongsDate, categoryName, amount, descriptionExact, cashUserId)
 		if err != nil {
 			return err
 		}

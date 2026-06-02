@@ -5,7 +5,6 @@ import (
 
 	"github.com/macar-x/cashlenx-server/errors"
 	"github.com/macar-x/cashlenx-server/model"
-	"github.com/macar-x/cashlenx-server/service/user_service"
 	"github.com/spf13/cobra"
 )
 
@@ -24,7 +23,7 @@ var profileGetCmd = &cobra.Command{
 	Use:   "get",
 	Short: "Get profile",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		user := user_service.GetService(userId)
+		user := getUserProfile(userId)
 		if user.Id.IsZero() {
 			return errors.NewNotFoundError("user not found")
 		}
@@ -37,7 +36,7 @@ var profileUpdateCmd = &cobra.Command{
 	Use:   "update",
 	Short: "Update profile",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		updatedUser, err := user_service.UpdateProfileService(userId, model.UserProfileUpdateRequest{
+		updatedUser, err := updateUserProfile(userId, model.UserProfileUpdateRequest{
 			Nickname:  profileNickname,
 			AvatarUrl: profileAvatar,
 			Gender:    profileGender,

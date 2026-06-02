@@ -95,3 +95,68 @@ func TestUserPrintHelpers(t *testing.T) {
 		CashFlows:   manage_service.EntityStats{Success: 7, Failed: 8},
 	})
 }
+
+func TestProfileGetCommandPassesAuthenticatedUserToService(t *testing.T) {
+	userID := primitive.NewObjectID()
+	original := getUserProfile
+	getUserProfile = func(serviceUserID string) model.UserEntity {
+		if serviceUserID != userID.Hex() {
+			t.Fatalf("service user id = %q, want %q", serviceUserID, userID.Hex())
+		}
+		return model.UserEntity{
+			Id:       userID,
+			Username: "tester",
+			IsActive: true,
+			Role:     model.UserRoleUser,
+		}
+	}
+	t.Cleanup(func() {
+		getUserProfile = original
+		userId = ""
+	})
+
+	userId = userID.Hex()
+	if err := profileGetCmd.RunE(profileGetCmd, nil); err != nil {
+		t.Fatalf("RunE returned error: %v", err)
+	}
+}
+
+func TestProfileUpdateCommandPassesFlagsToService(t *testing.T) {
+	userID := primitive.NewObjectID()
+	var got model.UserProfileUpdateRequest
+	original := updateUserProfile
+	updateUserProfile = func(serviceUserID string, request model.UserProfileUpdateRequest) (model.UserEntity, error) {
+		if serviceUserID != userID.Hex() {
+			t.Fatalf("service user id = %q, want %q", serviceUserID, userID.Hex())
+		}
+		got = request
+		return model.UserEntity{
+			Id:        userID,
+			Username:  "tester",
+			Nickname:  request.Nickname,
+			AvatarUrl: request.AvatarUrl,
+			Gender:    request.Gender,
+			IsActive:  true,
+			Role:      model.UserRoleUser,
+		}, nil
+	}
+	t.Cleanup(func() {
+		updateUserProfile = original
+		userId = ""
+		profileNickname = ""
+		profileAvatar = ""
+		profileGender = ""
+	})
+
+	userId = userID.Hex()
+	profileNickname = "Test User"
+	profileAvatar = "https://example.test/avatar.png"
+	profileGender = model.GenderOthers
+
+	if err := profileUpdateCmd.RunE(profileUpdateCmd, nil); err != nil {
+		t.Fatalf("RunE returned error: %v", err)
+	}
+	if got.Nickname != "Test User" || got.AvatarUrl != "https://example.test/avatar.png" || got.Gender != model.GenderOthers {
+		t.Fatalf("service request = %+v", got)
+	}
+}

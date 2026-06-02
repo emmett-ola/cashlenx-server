@@ -23,7 +23,7 @@ var incomeCmd = &cobra.Command{
 		if !cash_flow_service.IsIncomeRequiredFiledSatisfied(categoryName, amount) {
 			return errors.New("some required fields are empty")
 		}
-		cashFlowEntity, err := cash_flow_service.SaveIncome(belongsDate, categoryName, amount, descriptionExact, cashUserId)
+		cashFlowEntity, err := saveIncomeForUser(belongsDate, categoryName, amount, descriptionExact, cashUserId)
 		if err != nil {
 			return err
 		}

@@ -19,7 +19,7 @@ func GetProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get user
-	user := user_service.GetService(userID)
+	user := getProfileUser(userID)
 	if user.Id.IsZero() {
 		util.ComposeJSONResponse(w, http.StatusNotFound, errors.NewNotFoundError("user not found"))
 		return
@@ -44,7 +44,7 @@ func UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Update profile
-	updatedUser, err := user_service.UpdateProfileService(userID, requestBody)
+	updatedUser, err := updateProfileUser(userID, requestBody)
 	if err != nil {
 		util.ComposeErrorResponse(w, r, err)
 		return
