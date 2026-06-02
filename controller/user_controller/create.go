@@ -5,7 +5,6 @@ import (
 
 	"github.com/macar-x/cashlenx-server/errors"
 	"github.com/macar-x/cashlenx-server/model"
-	"github.com/macar-x/cashlenx-server/service/user_service"
 	"github.com/macar-x/cashlenx-server/util"
 )
 
@@ -36,7 +35,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Call CreateService with admin user ID as creator
-	plainId, err := user_service.CreateService(requestBody, &adminUserId)
+	plainId, err := createUserByAdmin(requestBody, &adminUserId)
 	if err != nil {
 		if errors.IsAlreadyExistsError(err) {
 			util.ComposeJSONResponse(w, http.StatusConflict, err)
@@ -47,7 +46,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get the created user entity
-	createdUser := user_service.GetUserByObjectId(plainId)
+	createdUser := getUserByID(plainId)
 	if createdUser.Id.IsZero() {
 		util.ComposeJSONResponse(w, http.StatusInternalServerError, errors.NewInternalError("failed to retrieve created user", nil))
 		return

@@ -6,7 +6,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/macar-x/cashlenx-server/errors"
 	"github.com/macar-x/cashlenx-server/model"
-	"github.com/macar-x/cashlenx-server/service/user_service"
 	"github.com/macar-x/cashlenx-server/util"
 )
 
@@ -26,7 +25,7 @@ func Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updatedUser, err := user_service.UpdateService(id, requestBody)
+	updatedUser, err := updateUserByAdmin(id, requestBody)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			util.ComposeJSONResponse(w, http.StatusNotFound, err)

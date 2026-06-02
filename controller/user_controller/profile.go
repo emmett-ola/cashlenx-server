@@ -5,7 +5,6 @@ import (
 
 	"github.com/macar-x/cashlenx-server/errors"
 	"github.com/macar-x/cashlenx-server/model"
-	"github.com/macar-x/cashlenx-server/service/user_service"
 	"github.com/macar-x/cashlenx-server/util"
 )
 
@@ -90,7 +89,7 @@ func ChangePassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Change password
-	err := user_service.ChangePasswordService(userID, requestBody.OldPassword, requestBody.NewPassword)
+	err := changeUserPassword(userID, requestBody.OldPassword, requestBody.NewPassword)
 	if err != nil {
 		if errors.IsUnauthorizedError(err) {
 			util.ComposeJSONResponse(w, http.StatusUnauthorized, err)
@@ -119,7 +118,7 @@ func DeleteAccount(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Delete account
-	err := user_service.DeleteService(userID)
+	err := deleteCurrentUser(userID)
 	if err != nil {
 		util.ComposeErrorResponse(w, r, err)
 		return

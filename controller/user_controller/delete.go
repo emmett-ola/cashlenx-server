@@ -5,7 +5,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/macar-x/cashlenx-server/errors"
-	"github.com/macar-x/cashlenx-server/service/user_service"
 	"github.com/macar-x/cashlenx-server/util"
 )
 
@@ -21,7 +20,7 @@ func Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Delete user via service
-	if err := user_service.DeleteService(userId); err != nil {
+	if err := deleteUserByAdmin(userId); err != nil {
 		util.ComposeErrorResponse(w, r, err)
 		return
 	}

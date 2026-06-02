@@ -5,7 +5,6 @@ import (
 
 	"github.com/macar-x/cashlenx-server/errors"
 	"github.com/macar-x/cashlenx-server/model"
-	"github.com/macar-x/cashlenx-server/service/user_service"
 	"github.com/macar-x/cashlenx-server/util"
 )
 
@@ -16,7 +15,7 @@ func GetConfiguration(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	config, err := user_service.GetConfigurationService(userID)
+	config, err := getUserConfiguration(userID)
 	if err != nil {
 		util.ComposeErrorResponse(w, r, err)
 		return
@@ -38,7 +37,7 @@ func UpsertConfiguration(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	config, err := user_service.UpsertConfigurationService(userID, requestBody)
+	config, err := upsertUserConfiguration(userID, requestBody)
 	if err != nil {
 		util.ComposeErrorResponse(w, r, err)
 		return

@@ -6,8 +6,16 @@ import (
 )
 
 var (
-	getProfileUser    = user_service.GetService
-	updateProfileUser = user_service.UpdateProfileService
+	getProfileUser          = user_service.GetService
+	updateProfileUser       = user_service.UpdateProfileService
+	getUserConfiguration    = user_service.GetConfigurationService
+	upsertUserConfiguration = user_service.UpsertConfigurationService
+	createUserByAdmin       = user_service.CreateService
+	getUserByID             = user_service.GetUserByObjectId
+	updateUserByAdmin       = user_service.UpdateService
+	deleteUserByAdmin       = user_service.DeleteService
+	changeUserPassword      = user_service.ChangePasswordService
+	deleteCurrentUser       = user_service.DeleteService
 )
 
 type updateProfileUserFunc func(string, model.UserProfileUpdateRequest) (model.UserEntity, error)

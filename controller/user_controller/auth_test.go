@@ -145,6 +145,165 @@ func TestListAllUsesPaginationDefaultsAndReturnsUsers(t *testing.T) {
 	}
 }
 
+func TestUserControllerServiceDelegationPaths(t *testing.T) {
+	adminID := primitive.NewObjectID().Hex()
+	userID := primitive.NewObjectID()
+	var createReq, updateReq model.UserDTO
+	var createActor *string
+	var getCreatedID, updateID, deleteAdminID string
+	var configGetID, configUpsertID string
+	var passwordArgs, deleteCurrentArgs struct {
+		userID string
+		first  string
+		second string
+	}
+	var configReq model.UserConfigurationRequest
+
+	originalCreate := createUserByAdmin
+	createUserByAdmin = func(req model.UserDTO, actor *string) (string, error) {
+		createReq = req
+		createActor = actor
+		return userID.Hex(), nil
+	}
+	originalGet := getUserByID
+	getUserByID = func(id string) model.UserEntity {
+		getCreatedID = id
+		return model.UserEntity{Id: userID, Username: "alice", Role: model.UserRoleUser, IsActive: true}
+	}
+	originalUpdate := updateUserByAdmin
+	updateUserByAdmin = func(id string, req model.UserDTO) (model.UserEntity, error) {
+		updateID = id
+		updateReq = req
+		return model.UserEntity{Id: userID, Username: req.Username, Role: model.UserRoleUser, IsActive: true}, nil
+	}
+	originalDeleteAdmin := deleteUserByAdmin
+	deleteUserByAdmin = func(id string) error {
+		deleteAdminID = id
+		return nil
+	}
+	originalGetConfig := getUserConfiguration
+	getUserConfiguration = func(serviceUserID string) (model.UserConfigurationEntity, error) {
+		configGetID = serviceUserID
+		return testUserControllerConfig(userID), nil
+	}
+	originalUpsertConfig := upsertUserConfiguration
+	upsertUserConfiguration = func(serviceUserID string, req model.UserConfigurationRequest) (model.UserConfigurationEntity, error) {
+		configUpsertID = serviceUserID
+		configReq = req
+		return testUserControllerConfig(userID), nil
+	}
+	originalPassword := changeUserPassword
+	changeUserPassword = func(serviceUserID, oldPassword, newPassword string) error {
+		passwordArgs.userID = serviceUserID
+		passwordArgs.first = oldPassword
+		passwordArgs.second = newPassword
+		return nil
+	}
+	originalDeleteCurrent := deleteCurrentUser
+	deleteCurrentUser = func(serviceUserID string) error {
+		deleteCurrentArgs.userID = serviceUserID
+		return nil
+	}
+	t.Cleanup(func() {
+		createUserByAdmin = originalCreate
+		getUserByID = originalGet
+		updateUserByAdmin = originalUpdate
+		deleteUserByAdmin = originalDeleteAdmin
+		getUserConfiguration = originalGetConfig
+		upsertUserConfiguration = originalUpsertConfig
+		changeUserPassword = originalPassword
+		deleteCurrentUser = originalDeleteCurrent
+	})
+
+	createReqHTTP := httptest.NewRequest(http.MethodPost, "/admin/user", strings.NewReader(`{"username":"alice","password":"secret","email_address":"alice@example.test"}`))
+	createReqHTTP = createReqHTTP.WithContext(context.WithValue(createReqHTTP.Context(), "user_id", adminID))
+	createRec := httptest.NewRecorder()
+	Create(createRec, createReqHTTP)
+	if createRec.Code != http.StatusCreated {
+		t.Fatalf("create status = %d, want %d; body=%s", createRec.Code, http.StatusCreated, createRec.Body.String())
+	}
+
+	updateReqHTTP := httptest.NewRequest(http.MethodPut, "/admin/user/"+userID.Hex(), strings.NewReader(`{"username":"alice2","email_address":"alice2@example.test"}`))
+	updateReqHTTP = mux.SetURLVars(updateReqHTTP, map[string]string{"id": userID.Hex()})
+	updateRec := httptest.NewRecorder()
+	Update(updateRec, updateReqHTTP)
+	if updateRec.Code != http.StatusOK {
+		t.Fatalf("update status = %d, want %d; body=%s", updateRec.Code, http.StatusOK, updateRec.Body.String())
+	}
+
+	deleteReq := httptest.NewRequest(http.MethodDelete, "/admin/user/"+userID.Hex(), nil)
+	deleteReq = mux.SetURLVars(deleteReq, map[string]string{"id": userID.Hex()})
+	deleteRec := httptest.NewRecorder()
+	Delete(deleteRec, deleteReq)
+	if deleteRec.Code != http.StatusOK {
+		t.Fatalf("delete status = %d, want %d; body=%s", deleteRec.Code, http.StatusOK, deleteRec.Body.String())
+	}
+
+	configGetReq := httptest.NewRequest(http.MethodGet, "/user/configuration", nil)
+	configGetReq = configGetReq.WithContext(context.WithValue(configGetReq.Context(), "user_id", userID.Hex()))
+	configGetRec := httptest.NewRecorder()
+	GetConfiguration(configGetRec, configGetReq)
+	if configGetRec.Code != http.StatusOK {
+		t.Fatalf("config get status = %d, want %d; body=%s", configGetRec.Code, http.StatusOK, configGetRec.Body.String())
+	}
+
+	configUpsertReq := httptest.NewRequest(http.MethodPost, "/user/configuration", strings.NewReader(`{"display_language":"en-US","currency_code":"USD","active_theme_color":"blue"}`))
+	configUpsertReq = configUpsertReq.WithContext(context.WithValue(configUpsertReq.Context(), "user_id", userID.Hex()))
+	configUpsertRec := httptest.NewRecorder()
+	UpsertConfiguration(configUpsertRec, configUpsertReq)
+	if configUpsertRec.Code != http.StatusOK {
+		t.Fatalf("config upsert status = %d, want %d; body=%s", configUpsertRec.Code, http.StatusOK, configUpsertRec.Body.String())
+	}
+
+	passwordReq := httptest.NewRequest(http.MethodPut, "/user/password", strings.NewReader(`{"old_password":"old","new_password":"new"}`))
+	passwordReq = passwordReq.WithContext(context.WithValue(passwordReq.Context(), "user_id", userID.Hex()))
+	passwordRec := httptest.NewRecorder()
+	ChangePassword(passwordRec, passwordReq)
+	if passwordRec.Code != http.StatusOK {
+		t.Fatalf("password status = %d, want %d; body=%s", passwordRec.Code, http.StatusOK, passwordRec.Body.String())
+	}
+
+	accountReq := httptest.NewRequest(http.MethodDelete, "/user/account", nil)
+	accountReq = accountReq.WithContext(context.WithValue(accountReq.Context(), "user_id", userID.Hex()))
+	accountRec := httptest.NewRecorder()
+	DeleteAccount(accountRec, accountReq)
+	if accountRec.Code != http.StatusOK {
+		t.Fatalf("account status = %d, want %d; body=%s", accountRec.Code, http.StatusOK, accountRec.Body.String())
+	}
+
+	if createReq.Username != "alice" || createReq.Password != "secret" || createReq.EmailAddress != "alice@example.test" || createActor == nil || *createActor != adminID || getCreatedID != userID.Hex() {
+		t.Fatalf("create req=%+v actor=%v getCreatedID=%q", createReq, createActor, getCreatedID)
+	}
+	if updateID != userID.Hex() || updateReq.Username != "alice2" || updateReq.EmailAddress != "alice2@example.test" {
+		t.Fatalf("update id=%q req=%+v", updateID, updateReq)
+	}
+	if deleteAdminID != userID.Hex() {
+		t.Fatalf("delete admin id = %q", deleteAdminID)
+	}
+	if configGetID != userID.Hex() || configUpsertID != userID.Hex() {
+		t.Fatalf("config ids = get %q upsert %q", configGetID, configUpsertID)
+	}
+	if configReq.DisplayLanguage == nil || *configReq.DisplayLanguage != "en-US" || configReq.CurrencyCode == nil || *configReq.CurrencyCode != "USD" || configReq.ActiveThemeColor == nil || *configReq.ActiveThemeColor != "blue" {
+		t.Fatalf("config req = %+v", configReq)
+	}
+	if passwordArgs.userID != userID.Hex() || passwordArgs.first != "old" || passwordArgs.second != "new" {
+		t.Fatalf("password args = %+v", passwordArgs)
+	}
+	if deleteCurrentArgs.userID != userID.Hex() {
+		t.Fatalf("delete current args = %+v", deleteCurrentArgs)
+	}
+}
+
+func testUserControllerConfig(userID primitive.ObjectID) model.UserConfigurationEntity {
+	return model.UserConfigurationEntity{
+		Id:               primitive.NewObjectID(),
+		BelongsUserId:    userID,
+		DisplayLanguage:  "en-US",
+		CurrencyCode:     "USD",
+		ActiveThemeColor: "blue",
+	}
+}
+
 func installUserMapperStub(t *testing.T, users ...model.UserEntity) *userMapperStub {
 	t.Helper()
 	original := user_mapper.INSTANCE
