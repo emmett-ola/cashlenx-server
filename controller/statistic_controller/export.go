@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/macar-x/cashlenx-server/errors"
-	"github.com/macar-x/cashlenx-server/service/statistic_service"
 	"github.com/macar-x/cashlenx-server/util"
 )
 
@@ -58,11 +57,11 @@ func ExportData(w http.ResponseWriter, r *http.Request) {
 	var err error
 	switch format {
 	case "xlsx":
-		err = statistic_service.ExportForUser(fromDate, toDate, tempFilePath, userId)
+		err = exportStatisticXLSXForUser(fromDate, toDate, tempFilePath, userId)
 	case "csv":
-		err = statistic_service.ExportToCSVForUser(fromDate, toDate, tempFilePath, userId)
+		err = exportStatisticCSVForUser(fromDate, toDate, tempFilePath, userId)
 	case "pdf":
-		err = statistic_service.ExportToPDFForUser(fromDate, toDate, tempFilePath, userId)
+		err = exportStatisticPDFForUser(fromDate, toDate, tempFilePath, userId)
 	}
 
 	if err != nil {

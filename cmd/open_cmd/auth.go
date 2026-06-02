@@ -4,11 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/macar-x/cashlenx-server/auth"
 	"github.com/macar-x/cashlenx-server/cmd/cli_auth"
 	"github.com/macar-x/cashlenx-server/model"
-	"github.com/macar-x/cashlenx-server/service/refresh_token_service"
-	"github.com/macar-x/cashlenx-server/service/user_service"
 	"github.com/spf13/cobra"
 )
 
@@ -43,17 +40,17 @@ var loginCmd = &cobra.Command{
 		var user model.UserEntity
 		var err error
 		if loginRefreshToken != "" {
-			accessToken, refreshToken, user, err = auth.Service.RefreshToken(loginRefreshToken, cli_auth.DeviceID, cli_auth.DeviceName, cli_auth.IPAddress, cli_auth.UserAgent)
+			accessToken, refreshToken, user, err = refreshOpenToken(loginRefreshToken, cli_auth.DeviceID, cli_auth.DeviceName, cli_auth.IPAddress, cli_auth.UserAgent)
 		} else {
 			if loginUsername == "" || loginPassword == "" {
 				return errors.New("username and password are required unless --refresh-token is provided")
 			}
-			accessToken, refreshToken, user, err = auth.Service.Authenticate(loginUsername, loginPassword, cli_auth.DeviceID, cli_auth.DeviceName, cli_auth.IPAddress, cli_auth.UserAgent)
+			accessToken, refreshToken, user, err = authenticateOpenUser(loginUsername, loginPassword, cli_auth.DeviceID, cli_auth.DeviceName, cli_auth.IPAddress, cli_auth.UserAgent)
 		}
 		if err != nil {
 			return err
 		}
-		if err := cli_auth.Save(accessToken, refreshToken, user); err != nil {
+		if err := saveOpenSession(accessToken, refreshToken, user); err != nil {
 			return err
 		}
 
@@ -73,7 +70,7 @@ var registerCmd = &cobra.Command{
 		if registerUsername == "" || registerPassword == "" || registerEmail == "" || registerVerificationToken == "" {
 			return errors.New("username, password, email, and verification token are required")
 		}
-		userId, err := user_service.RegisterPublicUser(registerUsername, registerPassword, registerEmail, registerVerificationToken)
+		userId, err := registerOpenUser(registerUsername, registerPassword, registerEmail, registerVerificationToken)
 		if err != nil {
 			return err
 		}
@@ -87,36 +84,36 @@ var logoutCmd = &cobra.Command{
 	Short: "Logout by revoking refresh token or all tokens for an access token",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if logoutRefreshToken == "" && logoutAccessToken == "" {
-			session, err := cli_auth.CurrentSession()
+			session, err := currentOpenSession()
 			if err == nil {
 				logoutRefreshToken = session.RefreshToken
 			}
 		}
 		if logoutRefreshToken != "" {
-			refreshToken, err := refresh_token_service.GetRefreshTokenByToken(logoutRefreshToken, cli_auth.DeviceID, cli_auth.DeviceName, cli_auth.IPAddress, cli_auth.UserAgent)
+			refreshToken, err := getOpenRefreshToken(logoutRefreshToken, cli_auth.DeviceID, cli_auth.DeviceName, cli_auth.IPAddress, cli_auth.UserAgent)
 			if err != nil {
 				return err
 			}
-			if err := refresh_token_service.RevokeRefreshToken(logoutRefreshToken, refreshToken.UserId); err != nil {
+			if err := revokeOpenRefreshToken(logoutRefreshToken, refreshToken.UserId); err != nil {
 				return err
 			}
-			_ = cli_auth.Clear()
+			_ = clearOpenSession()
 			fmt.Println("Successfully logged out from this device")
 			return nil
 		}
 		if logoutAccessToken != "" {
-			claims, err := auth.Service.ValidateToken(logoutAccessToken)
+			claims, err := validateOpenAccessToken(logoutAccessToken)
 			if err != nil {
 				return err
 			}
-			if err := refresh_token_service.RevokeAllRefreshTokens(claims.UserID); err != nil {
+			if err := revokeAllOpenRefreshTokens(claims.UserID); err != nil {
 				return err
 			}
-			_ = cli_auth.Clear()
+			_ = clearOpenSession()
 			fmt.Println("Successfully logged out from all devices")
 			return nil
 		}
-		_ = cli_auth.Clear()
+		_ = clearOpenSession()
 		fmt.Println("Logout accepted")
 		return nil
 	},
@@ -129,7 +126,7 @@ var resetPasswordCmd = &cobra.Command{
 		if resetEmailOrUsername == "" {
 			return errors.New("email or username is required")
 		}
-		if err := user_service.RequestPasswordReset(resetEmailOrUsername, cli_auth.IPAddress); err != nil {
+		if err := requestOpenPasswordReset(resetEmailOrUsername, cli_auth.IPAddress); err != nil {
 			return err
 		}
 		fmt.Println("Password reset request accepted")
@@ -144,7 +141,7 @@ var resetPasswordConfirmCmd = &cobra.Command{
 		if resetToken == "" || resetPassword == "" {
 			return errors.New("token and password are required")
 		}
-		if err := user_service.ConfirmPasswordReset(resetToken, resetPassword); err != nil {
+		if err := confirmOpenPasswordReset(resetToken, resetPassword); err != nil {
 			return err
 		}
 		fmt.Println("Password reset successfully")

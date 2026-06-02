@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/macar-x/cashlenx-server/cmd/cli_auth"
-	"github.com/macar-x/cashlenx-server/service/verification_service"
 	"github.com/spf13/cobra"
 )
 
@@ -27,7 +26,7 @@ var sendVerificationCodeCmd = &cobra.Command{
 		if verificationPurpose == "" || verificationEmail == "" {
 			return errors.New("purpose and email are required")
 		}
-		if err := verification_service.SendVerificationCode(verificationPurpose, verificationEmail, cli_auth.IPAddress); err != nil {
+		if err := sendOpenVerificationCode(verificationPurpose, verificationEmail, cli_auth.IPAddress); err != nil {
 			return err
 		}
 		fmt.Println("Verification code sent")
@@ -42,7 +41,7 @@ var verifyVerificationCodeCmd = &cobra.Command{
 		if verificationPurpose == "" || verificationEmail == "" || verificationCode == "" {
 			return errors.New("purpose, email, and code are required")
 		}
-		result, err := verification_service.VerifyCode(verificationPurpose, verificationEmail, verificationCode)
+		result, err := verifyOpenCode(verificationPurpose, verificationEmail, verificationCode)
 		if err != nil {
 			return err
 		}

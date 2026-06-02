@@ -1,7 +1,6 @@
 package open_cmd
 
 import (
-	"github.com/macar-x/cashlenx-server/controller"
 	"github.com/macar-x/cashlenx-server/util"
 	"github.com/spf13/cobra"
 )
@@ -17,7 +16,7 @@ var startCmd = &cobra.Command{
 		if !cmd.Flags().Changed("port") {
 			startPort = int32(util.GetConfigInt("server.port", 8080))
 		}
-		controller.StartServer(startPort)
+		startOpenServer(startPort)
 	},
 }
 

@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/macar-x/cashlenx-server/model"
-	"github.com/macar-x/cashlenx-server/service/user_service"
 	"github.com/spf13/cobra"
 )
 
@@ -45,11 +44,11 @@ var userCreateCmd = &cobra.Command{
 			Gender:          adminUserGender,
 			IsEmailVerified: adminUserEmailVerified,
 		}
-		createdId, err := user_service.CreateService(request, &adminSessionUserId)
+		createdId, err := createAdminUser(request, &adminSessionUserId)
 		if err != nil {
 			return err
 		}
-		createdUser := user_service.GetUserByObjectId(createdId)
+		createdUser := getAdminUser(createdId)
 		fmt.Println("User created successfully")
 		printAdminUser(createdUser)
 		return nil
@@ -60,8 +59,8 @@ var userListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List users",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		users := user_service.GetAllUsers(adminUserLimit, adminUserOffset)
-		total := user_service.CountAllUsers()
+		users := listAdminUsers(adminUserLimit, adminUserOffset)
+		total := countAdminUsers()
 		fmt.Printf("Total Users: %d\n\n", total)
 		if len(users) == 0 {
 			fmt.Println("No users found")
@@ -84,7 +83,7 @@ var userGetCmd = &cobra.Command{
 		if adminUserId == "" {
 			return errors.New("id is required")
 		}
-		user := user_service.GetUserByObjectId(adminUserId)
+		user := getAdminUser(adminUserId)
 		if user.Id.IsZero() {
 			return errors.New("user not found")
 		}
@@ -111,7 +110,7 @@ var userUpdateCmd = &cobra.Command{
 		if adminUserEmailVerifiedOn {
 			request.IsEmailVerified = adminUserEmailVerified
 		}
-		updatedUser, err := user_service.UpdateService(adminUserId, request)
+		updatedUser, err := updateAdminUser(adminUserId, request)
 		if err != nil {
 			return err
 		}
@@ -128,7 +127,7 @@ var userDeleteCmd = &cobra.Command{
 		if adminUserId == "" {
 			return errors.New("id is required")
 		}
-		if err := user_service.DeleteService(adminUserId); err != nil {
+		if err := deleteAdminUser(adminUserId); err != nil {
 			return err
 		}
 		fmt.Println("User deleted successfully")

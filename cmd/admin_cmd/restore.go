@@ -7,7 +7,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/macar-x/cashlenx-server/service/manage_service"
 	"github.com/spf13/cobra"
 )
 
@@ -40,7 +39,7 @@ WARNING: This will replace all existing data unless --merge is used.`,
 			}
 		}
 
-		stats, err := manage_service.AdminRestoreDatabase(restorePath)
+		stats, err := adminRestoreDatabase(restorePath)
 		if err != nil {
 			return err
 		}

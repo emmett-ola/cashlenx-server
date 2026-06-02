@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/macar-x/cashlenx-server/errors"
-	"github.com/macar-x/cashlenx-server/service/statistic_service"
 	"github.com/macar-x/cashlenx-server/util"
 )
 
@@ -26,7 +25,7 @@ func ImportData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Call service to import data for this user
-	err := statistic_service.ImportForUser(filePath, userId)
+	err := importStatisticForUser(filePath, userId)
 	if err != nil {
 		util.ComposeErrorResponse(w, r, err)
 		return

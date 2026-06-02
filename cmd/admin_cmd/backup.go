@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/macar-x/cashlenx-server/service/manage_service"
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +19,7 @@ If no path is specified, creates backup in current directory with timestamp.`,
 			backupPath = fmt.Sprintf("cashlenx_backup_%s.json", time.Now().Format("20060102_150405"))
 		}
 
-		stats, err := manage_service.AdminDumpDatabase(backupPath)
+		stats, err := adminDumpDatabase(backupPath)
 		if err != nil {
 			return err
 		}

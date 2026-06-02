@@ -3,8 +3,6 @@ package auth_cmd
 import (
 	"fmt"
 
-	"github.com/macar-x/cashlenx-server/cmd/cli_auth"
-	"github.com/macar-x/cashlenx-server/service/refresh_token_service"
 	"github.com/spf13/cobra"
 )
 
@@ -14,7 +12,7 @@ var tokensCmd = &cobra.Command{
 	Use:   "tokens",
 	Short: "List refresh tokens for a user",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		claims, err := cli_auth.RequireUser()
+		claims, err := requireAuthUser()
 		if err != nil {
 			return err
 		}
@@ -23,7 +21,7 @@ var tokensCmd = &cobra.Command{
 		}
 		tokensUserId = claims.UserID
 
-		tokens := refresh_token_service.GetUserRefreshTokens(tokensUserId)
+		tokens := getAuthRefreshTokens(tokensUserId)
 		if len(tokens) == 0 {
 			fmt.Println("No refresh tokens found")
 			return nil

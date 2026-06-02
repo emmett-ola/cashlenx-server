@@ -6,7 +6,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/macar-x/cashlenx-server/errors"
-	"github.com/macar-x/cashlenx-server/service/statistic_service"
 	"github.com/macar-x/cashlenx-server/util"
 )
 
@@ -36,7 +35,7 @@ func GetDailyTopExpenses(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	topExpenses, err := statistic_service.GetTopExpensesForUser(limit, "daily", date, userId)
+	topExpenses, err := getTopExpensesForUser(limit, "daily", date, userId)
 	if err != nil {
 		util.ComposeErrorResponse(w, r, err)
 		return
@@ -71,7 +70,7 @@ func GetMonthlyTopExpenses(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	topExpenses, err := statistic_service.GetTopExpensesForUser(limit, "monthly", month, userId)
+	topExpenses, err := getTopExpensesForUser(limit, "monthly", month, userId)
 	if err != nil {
 		util.ComposeErrorResponse(w, r, err)
 		return
@@ -106,7 +105,7 @@ func GetYearlyTopExpenses(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	topExpenses, err := statistic_service.GetTopExpensesForUser(limit, "yearly", year, userId)
+	topExpenses, err := getTopExpensesForUser(limit, "yearly", year, userId)
 	if err != nil {
 		util.ComposeErrorResponse(w, r, err)
 		return

@@ -4,9 +4,11 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/gorilla/mux"
+	"github.com/macar-x/cashlenx-server/service/statistic_service"
 )
 
 func TestStatisticHandlersRequireAuthenticatedUser(t *testing.T) {
@@ -104,5 +106,121 @@ func TestStatisticExportRejectsInvalidFormat(t *testing.T) {
 
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want %d; body=%s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
+func TestStatisticExportImportAndTopPassInputsToServices(t *testing.T) {
+	const userID = "507f1f77bcf86cd799439011"
+	var exportArgs struct {
+		fromDate string
+		toDate   string
+		filePath string
+		userID   string
+	}
+	var importArgs struct {
+		filePath string
+		userID   string
+	}
+	var topCalls []struct {
+		limit  int
+		period string
+		date   string
+		userID string
+	}
+
+	originalCSV := exportStatisticCSVForUser
+	exportStatisticCSVForUser = func(fromDate, toDate, filePath, serviceUserID string) error {
+		exportArgs.fromDate = fromDate
+		exportArgs.toDate = toDate
+		exportArgs.filePath = filePath
+		exportArgs.userID = serviceUserID
+		return os.WriteFile(filePath, []byte("id,amount\n1,10\n"), 0600)
+	}
+	originalImport := importStatisticForUser
+	importStatisticForUser = func(filePath, serviceUserID string) error {
+		importArgs.filePath = filePath
+		importArgs.userID = serviceUserID
+		return nil
+	}
+	originalTop := getTopExpensesForUser
+	getTopExpensesForUser = func(limit int, period, date, serviceUserID string) (*statistic_service.TopExpenses, error) {
+		topCalls = append(topCalls, struct {
+			limit  int
+			period string
+			date   string
+			userID string
+		}{limit: limit, period: period, date: date, userID: serviceUserID})
+		return &statistic_service.TopExpenses{
+			Period: date, Limit: limit, TotalExpense: 10,
+			Expenses: []statistic_service.TopExpense{{Date: date, Category: "Food", Amount: 10, Percentage: 100}},
+		}, nil
+	}
+	t.Cleanup(func() {
+		exportStatisticCSVForUser = originalCSV
+		importStatisticForUser = originalImport
+		getTopExpensesForUser = originalTop
+	})
+
+	exportReq := httptest.NewRequest(http.MethodGet, "/statistic/export?format=csv&from_date=2026-05-01&to_date=2026-05-31", nil)
+	exportReq = exportReq.WithContext(context.WithValue(exportReq.Context(), "user_id", userID))
+	exportRec := httptest.NewRecorder()
+	ExportData(exportRec, exportReq)
+	if exportRec.Code != http.StatusOK {
+		t.Fatalf("export status = %d, want %d; body=%s", exportRec.Code, http.StatusOK, exportRec.Body.String())
+	}
+	if exportArgs.fromDate != "2026-05-01" || exportArgs.toDate != "2026-05-31" || exportArgs.userID != userID || exportArgs.filePath == "" {
+		t.Fatalf("export args = %+v", exportArgs)
+	}
+	if exportRec.Header().Get("Content-Type") != "text/csv" {
+		t.Fatalf("content type = %q", exportRec.Header().Get("Content-Type"))
+	}
+
+	importReq := httptest.NewRequest(http.MethodPost, "/statistic/import?file_path=/tmp/import.csv", nil)
+	importReq = importReq.WithContext(context.WithValue(importReq.Context(), "user_id", userID))
+	importRec := httptest.NewRecorder()
+	ImportData(importRec, importReq)
+	if importRec.Code != http.StatusOK {
+		t.Fatalf("import status = %d, want %d; body=%s", importRec.Code, http.StatusOK, importRec.Body.String())
+	}
+	if importArgs.filePath != "/tmp/import.csv" || importArgs.userID != userID {
+		t.Fatalf("import args = %+v", importArgs)
+	}
+
+	cases := []struct {
+		handler http.HandlerFunc
+		path    string
+		vars    map[string]string
+	}{
+		{GetDailyTopExpenses, "/statistic/top/daily/2026-05-25?limit=3", map[string]string{"date": "2026-05-25"}},
+		{GetMonthlyTopExpenses, "/statistic/top/monthly/2026-05?limit=4", map[string]string{"month": "2026-05"}},
+		{GetYearlyTopExpenses, "/statistic/top/yearly/2026?limit=5", map[string]string{"year": "2026"}},
+	}
+	for _, tc := range cases {
+		req := httptest.NewRequest(http.MethodGet, tc.path, nil)
+		req = req.WithContext(context.WithValue(req.Context(), "user_id", userID))
+		req = mux.SetURLVars(req, tc.vars)
+		rec := httptest.NewRecorder()
+		tc.handler(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("top status = %d, want %d; body=%s", rec.Code, http.StatusOK, rec.Body.String())
+		}
+	}
+	want := []struct {
+		limit  int
+		period string
+		date   string
+		userID string
+	}{
+		{3, "daily", "2026-05-25", userID},
+		{4, "monthly", "2026-05", userID},
+		{5, "yearly", "2026", userID},
+	}
+	if len(topCalls) != len(want) {
+		t.Fatalf("top calls = %+v", topCalls)
+	}
+	for i := range want {
+		if topCalls[i] != want[i] {
+			t.Fatalf("top call[%d] = %+v, want %+v", i, topCalls[i], want[i])
+		}
 	}
 }
