@@ -1,0 +1,42 @@
+name: API Smoke Test
+
+on:
+  push:
+    branches: [main, develop, test]
+  pull_request:
+    branches: [main, develop, test]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mongodb-api-smoke:
+    name: MongoDB API Smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.0'
+          cache: true
+
+      - name: Verify smoke script syntax
+        run: bash -n scripts/smoke-api.sh
+
+      - name: Run managed MongoDB API smoke test
+        env:
+          ADMIN_USERNAME: admin
+          ADMIN_PASSWORD: admin
+          API_VERSION: v0
+          SMOKE_SERVER_PORT: 18080
+        run: scripts/smoke-api.sh --managed

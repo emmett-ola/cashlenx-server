@@ -291,7 +291,15 @@ api GET "/open/health" 200
 api GET "/open/version" 200
 api POST "/open/auth/logout" 200
 
-api POST "/open/auth/register" 201 "{\"username\":\"${USERNAME}\",\"password\":\"${PASSWORD}\"}"
+api POST "/open/auth/login" 200 "{\"username\":\"${ADMIN_USERNAME}\",\"password\":\"${ADMIN_PASSWORD}\",\"device_id\":\"smoke-admin-setup\",\"device_name\":\"Smoke Script\"}"
+ADMIN_ACCESS_TOKEN="$(json_get "data.access_token")"
+if [[ -z "$ADMIN_ACCESS_TOKEN" ]]; then
+  echo "admin setup login response did not include access_token" >&2
+  cat "$RESP_FILE" >&2
+  exit 1
+fi
+api POST "/admin/user" 201 "{\"username\":\"${USERNAME}\",\"password\":\"${PASSWORD}\",\"email_address\":\"${USERNAME}@example.test\",\"is_email_verified\":true}" "$ADMIN_ACCESS_TOKEN"
+
 api POST "/open/auth/login" 200 "{\"username\":\"${USERNAME}\",\"password\":\"${PASSWORD}\",\"device_id\":\"smoke\",\"device_name\":\"Smoke Script\"}"
 ACCESS_TOKEN="$(json_get "data.access_token")"
 REFRESH_TOKEN="$(json_get "data.refresh_token")"
