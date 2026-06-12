@@ -4,10 +4,10 @@ This roadmap tracks backend work by versioned milestones. During the `v0.x` phas
 
 ## Current Direction
 
-- Active branch line: `dev/v0.6.0`
+- Active branch line: `dev/v0.8.0`
 - Active API path version: `/api/v0`
-- Current roadmap milestone: `v0.6.0` beta readiness and service testability
-- Next enhancement milestone: `v0.7.0` observability
+- Current roadmap milestone: `v0.8.0` migration tooling
+- Next enhancement milestone: `v0.9.0` performance and caching
 
 ## Versioning Policy
 
@@ -109,7 +109,7 @@ Cleanup notes:
 
 - `README.md` now describes implemented auth, account, cash, category, statistics, import/export, admin, Docker, and OpenAPI capabilities.
 - Current local server command is documented as `go run main.go open start -p 8080`.
-- `model/version.go` and OpenAPI `info.version` now report `0.6.0` while API routes remain under `/api/v0`.
+- `model/version.go` and OpenAPI `info.version` now report `0.8.0` while API routes remain under `/api/v0`.
 - OpenAPI now covers the registered auth/token/password-reset, category tree, and statistic/dashboard/chart routes from `controller/server.go`.
 - Cash/category enum examples use lowercase `income` and `expense`, matching `model/constants.go`.
 - `/open/auth/logout` is mounted under `/open` as a public idempotent endpoint; it returns OK without credentials and revokes sessions only when a valid refresh token or bearer access token is supplied. `/auth/tokens` is documented as an authenticated token-management endpoint.
@@ -126,7 +126,7 @@ Cleanup notes:
 - [x] Align CI Go version and branch coverage with `go.mod` and the active `dev/*` branch line before beta tagging #devops
 - [x] Update `docs/openapi.yaml`, `README.md`, `AGENTS.md`, and implementation docs whenever a user-facing API contract changes #docs
 
-## Active Milestone
+## Completed Milestone
 
 ### v0.6.0 - Beta Readiness and Service Testability
 
@@ -134,19 +134,27 @@ Cleanup notes:
 - [x] Keep service unit tests database-free with in-memory mapper fakes for category, cash flow, statistic, user, and verification flows #api #dx
 - [x] Enforce admin role lifecycle: only startup bootstrap creates admin accounts, generic creation creates users, role updates are rejected, and admin deletion is blocked #security #api
 - [x] Align displayed implementation version and active branch metadata to `0.6.0` while API routes remain under `/api/v0` #docs #devops
-- [ ] Complete or explicitly disable unfinished email-dependent flows until SMTP/provider configuration is production-usable #api #security
-- [ ] Run MongoDB-backed beta smoke checks against `/api/v0` for registration, login, token refresh, logout, profile, password change, cash flow, category, statistics, import/export, admin bootstrap, and admin APIs #api #security
+- [x] Run MongoDB-backed managed beta smoke checks against `/api/v0` for admin bootstrap, login, token refresh, logout, profile, password change, cash flow, category, statistics, export, user backup, and admin APIs #api #security
+- [x] Add a managed smoke workflow that starts disposable MongoDB and the local API server before running `scripts/smoke-api.sh --managed` #api #devops
+
+## Carried Follow-Up Work
+
+These items were left behind from beta-readiness work and should be resolved deliberately, but they do not block tracking `dev/v0.8.0` as the active branch line.
+
+- [ ] Complete or explicitly disable unfinished email-dependent flows until SMTP/provider configuration is production-usable; this includes public registration smoke coverage because registration depends on emailed verification codes #api #security
 - [ ] Run Flutter-client smoke checks against `/api/v0` for login, registration, logout, token refresh, profile, cash flow, category, statistics, import/export, and admin flows #flutter #api
 - [ ] Fix behavior gaps discovered by beta API smoke checks, Flutter-client smoke checks, and manual API verification #flutter #api
 - [ ] Confirm MongoDB default development path from a fresh Docker volume while keeping MySQL build compatibility for touched persistence code #data
 
-## Later Enhancement Milestones
+## Carried Enhancement Milestone
 
 ### v0.7.0 - Observability
 
 - [x] Request ID propagation and structured request/error logging #observability
 - [ ] `/metrics` endpoint with Prometheus counters/histograms #observability #devops
 - [ ] Enable `pprof` in development #observability
+
+## Active Milestone
 
 ### v0.8.0 - Migration Tooling
 
@@ -155,6 +163,8 @@ Cleanup notes:
 - [ ] Backup/restore CLI with progress and validation #data #devops
 - [ ] Integration tests via Docker Compose for MongoDB/MySQL #data #devops
 - [ ] Add rollback functionality for failed database operations #data #security
+
+## Later Enhancement Milestones
 
 ### v0.9.0 - Performance and Caching
 
@@ -182,8 +192,8 @@ Cleanup notes:
 
 - Keep `README.md`, `docs/openapi.yaml`, `model/version.go`, and this roadmap synchronized when route contracts or milestone versions change.
 - SMTP configuration is wired through runtime config, but email flows still need provider-level smoke testing before being considered complete.
-- `scripts/smoke-api.sh` provides a MongoDB-backed beta API smoke flow for the non-SMTP core API surface once the server is running.
-- CI now uses GitHub Actions for build/test/release automation, Codecov for coverage reporting, and DeepSource for code analysis; live API smoke testing remains a separate environment check.
+- `scripts/smoke-api.sh --managed` provides a MongoDB-backed beta API smoke flow for the non-SMTP core API surface by starting disposable MongoDB and a local API server.
+- CI now uses GitHub Actions for build/test/release automation, Codecov for coverage reporting, and DeepSource for code analysis; managed live API smoke testing is available through `.github/workflows/smoke.yml`.
 
 ## Notes
 
