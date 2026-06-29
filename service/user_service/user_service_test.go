@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/macar-x/cashlenx-server/model"
+	"github.com/macar-x/cashlenx-server/service/verification_service"
+	"github.com/macar-x/cashlenx-server/util"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -44,6 +46,111 @@ func TestCreateServiceCreatesUserAndInitializesCategories(t *testing.T) {
 	}
 	if initializedUserID != userID {
 		t.Fatalf("initializedUserID = %q, want %q", initializedUserID, userID)
+	}
+}
+
+func TestRegisterPublicUserConsumesSignupTokenAndCreatesVerifiedUser(t *testing.T) {
+	repo := installUserServiceTestDeps(t)
+	setRegistrationEnabled(t, "true")
+
+	var consumedToken string
+	var consumedOperation verification_service.OperationType
+	consumeVerifiedToken = func(token string, operation verification_service.OperationType) (model.OperationConfirmCode, error) {
+		consumedToken = token
+		consumedOperation = operation
+		return model.OperationConfirmCode{Payload: "alice@example.test"}, nil
+	}
+
+	userID, err := RegisterPublicUser("alice", "StrongPass123!", " Alice@Example.Test ", "signup-token")
+	if err != nil {
+		t.Fatalf("RegisterPublicUser returned error: %v", err)
+	}
+
+	created := repo.users[userID]
+	if created.Id.IsZero() {
+		t.Fatal("expected registered user to be stored")
+	}
+	if created.EmailAddress != "alice@example.test" || !created.IsEmailVerified {
+		t.Fatalf("registered email state = %q/%v", created.EmailAddress, created.IsEmailVerified)
+	}
+	if consumedToken != "signup-token" || consumedOperation != verification_service.OperationSignup {
+		t.Fatalf("consumed token/operation = %q/%q", consumedToken, consumedOperation)
+	}
+}
+
+func TestRegisterPublicUserRejectsTokenForDifferentEmail(t *testing.T) {
+	repo := installUserServiceTestDeps(t)
+	setRegistrationEnabled(t, "true")
+	consumeVerifiedToken = func(string, verification_service.OperationType) (model.OperationConfirmCode, error) {
+		return model.OperationConfirmCode{Payload: "other@example.test"}, nil
+	}
+
+	_, err := RegisterPublicUser("alice", "StrongPass123!", "alice@example.test", "signup-token")
+	if err == nil {
+		t.Fatal("expected mismatched verification email error")
+	}
+	if len(repo.insertedIDs) != 0 {
+		t.Fatalf("inserted count = %d, want 0", len(repo.insertedIDs))
+	}
+}
+
+func TestRequestPasswordResetSendsPurposeScopedCodeWithoutUserEnumeration(t *testing.T) {
+	repo := installUserServiceTestDeps(t)
+	userID := primitive.NewObjectID()
+	repo.users[userID.Hex()] = model.UserEntity{
+		Id:           userID,
+		Username:     "alice",
+		EmailAddress: "alice@example.test",
+	}
+
+	var purpose, emailAddress, ipAddress string
+	sendVerificationCode = func(gotPurpose, gotEmail, gotIP string) error {
+		purpose, emailAddress, ipAddress = gotPurpose, gotEmail, gotIP
+		return nil
+	}
+
+	if err := RequestPasswordReset("alice", "192.0.2.10"); err != nil {
+		t.Fatalf("RequestPasswordReset returned error: %v", err)
+	}
+	if purpose != string(verification_service.OperationPasswordReset) || emailAddress != "alice@example.test" || ipAddress != "192.0.2.10" {
+		t.Fatalf("verification request = purpose %q email %q ip %q", purpose, emailAddress, ipAddress)
+	}
+
+	purpose = ""
+	if err := RequestPasswordReset("missing-user", "192.0.2.11"); err != nil {
+		t.Fatalf("unknown-user reset returned error: %v", err)
+	}
+	if purpose != "" {
+		t.Fatal("expected no verification send for an unknown user")
+	}
+}
+
+func TestConfirmPasswordResetConsumesTokenAndUpdatesPassword(t *testing.T) {
+	repo := installUserServiceTestDeps(t)
+	userID := primitive.NewObjectID()
+	repo.users[userID.Hex()] = model.UserEntity{
+		Id:           userID,
+		Username:     "alice",
+		EmailAddress: "alice@example.test",
+	}
+
+	var consumedOperation verification_service.OperationType
+	consumeVerifiedToken = func(token string, operation verification_service.OperationType) (model.OperationConfirmCode, error) {
+		if token != "reset-token" {
+			t.Fatalf("token = %q, want reset-token", token)
+		}
+		consumedOperation = operation
+		return model.OperationConfirmCode{Payload: " Alice@Example.Test "}, nil
+	}
+
+	if err := ConfirmPasswordReset("reset-token", "NewPass123!"); err != nil {
+		t.Fatalf("ConfirmPasswordReset returned error: %v", err)
+	}
+	if consumedOperation != verification_service.OperationPasswordReset {
+		t.Fatalf("operation = %q, want %q", consumedOperation, verification_service.OperationPasswordReset)
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(repo.users[userID.Hex()].PasswordHash), []byte("NewPass123!")); err != nil {
+		t.Fatalf("new password hash does not match: %v", err)
 	}
 }
 
@@ -326,6 +433,8 @@ func installUserServiceTestDeps(t *testing.T) *userRepoStub {
 	originalConfigRepo := userConfigurationRepo
 	originalInitCategories := initializeDefaultCategoriesForUser
 	originalRevokeAll := revokeAllRefreshTokens
+	originalConsumeVerifiedToken := consumeVerifiedToken
+	originalSendVerificationCode := sendVerificationCode
 
 	stub := &userRepoStub{
 		users:      map[string]model.UserEntity{},
@@ -344,8 +453,17 @@ func installUserServiceTestDeps(t *testing.T) *userRepoStub {
 		userConfigurationRepo = originalConfigRepo
 		initializeDefaultCategoriesForUser = originalInitCategories
 		revokeAllRefreshTokens = originalRevokeAll
+		consumeVerifiedToken = originalConsumeVerifiedToken
+		sendVerificationCode = originalSendVerificationCode
 	})
 	return stub
+}
+
+func setRegistrationEnabled(t *testing.T, value string) {
+	t.Helper()
+	original := util.GetConfigByKey("auth.registration.enabled")
+	util.SetConfigByKey("auth.registration.enabled", value)
+	t.Cleanup(func() { util.SetConfigByKey("auth.registration.enabled", original) })
 }
 
 type userRepoStub struct {

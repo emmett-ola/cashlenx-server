@@ -141,7 +141,8 @@ Cleanup notes:
 
 These items were left behind from beta-readiness work and should be resolved deliberately, but they do not block tracking `dev/v0.8.0` as the active branch line.
 
-- [ ] Complete or explicitly disable unfinished email-dependent flows until SMTP/provider configuration is production-usable; this includes public registration smoke coverage because registration depends on emailed verification codes #api #security
+- [x] Manually verify configured SMTP delivery; do not require repeated provider-level smoke testing for routine backend changes #api #security
+- [x] Cover public registration and password-reset request/confirmation procedures with deterministic tests that replace email delivery and persistence side effects #api #security
 - [ ] Run Flutter-client smoke checks against `/api/v0` for login, registration, logout, token refresh, profile, cash flow, category, statistics, import/export, and admin flows #flutter #api
 - [x] Resolve and verify currently known beta API smoke gaps: accepted gender values, compact cash-flow dates, period-specific statistic dates, and MySQL category mapper selection #flutter #api #data
 - [x] Confirm the MongoDB default path from a fresh disposable container through `scripts/smoke-api.sh --managed` and the managed smoke workflow #data #devops
@@ -195,7 +196,7 @@ These items were left behind from beta-readiness work and should be resolved del
 ## Known Drift To Resolve
 
 - Keep `README.md`, `docs/openapi.yaml`, `model/version.go`, and this roadmap synchronized when route contracts or milestone versions change.
-- SMTP configuration is wired through runtime config, but email flows still need provider-level smoke testing before being considered complete.
+- SMTP delivery has been manually verified by the project owner. Registration and password-reset procedure tests should remain deterministic and must not send real email.
 - `scripts/smoke-api.sh --managed` provides a MongoDB-backed beta API smoke flow for the non-SMTP core API surface by starting disposable MongoDB and a local API server.
 - CI now uses GitHub Actions for build/test/release automation, Codecov for coverage reporting, and DeepSource for code analysis; managed live API smoke testing is available through `.github/workflows/smoke.yml`.
 - The main CI workflow includes `dev/**`, but `.github/workflows/smoke.yml` currently triggers only for `main`, `develop`, and `test`; align smoke triggers with the active development branch policy.

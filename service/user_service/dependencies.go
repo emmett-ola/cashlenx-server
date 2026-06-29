@@ -6,6 +6,7 @@ import (
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/service/category_service"
 	"github.com/macar-x/cashlenx-server/service/refresh_token_service"
+	"github.com/macar-x/cashlenx-server/service/verification_service"
 )
 
 type userRepository interface {
@@ -88,4 +89,6 @@ var (
 	userConfigurationRepo              userConfigurationRepository = mapperUserConfigurationRepository{}
 	initializeDefaultCategoriesForUser                             = category_service.InitializeDefaultCategoriesForUser
 	revokeAllRefreshTokens                                         = refresh_token_service.RevokeAllRefreshTokens
+	consumeVerifiedToken                                           = verification_service.ConsumeVerifiedToken
+	sendVerificationCode                                           = verification_service.SendVerificationCode
 )

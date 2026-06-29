@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"github.com/macar-x/cashlenx-server/errors"
-	"github.com/macar-x/cashlenx-server/mapper/user_mapper"
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/service/verification_service"
 	"github.com/macar-x/cashlenx-server/util"
@@ -32,21 +31,21 @@ func RegisterPublicUser(username, password, emailAddress, verificationToken stri
 	if err := validation.ValidatePassword(password); err != nil {
 		return "", err
 	}
+	emailAddress = strings.ToLower(strings.TrimSpace(emailAddress))
 	if err := validation.ValidateEmail(emailAddress); err != nil {
 		return "", err
 	}
 
-	emailAddress = strings.ToLower(strings.TrimSpace(emailAddress))
-	existingUser := user_mapper.INSTANCE.GetUserByUsernameIncludeDeleted(username)
+	existingUser := userRepo.GetUserByUsernameIncludeDeleted(username)
 	if !existingUser.Id.IsZero() {
 		return "", errors.NewFieldAlreadyExistsError("username", "username already exists")
 	}
-	existingEmailUser := user_mapper.INSTANCE.GetUserByEmail(emailAddress)
+	existingEmailUser := userRepo.GetUserByEmail(emailAddress)
 	if !existingEmailUser.Id.IsZero() {
 		return "", errors.NewFieldAlreadyExistsError("email", "email address already exists")
 	}
 
-	verification, err := verification_service.ConsumeVerifiedToken(verificationToken, verification_service.OperationSignup)
+	verification, err := consumeVerifiedToken(verificationToken, verification_service.OperationSignup)
 	if err != nil {
 		return "", err
 	}

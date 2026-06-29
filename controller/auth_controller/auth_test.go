@@ -14,6 +14,7 @@ import (
 	"github.com/macar-x/cashlenx-server/mapper/refresh_token_mapper"
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/util"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func TestLogoutWithoutTokenReturnsOK(t *testing.T) {
@@ -79,6 +80,40 @@ func TestRegisterAcceptsEmailFieldName(t *testing.T) {
 
 	if rec.Code != http.StatusForbidden {
 		t.Fatalf("status = %d, want %d; body=%s", rec.Code, http.StatusForbidden, rec.Body.String())
+	}
+}
+
+func TestRegisterDelegatesVerifiedRegistrationAndReturnsCreatedUser(t *testing.T) {
+	userID := primitive.NewObjectID()
+	var username, password, emailAddress, verificationToken string
+	originalRegister := registerPublicUser
+	originalGet := getRegisteredUser
+	registerPublicUser = func(gotUsername, gotPassword, gotEmail, gotToken string) (string, error) {
+		username, password, emailAddress, verificationToken = gotUsername, gotPassword, gotEmail, gotToken
+		return userID.Hex(), nil
+	}
+	getRegisteredUser = func(id string) model.UserEntity {
+		if id != userID.Hex() {
+			t.Fatalf("created user id = %q, want %q", id, userID.Hex())
+		}
+		return model.UserEntity{Id: userID, Username: "alice", EmailAddress: "alice@example.test", IsEmailVerified: true}
+	}
+	t.Cleanup(func() {
+		registerPublicUser = originalRegister
+		getRegisteredUser = originalGet
+	})
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v0/open/auth/register", bytes.NewBufferString(`{"username":"alice","password":"StrongPass123!","email":"alice@example.test","verification_token":"signup-token"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+
+	Register(rec, req)
+
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d; body=%s", rec.Code, http.StatusCreated, rec.Body.String())
+	}
+	if username != "alice" || password != "StrongPass123!" || emailAddress != "alice@example.test" || verificationToken != "signup-token" {
+		t.Fatalf("registration args = %q/%q/%q/%q", username, password, emailAddress, verificationToken)
 	}
 }
 

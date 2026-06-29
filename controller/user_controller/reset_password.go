@@ -5,7 +5,6 @@ import (
 
 	"github.com/macar-x/cashlenx-server/errors"
 	"github.com/macar-x/cashlenx-server/model"
-	"github.com/macar-x/cashlenx-server/service/user_service"
 	"github.com/macar-x/cashlenx-server/util"
 )
 
@@ -25,7 +24,7 @@ func RequestPasswordReset(w http.ResponseWriter, r *http.Request) {
 	ipAddress := util.GetClientIP(r)
 
 	// Request password reset
-	err := user_service.RequestPasswordReset(requestBody.EmailOrUsername, ipAddress)
+	err := requestUserPasswordReset(requestBody.EmailOrUsername, ipAddress)
 	if err != nil {
 		util.ComposeErrorResponse(w, r, err)
 		return
@@ -57,7 +56,7 @@ func ConfirmPasswordReset(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Confirm password reset
-	err := user_service.ConfirmPasswordReset(requestBody.Token, requestBody.Password)
+	err := confirmUserPasswordReset(requestBody.Token, requestBody.Password)
 	if err != nil {
 		if errors.IsValidationError(err) {
 			util.ComposeJSONResponse(w, http.StatusBadRequest, err)

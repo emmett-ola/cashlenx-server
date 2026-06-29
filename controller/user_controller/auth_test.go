@@ -93,6 +93,47 @@ func TestUserControllersRejectInvalidInputBeforeService(t *testing.T) {
 	}
 }
 
+func TestPasswordResetHandlersDelegateSuccessfulProcedure(t *testing.T) {
+	var requestedIdentity, requestedIP string
+	var confirmedToken, confirmedPassword string
+	originalRequest := requestUserPasswordReset
+	originalConfirm := confirmUserPasswordReset
+	requestUserPasswordReset = func(identity, ipAddress string) error {
+		requestedIdentity, requestedIP = identity, ipAddress
+		return nil
+	}
+	confirmUserPasswordReset = func(token, password string) error {
+		confirmedToken, confirmedPassword = token, password
+		return nil
+	}
+	t.Cleanup(func() {
+		requestUserPasswordReset = originalRequest
+		confirmUserPasswordReset = originalConfirm
+	})
+
+	request := httptest.NewRequest(http.MethodPost, "/api/v0/open/auth/reset-password", strings.NewReader(`{"email_or_username":"alice@example.test"}`))
+	request.RemoteAddr = "192.0.2.10:1234"
+	requestRecorder := httptest.NewRecorder()
+	RequestPasswordReset(requestRecorder, request)
+	if requestRecorder.Code != http.StatusOK {
+		t.Fatalf("request status = %d, want %d; body=%s", requestRecorder.Code, http.StatusOK, requestRecorder.Body.String())
+	}
+
+	confirm := httptest.NewRequest(http.MethodPost, "/api/v0/open/auth/reset-password/confirm", strings.NewReader(`{"token":"reset-token","password":"NewPass123!"}`))
+	confirmRecorder := httptest.NewRecorder()
+	ConfirmPasswordReset(confirmRecorder, confirm)
+	if confirmRecorder.Code != http.StatusOK {
+		t.Fatalf("confirm status = %d, want %d; body=%s", confirmRecorder.Code, http.StatusOK, confirmRecorder.Body.String())
+	}
+
+	if requestedIdentity != "alice@example.test" || requestedIP != "192.0.2.10" {
+		t.Fatalf("reset request args = %q/%q", requestedIdentity, requestedIP)
+	}
+	if confirmedToken != "reset-token" || confirmedPassword != "NewPass123!" {
+		t.Fatalf("reset confirm args = %q/%q", confirmedToken, confirmedPassword)
+	}
+}
+
 func TestGetProfileReturnsLoggedInUser(t *testing.T) {
 	userID := primitive.NewObjectID()
 	installUserMapperStub(t, model.UserEntity{

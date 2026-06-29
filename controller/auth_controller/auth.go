@@ -9,7 +9,6 @@ import (
 	"github.com/macar-x/cashlenx-server/errors"
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/service/refresh_token_service"
-	"github.com/macar-x/cashlenx-server/service/user_service"
 	"github.com/macar-x/cashlenx-server/util"
 )
 
@@ -72,7 +71,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userId, err := user_service.RegisterPublicUser(
+	userId, err := registerPublicUser(
 		registerRequest.Username,
 		registerRequest.Password,
 		registerRequest.Email,
@@ -84,7 +83,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get the created user
-	createdUser := user_service.GetUserByObjectId(userId)
+	createdUser := getRegisteredUser(userId)
 	if createdUser.Id.IsZero() {
 		util.ComposeJSONResponse(w, http.StatusInternalServerError, errors.NewInternalError("failed to create user", nil))
 		return

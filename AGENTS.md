@@ -408,7 +408,7 @@ Important keys currently loaded there:
 Important nuance:
 
 - Use `db.mongodb.url` and `db.mysql.url` for database connection strings; legacy `mongodb.uri` and `mysql.uri` keys are intentionally not registered.
-- SMTP keys are wired from `.env`, but email flows still need provider-level smoke testing before beta.
+- SMTP keys are wired from `.env`, and configured delivery has been manually verified by the project owner. Automated registration and password-reset tests must replace email delivery rather than contact a real provider.
 
 ## Database Utilities
 
@@ -623,7 +623,7 @@ Use this section as a lightweight backlog of mismatches between implementation, 
 - [ ] Keep `README.md`, `docs/openapi.yaml`, `docs/roadmap.md`, and `model/version.go` synchronized when the active milestone or API contract changes
 - [x] Treat `/open/auth/logout` as a public idempotent compatibility path; it only revokes sessions when a valid token is supplied
 - [x] Treat `/auth/tokens` as authenticated token-management API; keep OpenAPI/docs explicit about its auth expectation
-- [ ] Smoke test SMTP-backed password reset and email-change flows with a real provider before beta
+- [x] Treat configured SMTP delivery as manually verified; keep registration and password-reset procedure tests deterministic and provider-free
 - [ ] Decide on the future provider strategy for email delivery, likely a third-party provider such as Mailgun, and document the intended integration approach
 - [x] Replace statistic CLI import/export default-admin fallback with an explicit user/auth model before treating those commands as production-ready multi-user workflows
 - [ ] Expand CI and/or local verification to cover more than `./errors` and `./validation`, especially DB-backed service paths as the project matures

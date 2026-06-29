@@ -34,7 +34,7 @@ func RequestPasswordReset(emailOrUsername string, ipAddress string) error {
 		return errors.NewInvalidInputError("user has no email address configured")
 	}
 
-	return verification_service.SendVerificationCode(string(verification_service.OperationPasswordReset), user.EmailAddress, ipAddress)
+	return sendVerificationCode(string(verification_service.OperationPasswordReset), user.EmailAddress, ipAddress)
 }
 
 // ConfirmPasswordReset confirms a password reset using a token
@@ -45,7 +45,7 @@ func ConfirmPasswordReset(token string, newPassword string) error {
 		return err
 	}
 
-	verification, err := verification_service.ConsumeVerifiedToken(token, verification_service.OperationPasswordReset)
+	verification, err := consumeVerifiedToken(token, verification_service.OperationPasswordReset)
 	if err != nil {
 		return err
 	}
