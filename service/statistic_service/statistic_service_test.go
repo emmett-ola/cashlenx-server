@@ -50,6 +50,58 @@ func TestGetDateRange(t *testing.T) {
 	}
 }
 
+func TestParsePeriodDate(t *testing.T) {
+	tests := []struct {
+		name   string
+		period string
+		value  string
+		want   time.Time
+	}{
+		{
+			name:   "daily compact",
+			period: "daily",
+			value:  "20260512",
+			want:   time.Date(2026, time.May, 12, 0, 0, 0, 0, time.UTC),
+		},
+		{
+			name:   "monthly compact",
+			period: "monthly",
+			value:  "202605",
+			want:   time.Date(2026, time.May, 1, 0, 0, 0, 0, time.UTC),
+		},
+		{
+			name:   "monthly dashed",
+			period: "monthly",
+			value:  "2026-05",
+			want:   time.Date(2026, time.May, 1, 0, 0, 0, 0, time.UTC),
+		},
+		{
+			name:   "yearly",
+			period: "yearly",
+			value:  "2026",
+			want:   time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC),
+		},
+		{
+			name:   "monthly full date compatibility",
+			period: "monthly",
+			value:  "2026-05-12",
+			want:   time.Date(2026, time.May, 12, 0, 0, 0, 0, time.UTC),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parsePeriodDate(tt.period, tt.value)
+			if err != nil {
+				t.Fatalf("parsePeriodDate returned error: %v", err)
+			}
+			if !got.Equal(tt.want) {
+				t.Fatalf("date = %s, want %s", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestAnalyzeTrendDirection(t *testing.T) {
 	tests := []struct {
 		name             string
@@ -136,7 +188,7 @@ func TestStatisticServiceGetSummaryForUserAggregatesByCategoryType(t *testing.T)
 	}
 	service := NewStatisticService(cashMapper, categoryMapper)
 
-	summary, err := service.GetSummaryForUser("monthly", "2026-05-12", userID.Hex())
+	summary, err := service.GetSummaryForUser("monthly", "202605", userID.Hex())
 	if err != nil {
 		t.Fatalf("GetSummaryForUser returned error: %v", err)
 	}

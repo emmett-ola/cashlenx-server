@@ -40,10 +40,20 @@ type CategoryMapper interface {
 }
 
 func init() {
-	switch util.GetConfigByKey("db.type") {
-	case "mongodb":
-		INSTANCE = CategoryMongoDbMapper{}
-	default:
+	mapper, ok := categoryMapperForDatabase(util.GetConfigByKey("db.type"))
+	if !ok {
 		panic("database type not supported")
+	}
+	INSTANCE = mapper
+}
+
+func categoryMapperForDatabase(databaseType string) (CategoryMapper, bool) {
+	switch databaseType {
+	case "mongodb":
+		return CategoryMongoDbMapper{}, true
+	case "mysql":
+		return CategoryMySqlMapper{}, true
+	default:
+		return nil, false
 	}
 }

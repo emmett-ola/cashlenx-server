@@ -34,7 +34,7 @@ func (s *StatisticService) GetTopExpensesForUser(limit int, period, date, userId
 	}
 
 	// Parse the date string
-	baseDate, err := util.ParseDate(date)
+	baseDate, err := parsePeriodDate(period, date)
 	if err != nil {
 		return nil, errors.New("invalid date format, use YYYYMMDD or YYYY-MM-DD")
 	}

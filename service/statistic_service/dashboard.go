@@ -48,7 +48,11 @@ func (s *StatisticService) GetDashboardOverviewForUser(period, date, userId stri
 
 	// Calculate quick stats
 	userObjectId, _ := primitive.ObjectIDFromHex(userId)
-	fromDate, toDate := getDateRange(period, util.FormatDateFromStringWithoutDash(date))
+	baseDate, err := parsePeriodDate(period, date)
+	if err != nil {
+		return nil, errors.New("invalid date format for period")
+	}
+	fromDate, toDate := getDateRange(period, baseDate)
 	cashFlows := s.cashFlowMapper.GetCashFlowsByDateRangeAndUser(fromDate, toDate, userObjectId)
 
 	quickStats := QuickStats{

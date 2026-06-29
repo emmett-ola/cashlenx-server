@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/macar-x/cashlenx-server/model"
-	"github.com/macar-x/cashlenx-server/util"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -29,7 +28,7 @@ func (s *StatisticService) GetBreakdownForUser(period, date, userId string) (*Br
 	}
 
 	// Parse the date string
-	baseDate, err := util.ParseDate(date)
+	baseDate, err := parsePeriodDate(period, date)
 	if err != nil {
 		return nil, errors.New("invalid date format, use YYYYMMDD or YYYY-MM-DD")
 	}

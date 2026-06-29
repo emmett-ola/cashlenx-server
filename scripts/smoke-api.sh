@@ -314,7 +314,7 @@ ACCESS_TOKEN="$(json_get "data.access_token")"
 REFRESH_TOKEN="$(json_get "data.refresh_token")"
 
 api GET "/user/profile" 200 "" "$ACCESS_TOKEN"
-api PUT "/user/profile" 200 "{\"nickname\":\"Beta Smoke\",\"gender\":\"other\"}" "$ACCESS_TOKEN"
+api PUT "/user/profile" 200 "{\"nickname\":\"Beta Smoke\",\"gender\":\"others\"}" "$ACCESS_TOKEN"
 
 api POST "/category" 201 "{\"name\":\"${CATEGORY_NAME}\",\"type\":\"expense\",\"remark\":\"smoke\"}" "$ACCESS_TOKEN"
 api GET "/category?type=expense&limit=10&offset=0" 200 "" "$ACCESS_TOKEN"
@@ -322,10 +322,10 @@ api GET "/category/tree?type=expense" 200 "" "$ACCESS_TOKEN"
 
 api POST "/cash/expense" 201 "{\"belongs_date\":\"2026-01-15\",\"category_name\":\"${CATEGORY_NAME}\",\"amount\":12.34,\"description\":\"smoke expense\"}" "$ACCESS_TOKEN"
 api GET "/cash?limit=10&offset=0" 200 "" "$ACCESS_TOKEN"
-api GET "/cash/range?from=2026-01-01&to=2026-01-31" 200 "" "$ACCESS_TOKEN"
-api GET "/cash/summary/daily/2026-01-15" 200 "" "$ACCESS_TOKEN"
+api GET "/cash/range?from=20260101&to=20260131" 200 "" "$ACCESS_TOKEN"
+api GET "/cash/summary/daily/20260115" 200 "" "$ACCESS_TOKEN"
 
-api GET "/statistic/summary/daily/2026-01-15" 200 "" "$ACCESS_TOKEN"
+api GET "/statistic/summary/daily/20260115" 200 "" "$ACCESS_TOKEN"
 api GET "/statistic/breakdown/monthly/202601" 200 "" "$ACCESS_TOKEN"
 api GET "/statistic/top/monthly/202601" 200 "" "$ACCESS_TOKEN"
 api GET "/statistic/dashboard/monthly/202601" 200 "" "$ACCESS_TOKEN"

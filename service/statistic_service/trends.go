@@ -29,7 +29,7 @@ func (s *StatisticService) GetTrendsForUser(period, date, userId string) (*Trend
 	}
 
 	// Parse the date string
-	baseDate, err := util.ParseDate(date)
+	baseDate, err := parsePeriodDate(period, date)
 	if err != nil {
 		return nil, errors.New("invalid date format, use YYYYMMDD or YYYY-MM-DD")
 	}
