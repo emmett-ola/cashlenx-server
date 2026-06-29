@@ -1,7 +1,9 @@
 package statistic_controller
 
 import (
+	"bytes"
 	"context"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -175,14 +177,27 @@ func TestStatisticExportImportAndTopPassInputsToServices(t *testing.T) {
 		t.Fatalf("content type = %q", exportRec.Header().Get("Content-Type"))
 	}
 
-	importReq := httptest.NewRequest(http.MethodPost, "/statistic/import?file_path=/tmp/import.csv", nil)
+	var importBody bytes.Buffer
+	writer := multipart.NewWriter(&importBody)
+	part, err := writer.CreateFormFile("file", "import.csv")
+	if err != nil {
+		t.Fatalf("CreateFormFile returned error: %v", err)
+	}
+	if _, err := part.Write([]byte("date,type,category,amount,description\n2026-05-01,expense,Food,10,lunch\n")); err != nil {
+		t.Fatalf("writing multipart file returned error: %v", err)
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatalf("closing multipart writer returned error: %v", err)
+	}
+	importReq := httptest.NewRequest(http.MethodPost, "/statistic/import", &importBody)
+	importReq.Header.Set("Content-Type", writer.FormDataContentType())
 	importReq = importReq.WithContext(context.WithValue(importReq.Context(), "user_id", userID))
 	importRec := httptest.NewRecorder()
 	ImportData(importRec, importReq)
 	if importRec.Code != http.StatusOK {
 		t.Fatalf("import status = %d, want %d; body=%s", importRec.Code, http.StatusOK, importRec.Body.String())
 	}
-	if importArgs.filePath != "/tmp/import.csv" || importArgs.userID != userID {
+	if importArgs.filePath == "" || importArgs.userID != userID {
 		t.Fatalf("import args = %+v", importArgs)
 	}
 

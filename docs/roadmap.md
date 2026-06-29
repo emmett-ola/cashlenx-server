@@ -143,7 +143,7 @@ These items were left behind from beta-readiness work and should be resolved del
 
 - [x] Manually verify configured SMTP delivery; do not require repeated provider-level smoke testing for routine backend changes #api #security
 - [x] Cover public registration and password-reset request/confirmation procedures with deterministic tests that replace email delivery and persistence side effects #api #security
-- [ ] Run Flutter-client smoke checks against `/api/v0` for login, registration, logout, token refresh, profile, cash flow, category, statistics, import/export, and admin flows #flutter #api
+- [x] Run disposable MongoDB-backed Flutter-client smoke checks against `/api/v0` for login, registration, logout, token refresh, profile, password reset, cash flow, category, statistics, import/export, backup, and admin flows #flutter #api
 - [x] Resolve and verify currently known beta API smoke gaps: accepted gender values, compact cash-flow dates, period-specific statistic dates, and MySQL category mapper selection #flutter #api #data
 - [x] Confirm the MongoDB default path from a fresh disposable container through `scripts/smoke-api.sh --managed` and the managed smoke workflow #data #devops
 - [ ] Keep MySQL build-compatible in touched persistence code and add runtime coverage where practical #data

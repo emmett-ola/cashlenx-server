@@ -1,7 +1,10 @@
 package statistic_controller
 
 import (
+	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"github.com/macar-x/cashlenx-server/errors"
 	"github.com/macar-x/cashlenx-server/util"
@@ -16,25 +19,49 @@ func ImportData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse query parameters
-	filePath := r.URL.Query().Get("file_path")
+	r.Body = http.MaxBytesReader(w, r.Body, 10<<20)
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		util.ComposeJSONResponse(w, http.StatusBadRequest, errors.NewInvalidInputError("failed to parse uploaded file"))
+		return
+	}
 
-	if filePath == "" {
-		util.ComposeJSONResponse(w, http.StatusBadRequest, errors.NewInvalidInputError("file_path is required"))
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		util.ComposeJSONResponse(w, http.StatusBadRequest, errors.NewInvalidInputError("file is required"))
+		return
+	}
+	defer file.Close()
+
+	extension := filepath.Ext(header.Filename)
+	tempFile, err := os.CreateTemp("", "cashlenx-statistic-import-*"+extension)
+	if err != nil {
+		util.ComposeJSONResponse(w, http.StatusInternalServerError, errors.NewInternalError("failed to create temporary import file", err))
+		return
+	}
+	tempPath := tempFile.Name()
+	defer os.Remove(tempPath)
+
+	if _, err := io.Copy(tempFile, file); err != nil {
+		tempFile.Close()
+		util.ComposeJSONResponse(w, http.StatusInternalServerError, errors.NewInternalError("failed to save uploaded file", err))
+		return
+	}
+	if err := tempFile.Close(); err != nil {
+		util.ComposeJSONResponse(w, http.StatusInternalServerError, errors.NewInternalError("failed to finalize uploaded file", err))
 		return
 	}
 
 	// Call service to import data for this user
-	err := importStatisticForUser(filePath, userId)
+	err = importStatisticForUser(tempPath, userId)
 	if err != nil {
 		util.ComposeErrorResponse(w, r, err)
 		return
 	}
 
 	response := map[string]interface{}{
-		"message":   "Data imported successfully",
-		"file_path": filePath,
-		"user_id":   userId,
+		"message":  "Data imported successfully",
+		"filename": header.Filename,
+		"user_id":  userId,
 	}
 	util.ComposeJSONResponse(w, http.StatusOK, response)
 }

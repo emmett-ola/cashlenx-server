@@ -774,14 +774,20 @@ paths:
   /statistic/import:
     post:
       summary: Import current user's statistics/cash-flow data
+      description: Imports an XLSX workbook produced by the statistics export endpoint.
       operationId: importStatisticData
       tags: [Statistic]
-      parameters:
-        - name: file_path
-          in: query
-          required: true
-          schema:
-            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
       responses:
         '200':
           $ref: '#/components/responses/WrappedResponse'
