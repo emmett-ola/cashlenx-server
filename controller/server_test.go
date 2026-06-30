@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/gorilla/mux"
@@ -86,6 +87,35 @@ func TestRouteRegistrationMatchesExpectedEndpoints(t *testing.T) {
 		if !r.Match(req, match) {
 			t.Fatalf("%s %s did not match registered routes", tc.method, tc.path)
 		}
+	}
+}
+
+func TestOperationalEndpoints(t *testing.T) {
+	originalEnv := util.GetConfigByKey("env")
+	t.Cleanup(func() { util.SetConfigByKey("env", originalEnv) })
+
+	api := mux.NewRouter()
+	api.HandleFunc("/api/v0/open/health", healthCheck).Methods(http.MethodGet)
+
+	util.SetConfigByKey("env", "test")
+	handler := buildHTTPHandler(api)
+	metricsRec := httptest.NewRecorder()
+	handler.ServeHTTP(metricsRec, httptest.NewRequest(http.MethodGet, "/metrics", nil))
+	if metricsRec.Code != http.StatusOK || !strings.Contains(metricsRec.Body.String(), "cashlenx_http_requests_in_flight") {
+		t.Fatalf("metrics response status=%d body=%s", metricsRec.Code, metricsRec.Body.String())
+	}
+	pprofRec := httptest.NewRecorder()
+	handler.ServeHTTP(pprofRec, httptest.NewRequest(http.MethodGet, "/debug/pprof/", nil))
+	if pprofRec.Code != http.StatusUnauthorized {
+		t.Fatalf("pprof in test status=%d, want %d", pprofRec.Code, http.StatusUnauthorized)
+	}
+
+	util.SetConfigByKey("env", "dev")
+	handler = buildHTTPHandler(api)
+	pprofRec = httptest.NewRecorder()
+	handler.ServeHTTP(pprofRec, httptest.NewRequest(http.MethodGet, "/debug/pprof/", nil))
+	if pprofRec.Code != http.StatusOK || !strings.Contains(pprofRec.Body.String(), "profile") {
+		t.Fatalf("pprof in dev status=%d body=%s", pprofRec.Code, pprofRec.Body.String())
 	}
 }
 

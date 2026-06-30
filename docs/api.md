@@ -13,6 +13,13 @@ http://localhost:8080/api/v0
 
 The API path version defaults to `/api/v0` and is configurable through `API_VERSION`.
 
+Operational endpoints are mounted outside the versioned API:
+
+- `GET /metrics` exposes Prometheus API request counters and duration histograms plus Go runtime/process metrics.
+- `/debug/pprof/*` is available only when `ENV=dev`.
+
+Operational endpoints intentionally bypass JWT and OpenAPI validation. Production deployments should restrict `/metrics` to trusted monitoring networks; pprof is not registered outside development.
+
 ## Response Shape
 
 Most JSON endpoints respond through the shared response wrapper from `util.ComposeJSONResponse`:

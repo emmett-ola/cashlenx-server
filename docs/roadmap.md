@@ -159,13 +159,13 @@ These items were left behind from beta-readiness work and should be resolved del
 - [x] Confirm the MongoDB default path from a fresh disposable container through `scripts/smoke-api.sh --managed` and the managed smoke workflow #data #devops
 - [x] Keep MySQL build-compatible and verify the full Flutter/API flow against disposable MySQL 8 #data #flutter
 
-## Carried Enhancement Milestone
+## Completed Milestone
 
 ### v0.7.0 - Observability
 
 - [x] Request ID propagation and structured request/error logging #observability
-- [ ] `/metrics` endpoint with Prometheus counters/histograms #observability #devops
-- [ ] Enable `pprof` in development #observability
+- [x] `/metrics` endpoint with Prometheus counters/histograms #observability #devops
+- [x] Enable `pprof` in development #observability
 
 ## Completed Milestone
 

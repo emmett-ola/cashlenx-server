@@ -25,6 +25,7 @@ CashLenX Server is a Go backend that exposes:
 - `shopspring/decimal` for money values
 - `excelize` and `gofpdf` for exports
 - OpenAPI validation through `kin-openapi`
+- Prometheus instrumentation through `prometheus/client_golang`
 
 ## Team Workflow Defaults
 
@@ -447,6 +448,7 @@ Middleware files:
 - `middleware/auth.go`
 - `middleware/cors.go`
 - `middleware/logging.go`
+- `middleware/metrics.go`
 - `middleware/schema_validation.go`
 
 CORS must stay outermost so browser `OPTIONS` preflight requests are answered before auth or OpenAPI schema validation can reject them. This is required for Flutter web and other browser clients.
@@ -454,6 +456,8 @@ CORS must stay outermost so browser `OPTIONS` preflight requests are answered be
 `middleware.Logging` adds or preserves `X-Request-ID`, stores it in request context, echoes it in the response header, and includes it in structured request logs. `util.ComposeErrorResponse` logs API errors centrally with request ID, status, method/path, caller location, and user ID when present; 4xx responses log at warn level and 5xx responses log at error level.
 
 Auth middleware skips all `/api/{version}/open/*` routes. `/open/auth/logout` handles optional token validation in its controller so the `/open` prefix remains consistently public.
+
+`GET /metrics` is an unversioned operational endpoint outside JWT and OpenAPI middleware. It exposes bounded route-template counters/histograms plus Go process/runtime metrics. `/debug/pprof/*` is registered through the standard library only when `env == dev`; production deployments must restrict metrics access at the network or reverse-proxy layer.
 
 OpenAPI schema validation loads `docs/openapi.yaml` at package init when enabled. Keep route paths in that spec aligned with `controller/server.go`; validation is bypassed automatically if the spec cannot be loaded or parsed.
 

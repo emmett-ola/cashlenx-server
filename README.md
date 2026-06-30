@@ -16,6 +16,7 @@ The project is still in active `v0.x` development. The current API path is `/api
 - MongoDB and MySQL persistence implementations
 - Docker Compose profiles for local MongoDB, MySQL, and backend startup
 - OpenAPI contract in `docs/openapi.yaml`
+- Prometheus request metrics and development-only Go profiling endpoints
 
 ## Project Structure
 
@@ -100,6 +101,13 @@ go run main.go admin database restore -i backup.json
 
 See `docs/openapi.yaml` for the current API contract and `docs/api.md` for additional API notes.
 
+## Operational Endpoints
+
+- `GET /metrics` exposes Prometheus request counters, duration histograms, and Go process/runtime metrics.
+- `/debug/pprof/*` exposes Go profiling handlers only when `ENV=dev`.
+
+These endpoints are intentionally outside `/api/v0` and the OpenAPI/JWT middleware. Restrict `/metrics` to trusted monitoring networks at the reverse proxy or firewall in deployed environments.
+
 ## Documentation
 
 - `AGENTS.md` - shared working guide for coding agents
@@ -141,6 +149,7 @@ Test coverage is still uneven while the project is under development. GitHub Act
 - `shopspring/decimal` for money values
 - `excelize` and `gofpdf` for exports
 - OpenAPI validation through `kin-openapi`
+- Prometheus instrumentation through `prometheus/client_golang`
 
 ## License
 

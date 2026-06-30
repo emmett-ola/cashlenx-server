@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"net/http"
+	_ "net/http/pprof"
 
 	"github.com/gorilla/mux"
 	"github.com/macar-x/cashlenx-server/controller/auth_controller"
@@ -63,9 +64,7 @@ func StartServer(port int32) {
 	registerCategoryRoute(r, apiPrefix)
 	registerStatisticRoute(r, apiPrefix)
 
-	// Apply middleware. CORS stays outermost so browser preflight requests are
-	// answered before auth or schema validation can reject them.
-	handler := middleware.CORS(middleware.Logging(middleware.Auth(middleware.SchemaValidation(r))))
+	handler := buildHTTPHandler(r)
 
 	host := util.GetConfigByKey("server.host")
 	addr := fmt.Sprintf(":%d", port)
@@ -78,6 +77,28 @@ func StartServer(port int32) {
 	if err := http.ListenAndServe(addr, handler); err != nil {
 		util.Logger.Fatalw("API server stopped", "error", err)
 	}
+}
+
+func buildHTTPHandler(r *mux.Router) http.Handler {
+	// CORS stays outermost for API traffic so browser preflight requests are
+	// answered before auth or OpenAPI validation can reject them.
+	apiHandler := middleware.CORS(
+		middleware.Logging(
+			middleware.Metrics(r,
+				middleware.Auth(
+					middleware.SchemaValidation(r),
+				),
+			),
+		),
+	)
+
+	root := mux.NewRouter()
+	root.Handle("/metrics", middleware.MetricsHandler()).Methods(http.MethodGet)
+	if util.GetConfigByKey("env") == "dev" {
+		root.PathPrefix("/debug/pprof/").Handler(http.DefaultServeMux)
+	}
+	root.PathPrefix("/").Handler(apiHandler)
+	return root
 }
 
 func registerOpenRoutes(r *mux.Router, prefix string) {
