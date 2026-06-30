@@ -21,16 +21,10 @@ applied migration history. Changing them does not update an existing database.
 
 ### MongoDB: `001_add_indexes.js`
 
-This is a legacy index script. It still contains pre-category-type
-`flow_type` indexes and a globally unique category-name index, so do not apply
-it to the current multi-user schema as-is. Reconciliation with current
-user-scoped queries and safe startup validation remains a `v0.8.0` roadmap
-item.
-
-The automatically mounted `docker/mongodb/init-mongo.js` has related index
-drift: it still creates `flow_type` indexes and enforces uniqueness on only
-`(belongs_user_id, name)`, while the service uniqueness rule also includes type
-and parent. Reconcile both files together.
+This script reconciles legacy index names with current multi-user cash-flow and
+category query patterns. It removes obsolete `flow_type` indexes and replaces
+the broad category-name constraint with a partial unique index scoped by user,
+type, parent, and active records.
 
 ## Migration Guidelines
 

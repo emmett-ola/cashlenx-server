@@ -42,17 +42,12 @@ Categories are user-scoped and store `belongs_user_id`, `parent_id`, `name`,
 name to repeat when its type or parent differs, so the intended uniqueness key
 is user + type + parent + name.
 
-## Known Bootstrap Drift
+## Index Lifecycle
 
-The current `init-mongo.js` still creates obsolete `flow_type` indexes and a
-unique `(belongs_user_id, name)` category index. That category index is stricter
-than the service contract and can reject otherwise valid categories. Reconcile
-the bootstrap indexes with the mapper queries and service uniqueness rules
-before treating them as production migration definitions.
-
-`migrations/001_add_indexes.js` has related legacy index definitions and must
-also not be applied as-is. Index lifecycle reconciliation is tracked in the
-`v0.8.0` roadmap.
+`init-mongo.js`, `migrations/001_add_indexes.js`, and the runtime index manager
+use the current user/type/parent/name category scope. The server invokes the
+runtime manager at startup and removes known obsolete `flow_type` and overly
+broad category-name indexes after current replacements are created.
 
 ## Demo Script Status
 

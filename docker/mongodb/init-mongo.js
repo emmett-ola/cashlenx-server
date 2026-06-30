@@ -1,6 +1,6 @@
 // MongoDB initialization script for CashLenX - SCHEMA ONLY
-// This script creates the database, collections, and inserts basic default categories
-// Demo/test data is available in init-mongo-demo.js (import manually via CLI: cashlenx manage import)
+// This script creates the database collections and indexes. User-scoped default
+// categories are created by the application, not by this script.
 
 print('Starting MongoDB initialization for CashLenX...');
 
@@ -48,15 +48,18 @@ db.operation_confirm_codes.createIndex({ is_delete: 1 });
 db.operation_confirm_codes.createIndex({ create_time: 1 });
 
 // Cash flows indexes
-db.cash_flows.createIndex({ belongs_date: -1 });
-db.cash_flows.createIndex({ category_id: 1 });
-db.cash_flows.createIndex({ flow_type: 1 });
-db.cash_flows.createIndex({ belongs_date: -1, flow_type: 1 });
-db.cash_flows.createIndex({ belongs_user_id: 1 });
+db.cash_flows.createIndex({ belongs_user_id: 1, belongs_date: -1 }, { name: 'cash_flows_user_date_index' });
+db.cash_flows.createIndex({ belongs_user_id: 1, category_id: 1 }, { name: 'cash_flows_user_category_index' });
+db.cash_flows.createIndex({ belongs_user_id: 1, is_delete: 1 }, { name: 'cash_flows_user_active_index' });
 
 // Categories indexes
-db.categories.createIndex({ belongs_user_id: 1 });
-db.categories.createIndex({ belongs_user_id: 1, name: 1 }, { unique: true });
+db.categories.createIndex({ belongs_user_id: 1, type: 1, parent_id: 1, name: 1 }, {
+  unique: true,
+  name: 'categories_active_scope_unique_index',
+  partialFilterExpression: { is_delete: false }
+});
+db.categories.createIndex({ belongs_user_id: 1, type: 1, is_delete: 1 }, { name: 'categories_user_type_active_index' });
+db.categories.createIndex({ belongs_user_id: 1, parent_id: 1, is_delete: 1 }, { name: 'categories_user_parent_active_index' });
 
 print('Indexes created successfully');
 
@@ -72,7 +75,6 @@ print('');
 print('Schema only - no demo data loaded');
 print('Admin user will be auto-created on first server start');
 print('Default categories will be auto-created for each new user');
-print('Load demo data via: cashlenx manage import -i demo-data.xlsx');
 print('=====================================\n');
 
 print('MongoDB initialization completed successfully!');

@@ -14,6 +14,7 @@ import (
 	"github.com/macar-x/cashlenx-server/controller/verification_controller"
 	"github.com/macar-x/cashlenx-server/middleware"
 	"github.com/macar-x/cashlenx-server/model"
+	"github.com/macar-x/cashlenx-server/service/manage_service"
 	"github.com/macar-x/cashlenx-server/service/user_service"
 	"github.com/macar-x/cashlenx-server/util"
 )
@@ -30,6 +31,9 @@ func StartServer(port int32) {
 	}
 
 	user_service.InitAdminUser()
+	if err := manage_service.CreateIndexes(); err != nil {
+		util.Logger.Warnw("Database index reconciliation failed", "error", err)
+	}
 
 	r := mux.NewRouter()
 

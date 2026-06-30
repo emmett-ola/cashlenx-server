@@ -1,52 +1,63 @@
-// MongoDB Index Migration
-// Run with: mongosh <connection_string> < 001_add_indexes.js
+// MongoDB index reconciliation for the current multi-user schema.
+// Run against the selected application database, for example:
+// mongosh "$MONGO_DB_URI" migrations/001_add_indexes.js
 
-// Switch to cashlenx database
-use cashlenx;
+print(`Reconciling indexes in database: ${db.getName()}`);
 
-print("Creating indexes for cash_flow collection...");
+function dropIndexIfPresent(collection, indexName) {
+  if (collection.getIndexes().some((index) => index.name === indexName)) {
+    collection.dropIndex(indexName);
+    print(`Dropped obsolete index: ${collection.getName()}.${indexName}`);
+  }
+}
 
-// Index on belongs_date for date range queries
-db.cash_flow.createIndex({ "belongs_date": 1 }, { name: "idx_belongs_date" });
-print("✓ Created index: idx_belongs_date");
-
-// Index on flow_type for income/expense filtering
-db.cash_flow.createIndex({ "flow_type": 1 }, { name: "idx_flow_type" });
-print("✓ Created index: idx_flow_type");
-
-// Compound index on belongs_date and flow_type for filtered date range queries
-db.cash_flow.createIndex({ "belongs_date": 1, "flow_type": 1 }, { name: "idx_belongs_date_flow_type" });
-print("✓ Created index: idx_belongs_date_flow_type");
-
-// Index on category_id for category-based queries
-db.cash_flow.createIndex({ "category_id": 1 }, { name: "idx_category_id" });
-print("✓ Created index: idx_category_id");
-
-print("\nCreating indexes for category collection...");
-
-// Unique index on category name
-db.category.createIndex({ "name": 1 }, { unique: true, name: "idx_category_name_unique" });
-print("✓ Created unique index: idx_category_name_unique");
-
-print("\nCreating indexes for user_configurations collection...");
-
-db.user_configurations.createIndex({ "belongs_user_id": 1 }, { unique: true, name: "user_configurations_belongs_user_id_unique_index" });
-print("✓ Created unique index: user_configurations_belongs_user_id_unique_index");
-
-print("\n=== Index Creation Complete ===");
-print("\nVerifying indexes:");
-
-print("\ncash_flow indexes:");
-db.cash_flow.getIndexes().forEach(function(idx) {
-    print("  - " + idx.name + ": " + JSON.stringify(idx.key));
+// Remove legacy names from both the old singular collections and the current
+// plural collections. Dropping an absent index is intentionally a no-op.
+['cash_flow', 'cash_flows'].forEach((collectionName) => {
+  const collection = db.getCollection(collectionName);
+  dropIndexIfPresent(collection, 'idx_flow_type');
+  dropIndexIfPresent(collection, 'idx_belongs_date_flow_type');
 });
 
-print("\ncategory indexes:");
-db.category.getIndexes().forEach(function(idx) {
-    print("  - " + idx.name + ": " + JSON.stringify(idx.key));
+['category', 'categories'].forEach((collectionName) => {
+  const collection = db.getCollection(collectionName);
+  dropIndexIfPresent(collection, 'idx_category_name_unique');
+  dropIndexIfPresent(collection, 'belongs_user_id_1_name_1');
 });
 
-print("\nuser_configurations indexes:");
-db.user_configurations.getIndexes().forEach(function(idx) {
-    print("  - " + idx.name + ": " + JSON.stringify(idx.key));
-});
+db.cash_flows.createIndex(
+  { belongs_user_id: 1, belongs_date: -1 },
+  { name: 'cash_flows_user_date_index' }
+);
+db.cash_flows.createIndex(
+  { belongs_user_id: 1, category_id: 1 },
+  { name: 'cash_flows_user_category_index' }
+);
+db.cash_flows.createIndex(
+  { belongs_user_id: 1, is_delete: 1 },
+  { name: 'cash_flows_user_active_index' }
+);
+
+db.categories.createIndex(
+  { belongs_user_id: 1, type: 1, parent_id: 1, name: 1 },
+  {
+    unique: true,
+    name: 'categories_active_scope_unique_index',
+    partialFilterExpression: { is_delete: false }
+  }
+);
+db.categories.createIndex(
+  { belongs_user_id: 1, type: 1, is_delete: 1 },
+  { name: 'categories_user_type_active_index' }
+);
+db.categories.createIndex(
+  { belongs_user_id: 1, parent_id: 1, is_delete: 1 },
+  { name: 'categories_user_parent_active_index' }
+);
+
+db.user_configurations.createIndex(
+  { belongs_user_id: 1 },
+  { unique: true, name: 'user_configurations_belongs_user_id_unique_index' }
+);
+
+print('MongoDB index reconciliation complete.');

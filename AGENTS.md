@@ -646,8 +646,7 @@ Use this section as a lightweight backlog of mismatches between implementation, 
 - [ ] Review legacy DB helper behavior that still uses package-global state plus `panic`/`log.Fatal`, and gradually normalize error handling
 - [ ] Confirm whether MongoDB-only eager initialization in the Cobra root command is still the intended default lifecycle, or if DB initialization should be made more explicit and symmetric across backends
 - [ ] Keep `/docs/roadmap.md` synchronized with the actual working branch/version plan as collaboration decisions evolve
-- [ ] Reconcile `migrations/001_add_indexes.js` with current category-type filtering and user-scoped category uniqueness before applying it
-- [ ] Reconcile `docker/mongodb/init-mongo.js` and `service/manage_service/indexes.go` at the same time: both still contain obsolete `flow_type` indexes, and the bootstrap category uniqueness key omits type and parent
+- [x] Reconcile MongoDB bootstrap, migration, and runtime indexes with user/type/parent/name category uniqueness and remove obsolete `flow_type` indexes
 - [ ] Retire or rewrite `docker/mongodb/init-mongo-demo.js`; it is a legacy single-user fixture that does not match current ownership, audit, category-type, or BSON date fields
 
 ## Testing Expectation Right Now
