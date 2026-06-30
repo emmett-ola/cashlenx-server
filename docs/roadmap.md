@@ -6,9 +6,9 @@ This roadmap tracks backend work by versioned milestones. During the `v0.x` phas
 
 - Active branch line: `dev/v0.8.0`
 - Active API path version: `/api/v0`
-- Current roadmap milestone: `v0.8.0` migration tooling
+- Current roadmap milestone: `v0.8.0` implementation complete; final verification and branch promotion remain
 - Next enhancement milestone: `v0.9.0` performance and caching
-- Integration status: MongoDB and MySQL runtime smoke coverage is complete; the remaining `v0.8.0` work is migration/index lifecycle tooling, backup/restore preflight progress, and rollback behavior.
+- Integration status: MongoDB and MySQL runtime smoke coverage exists, and the planned `v0.8.0` migration, preflight/progress, rollback, and branch-trigger work is implemented.
 
 ## Next Execution Order
 
@@ -18,7 +18,7 @@ This roadmap tracks backend work by versioned milestones. During the `v0.x` phas
 4. [Completed] Define and implement compensating rollback for failed migrations and destructive admin restores, retaining dirty migration state when compensation cannot complete.
 5. [Completed] Add `dev/**` to `.github/workflows/smoke.yml` triggers so the managed MongoDB smoke workflow follows the active branch policy.
 
-After `v0.8.0`, continue with the remaining security/performance work in `v0.9.0`, prioritizing the MySQL query-safety review before broader caching work.
+After final `v0.8.0` verification, continue with the remaining `v0.9.0` work: optional recent-query caching, benchmarks, and a Redis decision.
 
 ## Versioning Policy
 
@@ -167,7 +167,7 @@ These items were left behind from beta-readiness work and should be resolved del
 - [ ] `/metrics` endpoint with Prometheus counters/histograms #observability #devops
 - [ ] Enable `pprof` in development #observability
 
-## Active Milestone
+## Completed Milestone
 
 ### v0.8.0 - Migration Tooling
 
@@ -184,12 +184,12 @@ These items were left behind from beta-readiness work and should be resolved del
 ### v0.9.0 - Performance and Caching
 
 - [x] Provide the in-memory category cache and invalidate it on category writes for both mapper backends #performance
-- [ ] Extend cache coverage to user-scoped category lookups and replace broad cache clears with targeted invalidation where safe #performance
+- [x] Extend cache coverage to exact user-scoped category lookups, return defensive copies, and replace broad cache clears with targeted invalidation where safe #performance
 - [ ] Optional read-through cache for recent queries #performance
 - [ ] Benchmarks for summaries and mapper queries #performance #devops
 - [ ] Consider Redis for category caching #performance
 - [x] Implement parameterized category-name lookup methods for MongoDB and MySQL mappers #performance #security
-- [ ] Review and fix SQL injection risks in MySQL mappers #security
+- [x] Review MySQL mapper query construction, parameterize dynamic ID lists, and correct user-scope column names in deletion queries #security
 
 ### v0.10.0 - Cloud and Self-Hosted Hardening
 

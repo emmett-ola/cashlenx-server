@@ -32,27 +32,13 @@ func (CategoryMongoDbMapper) GetCategoryByObjectId(plainId string) model.Categor
 }
 
 func (CategoryMongoDbMapper) GetCategoryByName(categoryName string) model.CategoryEntity {
-	// Check cache first
-	categoryCache := cache.GetCategoryCache()
-	if cached, ok := categoryCache.GetByName(categoryName); ok {
-		return *cached
-	}
-
-	// Cache miss - query database
 	filter := bson.D{
 		primitive.E{Key: "name", Value: categoryName},
 	}
 
 	database.OpenMongoDbConnection(database.CategoryTableName)
 	defer database.CloseMongoDbConnection()
-	entity := convertBsonM2CategoryEntity(database.GetOneInMongoDB(filter))
-
-	// Store in cache if found
-	if !entity.IsEmpty() {
-		categoryCache.Set(&entity)
-	}
-
-	return entity
+	return convertBsonM2CategoryEntity(database.GetOneInMongoDB(filter))
 }
 
 func (CategoryMongoDbMapper) GetCategoriesByUserAndType(userObjectId primitive.ObjectID, categoryType string, page, pageSize int) ([]model.CategoryEntity, error) {
@@ -112,9 +98,8 @@ func (CategoryMongoDbMapper) InsertCategoryByEntity(newEntity model.CategoryEnti
 	defer database.CloseMongoDbConnection()
 
 	newCategoryId := database.InsertOneInMongoDB(convertCategoryEntity2BsonD(newEntity))
-
-	// Invalidate cache on insert
-	cache.GetCategoryCache().Clear()
+	newEntity.Id = newCategoryId
+	cache.GetCategoryCache().Set(&newEntity)
 
 	return newCategoryId.Hex()
 }
@@ -151,8 +136,8 @@ func (CategoryMongoDbMapper) UpdateCategoryByEntity(plainId string, updatedEntit
 		return model.CategoryEntity{}
 	}
 
-	// Invalidate cache on update
-	cache.GetCategoryCache().Clear()
+	cache.GetCategoryCache().InvalidateByID(plainId)
+	cache.GetCategoryCache().Set(&updatedEntity)
 
 	return updatedEntity
 }
@@ -196,8 +181,7 @@ func (CategoryMongoDbMapper) DeleteCategoryByObjectId(plainId string) model.Cate
 		return model.CategoryEntity{}
 	}
 
-	// Invalidate cache on delete
-	cache.GetCategoryCache().Clear()
+	cache.GetCategoryCache().InvalidateByID(plainId)
 
 	return targetEntity
 }
@@ -369,6 +353,9 @@ func (CategoryMongoDbMapper) GetCategoryByObjectIdAndUser(plainId string, userId
 		util.Logger.Warnln("category's id is not acceptable")
 		return model.CategoryEntity{}
 	}
+	if cached, ok := cache.GetCategoryCache().GetByID(plainId); ok && cached.BelongsUserId == userId {
+		return *cached
+	}
 
 	filter := bson.D{
 		primitive.E{Key: "_id", Value: objectId},
@@ -378,7 +365,11 @@ func (CategoryMongoDbMapper) GetCategoryByObjectIdAndUser(plainId string, userId
 
 	database.OpenMongoDbConnection(database.CategoryTableName)
 	defer database.CloseMongoDbConnection()
-	return convertBsonM2CategoryEntity(database.GetOneInMongoDB(filter))
+	entity := convertBsonM2CategoryEntity(database.GetOneInMongoDB(filter))
+	if !entity.IsEmpty() {
+		cache.GetCategoryCache().Set(&entity)
+	}
+	return entity
 }
 
 // GetCategoryByNameAndUser retrieves a category by name, ensuring it belongs to the user
@@ -410,6 +401,9 @@ func (CategoryMongoDbMapper) GetCategoryByNameUserAndType(categoryName string, u
 
 // GetCategoryByNameUserTypeAndParent retrieves a category by name, user, type and parent
 func (CategoryMongoDbMapper) GetCategoryByNameUserTypeAndParent(categoryName string, userId primitive.ObjectID, categoryType string, parentId primitive.ObjectID) model.CategoryEntity {
+	if cached, ok := cache.GetCategoryCache().GetByScope(userId.Hex(), categoryType, parentId.Hex(), categoryName); ok {
+		return *cached
+	}
 	filter := bson.D{
 		primitive.E{Key: "name", Value: categoryName},
 		primitive.E{Key: "belongs_user_id", Value: userId},
@@ -429,7 +423,11 @@ func (CategoryMongoDbMapper) GetCategoryByNameUserTypeAndParent(categoryName str
 
 	database.OpenMongoDbConnection(database.CategoryTableName)
 	defer database.CloseMongoDbConnection()
-	return convertBsonM2CategoryEntity(database.GetOneInMongoDB(filter))
+	entity := convertBsonM2CategoryEntity(database.GetOneInMongoDB(filter))
+	if !entity.IsEmpty() {
+		cache.GetCategoryCache().Set(&entity)
+	}
+	return entity
 }
 
 // DeleteCategoryByObjectIdAndUser deletes a category by ID, ensuring it belongs to the user
@@ -476,9 +474,8 @@ func (CategoryMongoDbMapper) DeleteCategoryByObjectIdAndUser(plainId string, use
 		return model.CategoryEntity{}
 	}
 
-	// Invalidate cache on delete
-	cache.GetCategoryCache().Clear()
-	
+	cache.GetCategoryCache().InvalidateByID(plainId)
+
 	targetEntity.IsDelete = true
 	targetEntity.DeleteTime = &now
 	targetEntity.DeleteUserId = &userId
@@ -520,8 +517,8 @@ func (CategoryMongoDbMapper) UpdateCategoryByEntityAndUser(plainId string, updat
 		return model.CategoryEntity{}
 	}
 
-	// Invalidate cache on update
-	cache.GetCategoryCache().Clear()
+	cache.GetCategoryCache().InvalidateByID(plainId)
+	cache.GetCategoryCache().Set(&updatedEntity)
 
 	return updatedEntity
 }
@@ -644,10 +641,10 @@ func convertBsonM2CategoryEntity(bsonM bson.M) model.CategoryEntity {
 		util.Logger.Errorln(err)
 		panic(err)
 	}
-	
+
 	// Manually map fields that might not be automatically mapped due to struct embedding differences or bson tags
 	// Note: BaseEntity fields should be mapped by bson tags in the struct if bson.Unmarshal works correctly with inline
 	// But let's be safe and check if we need manual mapping for older data or specific cases
-	
+
 	return newEntity
 }

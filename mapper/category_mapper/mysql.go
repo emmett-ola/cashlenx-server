@@ -38,13 +38,6 @@ func (CategoryMySqlMapper) GetCategoryByObjectId(plainId string) model.CategoryE
 }
 
 func (CategoryMySqlMapper) GetCategoryByName(categoryName string) model.CategoryEntity {
-	// Check cache first
-	categoryCache := cache.GetCategoryCache()
-	if cached, ok := categoryCache.GetByName(categoryName); ok {
-		return *cached
-	}
-
-	// Cache miss - query database
 	var sqlString bytes.Buffer
 	sqlString.WriteString("SELECT ID, PARENT_ID, NAME, TYPE FROM ")
 	sqlString.WriteString(database.CategoryTableName)
@@ -63,11 +56,6 @@ func (CategoryMySqlMapper) GetCategoryByName(categoryName string) model.Category
 	for rows.Next() {
 		categoryEntity = convertRow2CategoryEntity(rows)
 		break
-	}
-
-	// Store in cache if found
-	if !categoryEntity.IsEmpty() {
-		categoryCache.Set(&categoryEntity)
 	}
 
 	return categoryEntity
@@ -134,22 +122,25 @@ func (CategoryMySqlMapper) InsertCategoryByEntity(newEntity model.CategoryEntity
 	statement, err := connection.Prepare(sqlString.String())
 	if err != nil {
 		util.Logger.Errorw("insert failed", "error", err)
+		return ""
 	}
+	defer statement.Close()
 
 	result, err := statement.Exec(newPlainId, newEntity.BelongsUserId.Hex(), newEntity.ParentId.Hex(), newEntity.Name,
 		newEntity.Type, newEntity.Remark, newEntity.CreateUserId.Hex(), newEntity.CreateTime, newEntity.UpdateUserId.Hex(), newEntity.UpdateTime)
 	if err != nil {
 		util.Logger.Errorw("insert failed", "error", err)
+		return ""
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil || rowsAffected != 1 {
-		// fixme: maybe we should have a rollback here.
 		util.Logger.Errorw("insert failed", "error", err, "rows_affected", rowsAffected)
+		return ""
 	}
 
-	// Invalidate cache on insert
-	cache.GetCategoryCache().Clear()
+	newEntity.Id, _ = primitive.ObjectIDFromHex(newPlainId)
+	cache.GetCategoryCache().Set(&newEntity)
 
 	return newPlainId
 }
@@ -198,8 +189,8 @@ func (CategoryMySqlMapper) UpdateCategoryByEntity(plainId string, updatedEntity 
 		util.Logger.Errorw("update failed", "error", err, "rows_affected", rowsAffected)
 	}
 
-	// Invalidate cache on update
-	cache.GetCategoryCache().Clear()
+	cache.GetCategoryCache().InvalidateByID(plainId)
+	cache.GetCategoryCache().Set(&updatedEntity)
 
 	return updatedEntity
 }
@@ -243,8 +234,7 @@ func (CategoryMySqlMapper) DeleteCategoryByObjectId(plainId string) model.Catego
 		util.Logger.Errorw("delete failed", "error", err, "rows_affected", rowsAffected)
 	}
 
-	// Invalidate cache on delete
-	cache.GetCategoryCache().Clear()
+	cache.GetCategoryCache().InvalidateByID(plainId)
 
 	targetEntity.IsDelete = true
 	now := time.Now().UTC()
@@ -508,6 +498,9 @@ func (CategoryMySqlMapper) GetCategoriesByParentIdUserAndType(parentId primitive
 }
 
 func (CategoryMySqlMapper) GetCategoryByObjectIdAndUser(plainId string, userId primitive.ObjectID) model.CategoryEntity {
+	if cached, ok := cache.GetCategoryCache().GetByID(plainId); ok && cached.BelongsUserId == userId {
+		return *cached
+	}
 	var sqlString bytes.Buffer
 	sqlString.WriteString("SELECT ID, BELONGS_USER_ID, PARENT_ID, NAME, TYPE, REMARK, CREATE_USER_ID, CREATE_TIME, UPDATE_USER_ID, UPDATE_TIME FROM ")
 	sqlString.WriteString(database.CategoryTableName)
@@ -526,6 +519,9 @@ func (CategoryMySqlMapper) GetCategoryByObjectIdAndUser(plainId string, userId p
 	var categoryEntity model.CategoryEntity
 	if rows.Next() {
 		categoryEntity = convertRow2CategoryEntityWithUser(rows)
+	}
+	if !categoryEntity.IsEmpty() {
+		cache.GetCategoryCache().Set(&categoryEntity)
 	}
 	return categoryEntity
 }
@@ -577,6 +573,9 @@ func (CategoryMySqlMapper) GetCategoryByNameUserAndType(categoryName string, use
 }
 
 func (CategoryMySqlMapper) GetCategoryByNameUserTypeAndParent(categoryName string, userId primitive.ObjectID, categoryType string, parentId primitive.ObjectID) model.CategoryEntity {
+	if cached, ok := cache.GetCategoryCache().GetByScope(userId.Hex(), categoryType, parentId.Hex(), categoryName); ok {
+		return *cached
+	}
 	var sqlString bytes.Buffer
 	sqlString.WriteString("SELECT ID, BELONGS_USER_ID, PARENT_ID, NAME, TYPE, REMARK, CREATE_USER_ID, CREATE_TIME, UPDATE_USER_ID, UPDATE_TIME FROM ")
 	sqlString.WriteString(database.CategoryTableName)
@@ -605,6 +604,9 @@ func (CategoryMySqlMapper) GetCategoryByNameUserTypeAndParent(categoryName strin
 	var categoryEntity model.CategoryEntity
 	if rows.Next() {
 		categoryEntity = convertRow2CategoryEntityWithUser(rows)
+	}
+	if !categoryEntity.IsEmpty() {
+		cache.GetCategoryCache().Set(&categoryEntity)
 	}
 	return categoryEntity
 }
@@ -650,8 +652,7 @@ func (CategoryMySqlMapper) DeleteCategoryByObjectIdAndUser(plainId string, userI
 		return model.CategoryEntity{}
 	}
 
-	// Invalidate cache on delete
-	cache.GetCategoryCache().Clear()
+	cache.GetCategoryCache().InvalidateByID(plainId)
 
 	targetEntity.IsDelete = true
 	now := time.Now().UTC()
@@ -706,8 +707,8 @@ func (CategoryMySqlMapper) UpdateCategoryByEntityAndUser(plainId string, updated
 		return model.CategoryEntity{}
 	}
 
-	// Invalidate cache on update
-	cache.GetCategoryCache().Clear()
+	cache.GetCategoryCache().InvalidateByID(plainId)
+	cache.GetCategoryCache().Set(&updatedEntity)
 
 	return updatedEntity
 }
@@ -833,8 +834,7 @@ func (CategoryMySqlMapper) DeleteAllCategoriesByUser(userId primitive.ObjectID) 
 		return 0, err
 	}
 
-	// Clear cache after delete
-	cache.GetCategoryCache().Clear()
+	cache.GetCategoryCache().InvalidateUser(userId.Hex())
 
 	return result.RowsAffected()
 }

@@ -12,6 +12,7 @@ import (
 type CategoryCache struct {
 	byName    map[string]*model.CategoryEntity
 	byID      map[string]*model.CategoryEntity
+	byScope   map[string]*model.CategoryEntity
 	mu        sync.RWMutex
 	hits      int64
 	misses    int64
@@ -30,6 +31,7 @@ func GetCategoryCache() *CategoryCache {
 		instance = &CategoryCache{
 			byName:    make(map[string]*model.CategoryEntity),
 			byID:      make(map[string]*model.CategoryEntity),
+			byScope:   make(map[string]*model.CategoryEntity),
 			enabled:   true,
 			lastClear: time.Now(),
 		}
@@ -40,16 +42,12 @@ func GetCategoryCache() *CategoryCache {
 
 // GetByName retrieves a category by name from cache
 func (c *CategoryCache) GetByName(name string) (*model.CategoryEntity, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	if !c.enabled {
 		return nil, false
 	}
-
-	c.mu.RLock()
 	entity, ok := c.byName[name]
-	c.mu.RUnlock()
-
-	// Update stats outside of read lock to avoid race
-	c.mu.Lock()
 	if ok {
 		c.hits++
 		util.Logger.Debugw("Category cache hit", "name", name)
@@ -57,44 +55,58 @@ func (c *CategoryCache) GetByName(name string) (*model.CategoryEntity, bool) {
 		c.misses++
 		util.Logger.Debugw("Category cache miss", "name", name)
 	}
-	c.mu.Unlock()
-
-	return entity, ok
+	return cloneCategory(entity), ok
 }
 
 // GetByID retrieves a category by ID from cache
 func (c *CategoryCache) GetByID(id string) (*model.CategoryEntity, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	if !c.enabled {
 		return nil, false
 	}
-
-	c.mu.RLock()
 	entity, ok := c.byID[id]
-	c.mu.RUnlock()
-
-	// Update stats outside of read lock to avoid race
-	c.mu.Lock()
 	if ok {
 		c.hits++
 	} else {
 		c.misses++
 	}
-	c.mu.Unlock()
+	return cloneCategory(entity), ok
+}
 
-	return entity, ok
+// GetByScope retrieves an unambiguous user/type/parent/name category lookup.
+func (c *CategoryCache) GetByScope(userID, categoryType, parentID, name string) (*model.CategoryEntity, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if !c.enabled {
+		return nil, false
+	}
+	key := categoryScopeKey(userID, categoryType, parentID, name)
+	entity, ok := c.byScope[key]
+	if ok {
+		c.hits++
+	} else {
+		c.misses++
+	}
+	return cloneCategory(entity), ok
 }
 
 // Set adds or updates a category in the cache
 func (c *CategoryCache) Set(entity *model.CategoryEntity) {
-	if !c.enabled || entity == nil || entity.IsEmpty() {
+	if entity == nil || entity.IsEmpty() {
 		return
 	}
 
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	if !c.enabled {
+		return
+	}
 
-	c.byName[entity.Name] = entity
-	c.byID[entity.Id.Hex()] = entity
+	copy := *entity
+	c.byName[entity.Name] = &copy
+	c.byID[entity.Id.Hex()] = &copy
+	c.byScope[categoryScopeKey(entity.BelongsUserId.Hex(), entity.Type, entity.ParentId.Hex(), entity.Name)] = &copy
 	util.Logger.Debugw("Category cached", "name", entity.Name, "id", entity.Id.Hex())
 }
 
@@ -105,6 +117,7 @@ func (c *CategoryCache) Invalidate(name string) {
 
 	if entity, ok := c.byName[name]; ok {
 		delete(c.byID, entity.Id.Hex())
+		delete(c.byScope, categoryScopeKey(entity.BelongsUserId.Hex(), entity.Type, entity.ParentId.Hex(), entity.Name))
 		util.Logger.Debugw("Category invalidated", "name", name)
 	}
 	delete(c.byName, name)
@@ -116,10 +129,29 @@ func (c *CategoryCache) InvalidateByID(id string) {
 	defer c.mu.Unlock()
 
 	if entity, ok := c.byID[id]; ok {
-		delete(c.byName, entity.Name)
+		if named, exists := c.byName[entity.Name]; exists && named.Id.Hex() == id {
+			delete(c.byName, entity.Name)
+		}
+		delete(c.byScope, categoryScopeKey(entity.BelongsUserId.Hex(), entity.Type, entity.ParentId.Hex(), entity.Name))
 		util.Logger.Debugw("Category invalidated", "id", id)
 	}
 	delete(c.byID, id)
+}
+
+// InvalidateUser removes only entries owned by one user.
+func (c *CategoryCache) InvalidateUser(userID string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	for id, entity := range c.byID {
+		if entity.BelongsUserId.Hex() != userID {
+			continue
+		}
+		delete(c.byID, id)
+		delete(c.byScope, categoryScopeKey(entity.BelongsUserId.Hex(), entity.Type, entity.ParentId.Hex(), entity.Name))
+		if named, exists := c.byName[entity.Name]; exists && named.Id == entity.Id {
+			delete(c.byName, entity.Name)
+		}
+	}
 }
 
 // Clear removes all categories from cache
@@ -129,6 +161,7 @@ func (c *CategoryCache) Clear() {
 
 	c.byName = make(map[string]*model.CategoryEntity)
 	c.byID = make(map[string]*model.CategoryEntity)
+	c.byScope = make(map[string]*model.CategoryEntity)
 	c.lastClear = time.Now()
 	util.Logger.Info("Category cache cleared")
 }
@@ -146,7 +179,7 @@ func (c *CategoryCache) GetStats() map[string]interface{} {
 
 	return map[string]interface{}{
 		"enabled":    c.enabled,
-		"size":       len(c.byName),
+		"size":       len(c.byID),
 		"hits":       c.hits,
 		"misses":     c.misses,
 		"hit_rate":   hitRate,
@@ -169,5 +202,18 @@ func (c *CategoryCache) Disable() {
 	c.enabled = false
 	c.byName = make(map[string]*model.CategoryEntity)
 	c.byID = make(map[string]*model.CategoryEntity)
+	c.byScope = make(map[string]*model.CategoryEntity)
 	util.Logger.Info("Category cache disabled")
+}
+
+func categoryScopeKey(userID, categoryType, parentID, name string) string {
+	return userID + "\x00" + categoryType + "\x00" + parentID + "\x00" + name
+}
+
+func cloneCategory(entity *model.CategoryEntity) *model.CategoryEntity {
+	if entity == nil {
+		return nil
+	}
+	copy := *entity
+	return &copy
 }

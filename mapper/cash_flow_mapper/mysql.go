@@ -3,6 +3,7 @@ package cash_flow_mapper
 import (
 	"bytes"
 	"database/sql"
+	"strings"
 	"time"
 
 	"github.com/macar-x/cashlenx-server/model"
@@ -37,23 +38,33 @@ func (CashFlowMySqlMapper) GetCashFlowByObjectId(plainId string) model.CashFlowE
 }
 
 func (CashFlowMySqlMapper) GetCashFlowsByObjectIdArray(plainIdList []string) []model.CashFlowEntity {
+	if len(plainIdList) == 0 {
+		return []model.CashFlowEntity{}
+	}
 	var sqlString bytes.Buffer
 	sqlString.WriteString("SELECT ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION FROM ")
 	sqlString.WriteString(database.CashFlowTableName)
 	sqlString.WriteString(" WHERE ID in ")
-	// fixme: pass the params by ? instead to avoid SQL inject.
-	sqlString.WriteString("(" + util.CombiningWithComma(util.BatchSurroundingWithSingleQuotes(plainIdList)) + ") ")
+	placeholders := make([]string, len(plainIdList))
+	args := make([]interface{}, len(plainIdList))
+	for i, id := range plainIdList {
+		placeholders[i] = "?"
+		args[i] = id
+	}
+	sqlString.WriteString("(" + strings.Join(placeholders, ",") + ") ")
 	sqlString.WriteString(database.SqlExcludeDeleted)
 
 	connection := database.GetMySqlConnection()
 	defer database.CloseMySqlConnection()
 
-	rows, err := connection.Query(sqlString.String())
+	rows, err := connection.Query(sqlString.String(), args...)
 	if err != nil {
 		util.Logger.Errorw("query failed", "error", err)
+		return []model.CashFlowEntity{}
 	}
+	defer rows.Close()
 
-	targetEntityList := make([]model.CashFlowEntity, len(plainIdList))
+	targetEntityList := make([]model.CashFlowEntity, 0, len(plainIdList))
 	for rows.Next() {
 		targetEntityList = append(targetEntityList, convertRow2CashFlowEntity(rows))
 	}
@@ -162,7 +173,7 @@ func (CashFlowMySqlMapper) BulkInsertCashFlows(entities []model.CashFlowEntity) 
 			entityId = util.GenerateObjectId()
 		}
 		ids[i] = entityId
-		
+
 		createTime := entity.CreateTime
 		updateTime := entity.UpdateTime
 		if createTime.IsZero() {
@@ -648,7 +659,7 @@ func (CashFlowMySqlMapper) DeleteCashFlowsByBelongsDateAndUser(belongsDate time.
 	sqlString.WriteString("UPDATE ")
 	sqlString.WriteString(database.CashFlowTableName)
 	sqlString.WriteString(" SET IS_DELETE = TRUE, DELETE_TIME = NOW(), DELETE_USER_ID = ? ")
-	sqlString.WriteString(" WHERE BELONGS_DATE = ? AND USER_ID = ? ")
+	sqlString.WriteString(" WHERE BELONGS_DATE = ? AND BELONGS_USER_ID = ? ")
 	sqlString.WriteString(database.SqlExcludeDeleted)
 
 	connection := database.GetMySqlConnection()
@@ -685,7 +696,7 @@ func (CashFlowMySqlMapper) DeleteCashFlowsByCategoryIdAndUser(categoryPlainId st
 	sqlString.WriteString("UPDATE ")
 	sqlString.WriteString(database.CashFlowTableName)
 	sqlString.WriteString(" SET IS_DELETE = TRUE, DELETE_TIME = NOW(), DELETE_USER_ID = ? ")
-	sqlString.WriteString(" WHERE CATEGORY_ID = ? AND USER_ID = ? ")
+	sqlString.WriteString(" WHERE CATEGORY_ID = ? AND BELONGS_USER_ID = ? ")
 	sqlString.WriteString(database.SqlExcludeDeleted)
 
 	connection := database.GetMySqlConnection()

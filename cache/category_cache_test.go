@@ -65,6 +65,24 @@ func TestCategoryCache_Invalidate(t *testing.T) {
 	}
 }
 
+func TestCategoryCache_UserScopedLookup(t *testing.T) {
+	cache := GetCategoryCache()
+	cache.Clear()
+	first := &model.CategoryEntity{Id: primitive.NewObjectID(), BelongsUserId: primitive.NewObjectID(), Name: "Food", Type: "expense"}
+	second := &model.CategoryEntity{Id: primitive.NewObjectID(), BelongsUserId: primitive.NewObjectID(), Name: "Food", Type: "expense"}
+	cache.Set(first)
+	cache.Set(second)
+	got, ok := cache.GetByScope(first.BelongsUserId.Hex(), first.Type, first.ParentId.Hex(), first.Name)
+	if !ok || got.Id != first.Id {
+		t.Fatalf("scoped lookup returned %#v", got)
+	}
+	got.Name = "mutated"
+	again, _ := cache.GetByID(first.Id.Hex())
+	if again.Name != "Food" {
+		t.Fatal("cache returned mutable internal entity")
+	}
+}
+
 func TestCategoryCache_Clear(t *testing.T) {
 	cache := GetCategoryCache()
 	cache.Clear()

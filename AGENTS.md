@@ -650,6 +650,7 @@ Use this section as a lightweight backlog of mismatches between implementation, 
 - [ ] Keep `/docs/roadmap.md` synchronized with the actual working branch/version plan as collaboration decisions evolve
 - [x] Reconcile MongoDB bootstrap, migration, and runtime indexes with user/type/parent/name category uniqueness and remove obsolete `flow_type` indexes
 - [ ] Retire or rewrite `docker/mongodb/init-mongo-demo.js`; it is a legacy single-user fixture that does not match current ownership, audit, category-type, or BSON date fields
+- [x] Parameterize dynamic MySQL ID-list queries and use exact user-scoped category cache keys with targeted invalidation
 
 ## Testing Expectation Right Now
 
