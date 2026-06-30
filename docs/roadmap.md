@@ -26,10 +26,10 @@ numbered SQL sequence have passed against disposable Docker environments.
 - [x] Parameterized category-name queries for both mapper backends
 - [x] Parameterized dynamic MySQL ID lists and corrected user-scoped deletion columns
 - [x] Redis decision for this milestone: do not add Redis; reconsider it when multi-instance deployment requires shared cache coherence
+- [x] Removed the unused global name-only category-cache index and compatibility methods/tests
 
 ### Remaining work
 
-- [ ] Remove the unused global name-only category-cache index and its compatibility-only tests
 - [ ] Add deterministic benchmarks for cash-flow summaries and statistic summary/dashboard calculations
 - [ ] Add disposable integration benchmarks for MongoDB and MySQL filtered/date-range mapper queries
 - [ ] Capture benchmark baselines before adding another cache layer
@@ -42,12 +42,11 @@ cash flows, so those paths are candidates, not preselected cache targets.
 
 ## v0.9.0 Execution Order
 
-1. Remove the unused name-only category-cache index so all retained cache keys are ownership-safe.
-2. Add service benchmarks using deterministic in-memory mapper fakes.
-3. Add build-tagged mapper benchmarks against disposable MongoDB and MySQL databases.
-4. Record baseline results and identify actual bottlenecks.
-5. Implement recent-query caching only when the measured improvement justifies invalidation complexity.
-6. Re-run race tests, both database benchmark suites, and the MongoDB/MySQL smoke flows.
+1. Add service benchmarks using deterministic in-memory mapper fakes.
+2. Add build-tagged mapper benchmarks against disposable MongoDB and MySQL databases.
+3. Record baseline results and identify actual bottlenecks.
+4. Implement recent-query caching only when the measured improvement justifies invalidation complexity.
+5. Re-run race tests, both database benchmark suites, and the MongoDB/MySQL smoke flows.
 
 ## v0.9.0 Guardrails
 

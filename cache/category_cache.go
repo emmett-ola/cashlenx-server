@@ -10,7 +10,6 @@ import (
 
 // CategoryCache provides thread-safe in-memory caching for categories
 type CategoryCache struct {
-	byName    map[string]*model.CategoryEntity
 	byID      map[string]*model.CategoryEntity
 	byScope   map[string]*model.CategoryEntity
 	mu        sync.RWMutex
@@ -29,7 +28,6 @@ var (
 func GetCategoryCache() *CategoryCache {
 	once.Do(func() {
 		instance = &CategoryCache{
-			byName:    make(map[string]*model.CategoryEntity),
 			byID:      make(map[string]*model.CategoryEntity),
 			byScope:   make(map[string]*model.CategoryEntity),
 			enabled:   true,
@@ -38,24 +36,6 @@ func GetCategoryCache() *CategoryCache {
 		util.Logger.Info("Category cache initialized")
 	})
 	return instance
-}
-
-// GetByName retrieves a category by name from cache
-func (c *CategoryCache) GetByName(name string) (*model.CategoryEntity, bool) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if !c.enabled {
-		return nil, false
-	}
-	entity, ok := c.byName[name]
-	if ok {
-		c.hits++
-		util.Logger.Debugw("Category cache hit", "name", name)
-	} else {
-		c.misses++
-		util.Logger.Debugw("Category cache miss", "name", name)
-	}
-	return cloneCategory(entity), ok
 }
 
 // GetByID retrieves a category by ID from cache
@@ -104,23 +84,9 @@ func (c *CategoryCache) Set(entity *model.CategoryEntity) {
 	}
 
 	copy := *entity
-	c.byName[entity.Name] = &copy
 	c.byID[entity.Id.Hex()] = &copy
 	c.byScope[categoryScopeKey(entity.BelongsUserId.Hex(), entity.Type, entity.ParentId.Hex(), entity.Name)] = &copy
 	util.Logger.Debugw("Category cached", "name", entity.Name, "id", entity.Id.Hex())
-}
-
-// Invalidate removes a category from cache by name
-func (c *CategoryCache) Invalidate(name string) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	if entity, ok := c.byName[name]; ok {
-		delete(c.byID, entity.Id.Hex())
-		delete(c.byScope, categoryScopeKey(entity.BelongsUserId.Hex(), entity.Type, entity.ParentId.Hex(), entity.Name))
-		util.Logger.Debugw("Category invalidated", "name", name)
-	}
-	delete(c.byName, name)
 }
 
 // InvalidateByID removes a category from cache by ID
@@ -129,9 +95,6 @@ func (c *CategoryCache) InvalidateByID(id string) {
 	defer c.mu.Unlock()
 
 	if entity, ok := c.byID[id]; ok {
-		if named, exists := c.byName[entity.Name]; exists && named.Id.Hex() == id {
-			delete(c.byName, entity.Name)
-		}
 		delete(c.byScope, categoryScopeKey(entity.BelongsUserId.Hex(), entity.Type, entity.ParentId.Hex(), entity.Name))
 		util.Logger.Debugw("Category invalidated", "id", id)
 	}
@@ -148,9 +111,6 @@ func (c *CategoryCache) InvalidateUser(userID string) {
 		}
 		delete(c.byID, id)
 		delete(c.byScope, categoryScopeKey(entity.BelongsUserId.Hex(), entity.Type, entity.ParentId.Hex(), entity.Name))
-		if named, exists := c.byName[entity.Name]; exists && named.Id == entity.Id {
-			delete(c.byName, entity.Name)
-		}
 	}
 }
 
@@ -159,7 +119,6 @@ func (c *CategoryCache) Clear() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	c.byName = make(map[string]*model.CategoryEntity)
 	c.byID = make(map[string]*model.CategoryEntity)
 	c.byScope = make(map[string]*model.CategoryEntity)
 	c.lastClear = time.Now()
@@ -200,7 +159,6 @@ func (c *CategoryCache) Disable() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.enabled = false
-	c.byName = make(map[string]*model.CategoryEntity)
 	c.byID = make(map[string]*model.CategoryEntity)
 	c.byScope = make(map[string]*model.CategoryEntity)
 	util.Logger.Info("Category cache disabled")

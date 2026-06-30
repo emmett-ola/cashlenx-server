@@ -19,17 +19,8 @@ func TestCategoryCache_SetAndGet(t *testing.T) {
 	// Set category
 	cache.Set(entity)
 
-	// Get by name
-	retrieved, ok := cache.GetByName("TestCategory")
-	if !ok {
-		t.Error("Expected to find category by name")
-	}
-	if retrieved.Name != "TestCategory" {
-		t.Errorf("Expected name 'TestCategory', got '%s'", retrieved.Name)
-	}
-
 	// Get by ID
-	retrieved, ok = cache.GetByID(entity.Id.Hex())
+	retrieved, ok := cache.GetByID(entity.Id.Hex())
 	if !ok {
 		t.Error("Expected to find category by ID")
 	}
@@ -38,7 +29,7 @@ func TestCategoryCache_SetAndGet(t *testing.T) {
 	}
 }
 
-func TestCategoryCache_Invalidate(t *testing.T) {
+func TestCategoryCache_InvalidateByID(t *testing.T) {
 	cache := GetCategoryCache()
 	cache.Clear()
 
@@ -50,16 +41,16 @@ func TestCategoryCache_Invalidate(t *testing.T) {
 	cache.Set(entity)
 
 	// Verify it's cached
-	_, ok := cache.GetByName("TestCategory")
+	_, ok := cache.GetByID(entity.Id.Hex())
 	if !ok {
 		t.Error("Expected category to be cached")
 	}
 
 	// Invalidate
-	cache.Invalidate("TestCategory")
+	cache.InvalidateByID(entity.Id.Hex())
 
 	// Verify it's removed
-	_, ok = cache.GetByName("TestCategory")
+	_, ok = cache.GetByID(entity.Id.Hex())
 	if ok {
 		t.Error("Expected category to be removed from cache")
 	}
@@ -121,9 +112,9 @@ func TestCategoryCache_Stats(t *testing.T) {
 	cache.Set(entity)
 
 	// Generate some hits and misses
-	cache.GetByName("TestCategory") // hit
-	cache.GetByName("TestCategory") // hit
-	cache.GetByName("NonExistent")  // miss
+	cache.GetByID(entity.Id.Hex())               // hit
+	cache.GetByID(entity.Id.Hex())               // hit
+	cache.GetByID(primitive.NewObjectID().Hex()) // miss
 
 	stats := cache.GetStats()
 
@@ -156,7 +147,7 @@ func TestCategoryCache_Disable(t *testing.T) {
 	cache.Disable()
 
 	// Try to get - should return false
-	_, ok := cache.GetByName("TestCategory")
+	_, ok := cache.GetByID(entity.Id.Hex())
 	if ok {
 		t.Error("Expected cache to be disabled")
 	}
@@ -182,7 +173,7 @@ func TestCategoryCache_Singleton(t *testing.T) {
 	}
 	cache1.Set(entity)
 
-	retrieved, ok := cache2.GetByName("SingletonTest")
+	retrieved, ok := cache2.GetByID(entity.Id.Hex())
 	if !ok {
 		t.Error("Expected to find category set via cache1 in cache2")
 	}
@@ -227,13 +218,13 @@ func TestCategoryCache_ConcurrentAccess(t *testing.T) {
 				switch j % 4 {
 				case 0: // Read
 					idx := j % len(entities)
-					_, _ = cache.GetByName(entities[idx].Name)
+					_, _ = cache.GetByID(entities[idx].Id.Hex())
 				case 1: // Write
 					idx := j % len(entities)
 					cache.Set(entities[idx])
 				case 2: // Invalidate
 					idx := j % len(entities)
-					cache.Invalidate(entities[idx].Name)
+					cache.InvalidateByID(entities[idx].Id.Hex())
 				case 3: // Get stats
 					_ = cache.GetStats()
 				}
@@ -270,7 +261,7 @@ func TestCategoryCache_InvalidationAcrossThreads(t *testing.T) {
 	cache.Set(entity)
 
 	// Verify it's cached
-	_, ok := cache.GetByName("SharedCategory")
+	_, ok := cache.GetByID(entity.Id.Hex())
 	if !ok {
 		t.Error("Expected category to be cached")
 	}
@@ -278,13 +269,13 @@ func TestCategoryCache_InvalidationAcrossThreads(t *testing.T) {
 	// Invalidate from one goroutine
 	done := make(chan bool)
 	go func() {
-		cache.Invalidate("SharedCategory")
+		cache.InvalidateByID(entity.Id.Hex())
 		done <- true
 	}()
 	<-done
 
 	// Verify invalidation is visible from main goroutine
-	_, ok = cache.GetByName("SharedCategory")
+	_, ok = cache.GetByID(entity.Id.Hex())
 	if ok {
 		t.Error("Expected category to be invalidated across goroutines")
 	}
@@ -295,12 +286,14 @@ func TestCategoryCache_ClearAcrossThreads(t *testing.T) {
 	cache.Clear()
 
 	// Add multiple categories
+	ids := make([]string, 0, 5)
 	for i := 0; i < 5; i++ {
 		entity := &model.CategoryEntity{
 			Id:   primitive.NewObjectID(),
 			Name: "Category" + string(rune('A'+i)),
 		}
 		cache.Set(entity)
+		ids = append(ids, entity.Id.Hex())
 	}
 
 	stats := cache.GetStats()
@@ -323,11 +316,10 @@ func TestCategoryCache_ClearAcrossThreads(t *testing.T) {
 	}
 
 	// Verify all categories are gone
-	for i := 0; i < 5; i++ {
-		name := "Category" + string(rune('A'+i))
-		_, ok := cache.GetByName(name)
+	for _, id := range ids {
+		_, ok := cache.GetByID(id)
 		if ok {
-			t.Errorf("Expected category %s to be cleared", name)
+			t.Errorf("Expected category %s to be cleared", id)
 		}
 	}
 }
