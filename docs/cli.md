@@ -142,6 +142,7 @@ go run main.go admin database restore -i backup.json --force
 - `admin user create` uses the logged-in admin user as creator, matching the API request context.
 - `admin database backup` exports a full database dump.
 - `admin database restore` restores a full database dump.
+- Backup commands validate the destination before querying data. Restore commands validate backup version, size, required fields, ownership, and category/cash-flow relationships before mutating data; both print phase and entity progress.
 - Admin commands require a saved CLI session whose JWT role is `admin`, matching `/admin/*` API access checks.
 
 ## User Commands
@@ -160,6 +161,7 @@ go run main.go user database restore --input user_backup.json --user <user_id>
 ```
 
 User commands are user-scoped and mirror `/user/*` endpoints. They use the saved CLI session's user ID; if `--user` is supplied it must match the logged-in user.
+User backup/restore commands use the same preflight validation and progress format as the admin database commands.
 
 ## Cash Commands
 

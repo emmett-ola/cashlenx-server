@@ -7,13 +7,15 @@ import (
 )
 
 var (
-	requireAdminSession  = cli_auth.RequireAdmin
-	createAdminUser      = user_service.CreateService
-	getAdminUser         = user_service.GetUserByObjectId
-	listAdminUsers       = user_service.GetAllUsers
-	countAdminUsers      = user_service.CountAllUsers
-	updateAdminUser      = user_service.UpdateService
-	deleteAdminUser      = user_service.DeleteService
-	adminDumpDatabase    = manage_service.AdminDumpDatabase
-	adminRestoreDatabase = manage_service.AdminRestoreDatabase
+	requireAdminSession      = cli_auth.RequireAdmin
+	createAdminUser          = user_service.CreateService
+	getAdminUser             = user_service.GetUserByObjectId
+	listAdminUsers           = user_service.GetAllUsers
+	countAdminUsers          = user_service.CountAllUsers
+	updateAdminUser          = user_service.UpdateService
+	deleteAdminUser          = user_service.DeleteService
+	adminDumpDatabase        = manage_service.AdminDumpDatabase
+	adminRestoreDatabase     = manage_service.AdminRestoreDatabase
+	adminDumpWithProgress    = manage_service.AdminDumpDatabaseWithProgress
+	adminRestoreWithProgress = manage_service.AdminRestoreDatabaseWithProgress
 )

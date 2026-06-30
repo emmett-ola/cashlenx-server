@@ -106,6 +106,7 @@ The repository is farther along than some older docs imply. These features are p
 - Statistics summary, breakdown, trends, top expenses, dashboard, and chart endpoints
 - Admin database backup/restore
 - User-scoped export/import backup flows
+- Backup/restore preflight validation and CLI phase/entity progress reporting
 - SMTP email utility for verification-related email delivery
 - Snowflake ID generator initialization for distributed IDs
 

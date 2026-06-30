@@ -19,7 +19,7 @@ If no path is specified, creates backup in current directory with timestamp.`,
 			backupPath = fmt.Sprintf("cashlenx_backup_%s.json", time.Now().Format("20060102_150405"))
 		}
 
-		stats, err := adminDumpDatabase(backupPath)
+		stats, err := adminDumpWithProgress(backupPath, printDatabaseProgress)
 		if err != nil {
 			return err
 		}
@@ -31,6 +31,14 @@ If no path is specified, creates backup in current directory with timestamp.`,
 		fmt.Printf("  Cash Flows: %d success, %d failed\n", stats.CashFlows.Success, stats.CashFlows.Failed)
 		return nil
 	},
+}
+
+func printDatabaseProgress(progress manage_service.Progress) {
+	if progress.Total > 0 {
+		fmt.Printf("[%s] %s: %d/%d - %s\n", progress.Phase, progress.Entity, progress.Completed, progress.Total, progress.Message)
+		return
+	}
+	fmt.Printf("[%s] %s - %s\n", progress.Phase, progress.Entity, progress.Message)
 }
 
 func init() {

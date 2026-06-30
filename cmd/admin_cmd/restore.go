@@ -39,7 +39,7 @@ WARNING: This will replace all existing data unless --merge is used.`,
 			}
 		}
 
-		stats, err := adminRestoreDatabase(restorePath)
+		stats, err := adminRestoreWithProgress(restorePath, printDatabaseProgress)
 		if err != nil {
 			return err
 		}

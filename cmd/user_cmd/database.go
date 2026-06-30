@@ -26,7 +26,7 @@ var databaseBackupCmd = &cobra.Command{
 		if userBackupPath == "" {
 			userBackupPath = fmt.Sprintf("cashlenx_user_%s_backup_%s.json", userId, time.Now().Format("20060102_150405"))
 		}
-		stats, err := exportUserData(userId, userBackupPath)
+		stats, err := exportUserDataWithProgress(userId, userBackupPath, printUserDatabaseProgress)
 		if err != nil {
 			return err
 		}
@@ -43,7 +43,7 @@ var databaseRestoreCmd = &cobra.Command{
 		if userRestorePath == "" {
 			return errors.New("backup file path is required")
 		}
-		stats, err := importUserData(userId, userRestorePath)
+		stats, err := importUserDataWithProgress(userId, userRestorePath, printUserDatabaseProgress)
 		if err != nil {
 			return err
 		}
@@ -51,6 +51,14 @@ var databaseRestoreCmd = &cobra.Command{
 		printStats(stats)
 		return nil
 	},
+}
+
+func printUserDatabaseProgress(progress manage_service.Progress) {
+	if progress.Total > 0 {
+		fmt.Printf("[%s] %s: %d/%d - %s\n", progress.Phase, progress.Entity, progress.Completed, progress.Total, progress.Message)
+		return
+	}
+	fmt.Printf("[%s] %s - %s\n", progress.Phase, progress.Entity, progress.Message)
 }
 
 func printStats(stats manage_service.OperationStats) {

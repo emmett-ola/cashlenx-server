@@ -40,6 +40,10 @@ type OperationStats struct {
 
 // AdminDumpDatabase creates a full database dump (including deleted records)
 func AdminDumpDatabase(filePath string) (OperationStats, error) {
+	return AdminDumpDatabaseWithProgress(filePath, nil)
+}
+
+func AdminDumpDatabaseWithProgress(filePath string, progress ProgressFunc) (OperationStats, error) {
 	stats := OperationStats{
 		Users:       EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
 		UserConfigs: EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
@@ -50,10 +54,15 @@ func AdminDumpDatabase(filePath string) (OperationStats, error) {
 	if filePath == "" {
 		return stats, errors.New("file path cannot be empty")
 	}
+	if err := PreflightBackupDestination(filePath); err != nil {
+		return stats, err
+	}
+	emit(progress, "preflight", "backup", 1, 1, "Backup destination validated")
 
 	// Get all users (no pagination limit - get everything)
 	users := user_mapper.INSTANCE.GetAllUsersIncludeDeleted(0, 0)
 	stats.Users.Success = len(users)
+	emit(progress, "read", "users", len(users), len(users), "Users collected")
 
 	// Convert users to map format for JSON serialization
 	userMaps := make([]map[string]interface{}, len(users))
@@ -105,6 +114,7 @@ func AdminDumpDatabase(filePath string) (OperationStats, error) {
 
 	configs := user_config_mapper.INSTANCE.GetAllIncludeDeleted(0, 0)
 	stats.UserConfigs.Success = len(configs)
+	emit(progress, "read", "user_configurations", len(configs), len(configs), "User configurations collected")
 	configMaps := make([]map[string]interface{}, len(configs))
 	for i, config := range configs {
 		configMaps[i] = userConfigurationToMap(config)
@@ -113,6 +123,7 @@ func AdminDumpDatabase(filePath string) (OperationStats, error) {
 	// Get all categories (no pagination limit - get everything)
 	categories := category_mapper.INSTANCE.GetAllCategoriesIncludeDeleted(0, 0)
 	stats.Categories.Success = len(categories)
+	emit(progress, "read", "categories", len(categories), len(categories), "Categories collected")
 
 	// Convert categories to map format for JSON serialization
 	categoryMaps := make([]map[string]interface{}, len(categories))
@@ -146,6 +157,7 @@ func AdminDumpDatabase(filePath string) (OperationStats, error) {
 	// Get all cash flows (no pagination limit - get everything)
 	cashFlows := cash_flow_mapper.INSTANCE.GetAllCashFlowsIncludeDeleted(0, 0)
 	stats.CashFlows.Success = len(cashFlows)
+	emit(progress, "read", "cash_flows", len(cashFlows), len(cashFlows), "Cash flows collected")
 
 	// Convert cash flows to map format for JSON serialization
 	cashFlowMaps := make([]map[string]interface{}, len(cashFlows))
@@ -200,12 +212,17 @@ func AdminDumpDatabase(filePath string) (OperationStats, error) {
 	if err := encoder.Encode(backup); err != nil {
 		return stats, err
 	}
+	emit(progress, "write", "backup", 1, 1, "Backup file written")
 
 	return stats, nil
 }
 
 // UserExportData creates a backup of data for a specific user (excludes deleted records)
 func UserExportData(userId string, filePath string) (OperationStats, error) {
+	return UserExportDataWithProgress(userId, filePath, nil)
+}
+
+func UserExportDataWithProgress(userId string, filePath string, progress ProgressFunc) (OperationStats, error) {
 	stats := OperationStats{
 		Users:       EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
 		UserConfigs: EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
@@ -216,6 +233,10 @@ func UserExportData(userId string, filePath string) (OperationStats, error) {
 	if filePath == "" {
 		return stats, errors.New("file path cannot be empty")
 	}
+	if err := PreflightBackupDestination(filePath); err != nil {
+		return stats, err
+	}
+	emit(progress, "preflight", "backup", 1, 1, "Backup destination validated")
 
 	// Get user
 	user := user_mapper.INSTANCE.GetUserByObjectId(userId)
@@ -223,6 +244,7 @@ func UserExportData(userId string, filePath string) (OperationStats, error) {
 		return stats, errors.New("user not found")
 	}
 	stats.Users.Success = 1
+	emit(progress, "read", "users", 1, 1, "User collected")
 
 	// Convert user to map format
 	userMaps := make([]map[string]interface{}, 1)
@@ -278,11 +300,13 @@ func UserExportData(userId string, filePath string) (OperationStats, error) {
 		stats.UserConfigs.Success = 1
 		configMaps = []map[string]interface{}{userConfigurationToMap(config)}
 	}
+	emit(progress, "read", "user_configurations", stats.UserConfigs.Success, stats.UserConfigs.Success, "User configuration collected")
 
 	// Get categories for user (Exclude deleted)
 	// Use GetAllCategoriesByUser instead of IncludeDeleted version
 	categories := category_mapper.INSTANCE.GetAllCategoriesByUser(user.Id, 0, 0)
 	stats.Categories.Success = len(categories)
+	emit(progress, "read", "categories", len(categories), len(categories), "Categories collected")
 
 	// Convert categories to map format
 	categoryMaps := make([]map[string]interface{}, len(categories))
@@ -307,6 +331,7 @@ func UserExportData(userId string, filePath string) (OperationStats, error) {
 	// Use GetAllCashFlowsByUser instead of IncludeDeleted version
 	cashFlows := cash_flow_mapper.INSTANCE.GetAllCashFlowsByUser(user.Id, 0, 0)
 	stats.CashFlows.Success = len(cashFlows)
+	emit(progress, "read", "cash_flows", len(cashFlows), len(cashFlows), "Cash flows collected")
 
 	// Convert cash flows to map format
 	cashFlowMaps := make([]map[string]interface{}, len(cashFlows))
@@ -351,6 +376,7 @@ func UserExportData(userId string, filePath string) (OperationStats, error) {
 	if err := encoder.Encode(backup); err != nil {
 		return stats, err
 	}
+	emit(progress, "write", "backup", 1, 1, "Backup file written")
 
 	return stats, nil
 }

@@ -244,14 +244,14 @@ func TestUserPasswordEmailAccountAndDatabaseCommandsPassUserToServices(t *testin
 		deletedUserID = serviceUserID
 		return nil
 	}
-	originalExport := exportUserData
-	exportUserData = func(serviceUserID, path string) (manage_service.OperationStats, error) {
+	originalExport := exportUserDataWithProgress
+	exportUserDataWithProgress = func(serviceUserID, path string, _ manage_service.ProgressFunc) (manage_service.OperationStats, error) {
 		exportArgs.userID = serviceUserID
 		exportArgs.path = path
 		return manage_service.OperationStats{CashFlows: manage_service.EntityStats{Success: 1}}, nil
 	}
-	originalImport := importUserData
-	importUserData = func(serviceUserID, path string) (manage_service.OperationStats, error) {
+	originalImport := importUserDataWithProgress
+	importUserDataWithProgress = func(serviceUserID, path string, _ manage_service.ProgressFunc) (manage_service.OperationStats, error) {
 		importArgs.userID = serviceUserID
 		importArgs.path = path
 		return manage_service.OperationStats{Categories: manage_service.EntityStats{Success: 1}}, nil
@@ -261,8 +261,8 @@ func TestUserPasswordEmailAccountAndDatabaseCommandsPassUserToServices(t *testin
 		requestUserEmailChange = originalEmailChange
 		confirmUserEmailChange = originalEmailConfirm
 		deleteUserAccount = originalDelete
-		exportUserData = originalExport
-		importUserData = originalImport
+		exportUserDataWithProgress = originalExport
+		importUserDataWithProgress = originalImport
 		resetUserCommandState()
 	})
 

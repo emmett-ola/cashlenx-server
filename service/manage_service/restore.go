@@ -3,6 +3,7 @@ package manage_service
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"time"
 
@@ -16,6 +17,10 @@ import (
 
 // AdminRestoreDatabase restores database from a backup file (truncates existing data)
 func AdminRestoreDatabase(filePath string) (OperationStats, error) {
+	return AdminRestoreDatabaseWithProgress(filePath, nil)
+}
+
+func AdminRestoreDatabaseWithProgress(filePath string, progress ProgressFunc) (OperationStats, error) {
 	stats := OperationStats{
 		Users:       EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
 		UserConfigs: EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
@@ -26,6 +31,11 @@ func AdminRestoreDatabase(filePath string) (OperationStats, error) {
 	if filePath == "" {
 		return stats, errors.New("file path cannot be empty")
 	}
+	report, err := PreflightRestore(filePath)
+	if err != nil {
+		return stats, err
+	}
+	emit(progress, "preflight", "backup", 1, 1, fmt.Sprintf("Validated backup v%s: %d users, %d configurations, %d categories, %d cash flows", report.Version, report.Users, report.UserConfigurations, report.Categories, report.CashFlows))
 
 	// Read backup file
 	file, err := os.Open(filePath)
@@ -55,6 +65,7 @@ func AdminRestoreDatabase(filePath string) (OperationStats, error) {
 	if _, err := ResetDatabase(); err != nil {
 		return stats, err
 	}
+	emit(progress, "restore", "database", 1, 1, "Existing data cleared")
 
 	// Step 1: Insert users from backup (must be first, as categories and cash flows reference users)
 	for _, userMap := range backup.Users {
@@ -135,6 +146,7 @@ func AdminRestoreDatabase(filePath string) (OperationStats, error) {
 			stats.Users.Failed--
 		}
 	}
+	emit(progress, "restore", "users", stats.Users.Success, totalUsers, "Users restored")
 
 	// Step 2: Insert user configurations from backup
 	for _, configMap := range backup.UserConfigs {
@@ -144,6 +156,7 @@ func AdminRestoreDatabase(filePath string) (OperationStats, error) {
 			stats.UserConfigs.Failed--
 		}
 	}
+	emit(progress, "restore", "user_configurations", stats.UserConfigs.Success, totalUserConfigs, "User configurations restored")
 
 	// Step 3: Insert categories from backup
 	for _, catMap := range backup.Categories {
@@ -224,6 +237,7 @@ func AdminRestoreDatabase(filePath string) (OperationStats, error) {
 			stats.Categories.Failed--
 		}
 	}
+	emit(progress, "restore", "categories", stats.Categories.Success, totalCategories, "Categories restored")
 
 	// Step 4: Insert cash flows from backup
 	cashFlowEntities := make([]model.CashFlowEntity, totalCashFlows)
@@ -319,12 +333,17 @@ func AdminRestoreDatabase(filePath string) (OperationStats, error) {
 			stats.CashFlows.Failed = totalCashFlows - len(ids)
 		}
 	}
+	emit(progress, "restore", "cash_flows", stats.CashFlows.Success, totalCashFlows, "Cash flows restored")
 
 	return stats, nil
 }
 
 // UserImportData imports user data from a backup file with upsert logic (skips deleted records)
 func UserImportData(userId string, filePath string) (OperationStats, error) {
+	return UserImportDataWithProgress(userId, filePath, nil)
+}
+
+func UserImportDataWithProgress(userId string, filePath string, progress ProgressFunc) (OperationStats, error) {
 	stats := OperationStats{
 		Users:       EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
 		UserConfigs: EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
@@ -335,6 +354,11 @@ func UserImportData(userId string, filePath string) (OperationStats, error) {
 	if filePath == "" {
 		return stats, errors.New("file path cannot be empty")
 	}
+	report, err := PreflightRestore(filePath)
+	if err != nil {
+		return stats, err
+	}
+	emit(progress, "preflight", "backup", 1, 1, fmt.Sprintf("Validated backup v%s: %d configurations, %d categories, %d cash flows", report.Version, report.UserConfigurations, report.Categories, report.CashFlows))
 
 	// Read backup file
 	file, err := os.Open(filePath)
@@ -391,6 +415,7 @@ func UserImportData(userId string, filePath string) (OperationStats, error) {
 			stats.UserConfigs.Failed--
 		}
 	}
+	emit(progress, "restore", "user_configurations", stats.UserConfigs.Success, len(backup.UserConfigs), "User configurations imported")
 
 	// Step 2: Import categories
 	for _, catMap := range backup.Categories {
@@ -483,6 +508,7 @@ func UserImportData(userId string, filePath string) (OperationStats, error) {
 			stats.Categories.Failed--
 		}
 	}
+	emit(progress, "restore", "categories", stats.Categories.Success, len(backup.Categories), "Categories imported")
 
 	// Step 3: Import cash flows
 	for _, cfMap := range backup.CashFlows {
@@ -574,6 +600,7 @@ func UserImportData(userId string, filePath string) (OperationStats, error) {
 			stats.CashFlows.Failed--
 		}
 	}
+	emit(progress, "restore", "cash_flows", stats.CashFlows.Success, len(backup.CashFlows), "Cash flows imported")
 
 	return stats, nil
 }

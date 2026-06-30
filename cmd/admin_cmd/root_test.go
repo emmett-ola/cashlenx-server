@@ -157,19 +157,19 @@ func TestAdminUserCommandsPassInputsToServices(t *testing.T) {
 
 func TestAdminBackupRestoreCommandsPassPathsToServices(t *testing.T) {
 	var dumpPath, restoreServicePath string
-	originalDump := adminDumpDatabase
-	adminDumpDatabase = func(path string) (manage_service.OperationStats, error) {
+	originalDump := adminDumpWithProgress
+	adminDumpWithProgress = func(path string, _ manage_service.ProgressFunc) (manage_service.OperationStats, error) {
 		dumpPath = path
 		return manage_service.OperationStats{Users: manage_service.EntityStats{Success: 1}}, nil
 	}
-	originalRestore := adminRestoreDatabase
-	adminRestoreDatabase = func(path string) (manage_service.OperationStats, error) {
+	originalRestore := adminRestoreWithProgress
+	adminRestoreWithProgress = func(path string, _ manage_service.ProgressFunc) (manage_service.OperationStats, error) {
 		restoreServicePath = path
 		return manage_service.OperationStats{Categories: manage_service.EntityStats{Success: 1}}, nil
 	}
 	t.Cleanup(func() {
-		adminDumpDatabase = originalDump
-		adminRestoreDatabase = originalRestore
+		adminDumpWithProgress = originalDump
+		adminRestoreWithProgress = originalRestore
 		resetAdminCommandState()
 	})
 
