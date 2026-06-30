@@ -2,9 +2,9 @@ name: API Smoke Test
 
 on:
   push:
-    branches: [main, develop, test]
+    branches: [main, develop, test, 'dev/**']
   pull_request:
-    branches: [main, develop, test]
+    branches: [main, develop, test, 'dev/**']
   workflow_dispatch:
 
 permissions:

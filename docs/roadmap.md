@@ -16,7 +16,7 @@ This roadmap tracks backend work by versioned milestones. During the `v0.x` phas
 2. [Completed] Add a MySQL migration runner and applied-version table, with explicit detection of partially applied or out-of-order migrations.
 3. [Completed] Add backup/restore preflight validation and progress reporting to both admin and user CLI flows.
 4. [Completed] Define and implement compensating rollback for failed migrations and destructive admin restores, retaining dirty migration state when compensation cannot complete.
-5. Add `dev/**` to `.github/workflows/smoke.yml` triggers so the managed MongoDB smoke workflow follows the active branch policy.
+5. [Completed] Add `dev/**` to `.github/workflows/smoke.yml` triggers so the managed MongoDB smoke workflow follows the active branch policy.
 
 After `v0.8.0`, continue with the remaining security/performance work in `v0.9.0`, prioritizing the MySQL query-safety review before broader caching work.
 
@@ -210,7 +210,7 @@ These items were left behind from beta-readiness work and should be resolved del
 - SMTP delivery has been manually verified by the project owner. Registration and password-reset procedure tests should remain deterministic and must not send real email.
 - `scripts/smoke-api.sh --managed` provides a MongoDB-backed beta API smoke flow for the non-SMTP core API surface by starting disposable MongoDB and a local API server.
 - CI now uses GitHub Actions for build/test/release automation, Codecov for coverage reporting, and DeepSource for code analysis; managed live API smoke testing is available through `.github/workflows/smoke.yml`.
-- The main CI workflow includes `dev/**`, but `.github/workflows/smoke.yml` currently triggers only for `main`, `develop`, and `test`; align smoke triggers with the active development branch policy.
+- The main CI and managed MongoDB smoke workflows include the active `dev/**` branch line.
 - `service/manage_service/indexes.go` now reconciles current indexes during server startup. Migration version tracking remains separate work.
 - `docker/mongodb/init-mongo-demo.js` is a legacy single-user fixture and is not compatible with current ownership, audit, category-type, or BSON date fields; use managed API smoke data instead.
 - `../cashlenx-app/scripts/smoke-api.ps1 -Database mysql` runs the Flutter/API contract against disposable MySQL; `scripts/smoke-mysql-migrations.ps1` validates the numbered SQL sequence independently.
