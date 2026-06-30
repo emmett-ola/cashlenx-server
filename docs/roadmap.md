@@ -8,6 +8,7 @@ This roadmap tracks backend work by versioned milestones. During the `v0.x` phas
 - Active API path version: `/api/v0`
 - Current roadmap milestone: `v0.8.0` migration tooling
 - Next enhancement milestone: `v0.9.0` performance and caching
+- Integration status: MongoDB and MySQL runtime smoke coverage is complete; the remaining `v0.8.0` work is migration/index lifecycle tooling, backup/restore preflight progress, and rollback behavior.
 
 ## Versioning Policy
 
@@ -201,6 +202,7 @@ These items were left behind from beta-readiness work and should be resolved del
 - CI now uses GitHub Actions for build/test/release automation, Codecov for coverage reporting, and DeepSource for code analysis; managed live API smoke testing is available through `.github/workflows/smoke.yml`.
 - The main CI workflow includes `dev/**`, but `.github/workflows/smoke.yml` currently triggers only for `main`, `develop`, and `test`; align smoke triggers with the active development branch policy.
 - `service/manage_service/indexes.go` contains index-creation helpers, but they are not currently called from application startup and should not be treated as completed migration tooling.
+- `migrations/001_add_indexes.js` is a legacy MongoDB asset with obsolete `flow_type` and global category-name indexes; it must be reconciled before use with the current multi-user schema.
 - `../cashlenx-app/scripts/smoke-api.ps1 -Database mysql` runs the Flutter/API contract against disposable MySQL; `scripts/smoke-mysql-migrations.ps1` validates the numbered SQL sequence independently.
 
 ## Notes

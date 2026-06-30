@@ -269,7 +269,7 @@ Mapper packages currently include:
 
 Both MongoDB and MySQL implementations are expected for production-facing features. When adding persistence features, update both backends unless the change is explicitly database-specific and documented.
 
-Beta deployments are MongoDB-first, but touched persistence code should remain build-compatible across MongoDB and MySQL. Verification-code persistence is implemented for both mapper backends.
+Beta deployments are MongoDB-first. MySQL 8 has passed the full disposable Flutter/API smoke flow and numbered-schema validation, so touched persistence code should preserve that runtime parity. Verification-code persistence is implemented for both mapper backends.
 
 ### Service packages
 
@@ -519,8 +519,8 @@ Important: CI unit tests do not run the live MongoDB-backed `scripts/smoke-api.s
 
 Migration assets include:
 
-- MongoDB index script `migrations/001_add_indexes.js`
-- MySQL schema creation scripts `002` through `009`
+- Legacy MongoDB index script `migrations/001_add_indexes.js`; it is not safe for the current multi-user schema until its obsolete indexes are reconciled
+- MySQL schema creation scripts `002` through `011`
 - `config/default_categories.json` for category seeding
 - Docker init scripts under `docker/mongodb/` and `docker/mysql/`
 
@@ -638,6 +638,7 @@ Use this section as a lightweight backlog of mismatches between implementation, 
 - [ ] Review legacy DB helper behavior that still uses package-global state plus `panic`/`log.Fatal`, and gradually normalize error handling
 - [ ] Confirm whether MongoDB-only eager initialization in the Cobra root command is still the intended default lifecycle, or if DB initialization should be made more explicit and symmetric across backends
 - [ ] Keep `/docs/roadmap.md` synchronized with the actual working branch/version plan as collaboration decisions evolve
+- [ ] Reconcile `migrations/001_add_indexes.js` with current category-type filtering and user-scoped category uniqueness before applying it
 
 ## Testing Expectation Right Now
 

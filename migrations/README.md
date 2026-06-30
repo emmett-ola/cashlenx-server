@@ -14,27 +14,15 @@ powershell -ExecutionPolicy Bypass -File scripts/smoke-mysql-migrations.ps1
 This validates the migration sequence but does not track applied versions.
 Production migration version tracking remains roadmap work.
 
-## Available Migrations
+## Available Assets
 
-### 001_add_indexes.js
-Creates performance indexes on frequently queried fields.
+### MongoDB: `001_add_indexes.js`
 
-**MongoDB Usage**:
-```bash
-mongosh <connection_string> < 001_add_indexes.js
-```
-
-**Indexes Created**:
-- `cash_flow.belongs_date` - For date range queries
-- `cash_flow.flow_type` - For income/expense filtering
-- `cash_flow(belongs_date, flow_type)` - Compound index for filtered queries
-- `cash_flow.category_id` - For category-based queries
-- `category.name` - Unique index for category lookups
-
-**Expected Performance Improvement**:
-- Date queries: 10-100x faster
-- Category lookups: 10x faster
-- Type filtering: 50x faster
+This is a legacy index script. It still contains pre-category-type
+`flow_type` indexes and a globally unique category-name index, so do not apply
+it to the current multi-user schema as-is. Reconciliation with current
+user-scoped queries and safe startup validation remains a `v0.8.0` roadmap
+item.
 
 ## Migration Guidelines
 
@@ -44,22 +32,19 @@ mongosh <connection_string> < 001_add_indexes.js
 4. **Monitor performance** after migration
 5. **Have a rollback plan** ready
 
-## Rollback
-
-To remove indexes created by 001_add_indexes.js:
-
-```javascript
-use cashlenx;
-db.cash_flow.dropIndex("idx_belongs_date");
-db.cash_flow.dropIndex("idx_flow_type");
-db.cash_flow.dropIndex("idx_belongs_date_flow_type");
-db.cash_flow.dropIndex("idx_category_id");
-db.category.dropIndex("idx_category_name_unique");
-```
-
-### MySQL
+### MySQL: `002` through `011`
 
 SQL migrations `002` through `011` create the current development schema.
 Always apply them in filename order. Migrations `008` through `010` are retained
 as compatibility markers from the earlier development sequence; the canonical
 table definitions already contain their final fields.
+
+The disposable validation script applies only `*.sql`; the JavaScript assets
+are MongoDB-specific. There is not yet an application migration runner or an
+applied-version table.
+
+## Rollback
+
+Automated rollback is not implemented. Recreate disposable development
+databases when validating the sequence, and take a verified backup before any
+manual migration of persistent data.

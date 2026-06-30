@@ -47,7 +47,7 @@ cashlenx-server/
 cp .env.sample .env
 ```
 
-MongoDB is the default development database, but users may choose MongoDB or MySQL during bootstrap by setting the DB-related values in `.env`.
+MongoDB remains the default and supported beta deployment database. MySQL 8 is also runnable: the full Flutter/API contract and the numbered SQL sequence are verified against disposable containers. Applied-version tracking and an automated migration runner remain roadmap work.
 
 ### 2. Start a Database
 
@@ -113,6 +113,16 @@ go build -o cashlenx main.go
 go test ./...
 scripts/ci-test.sh
 ```
+
+On Windows, validate the numbered MySQL migrations independently:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/smoke-mysql-migrations.ps1
+```
+
+The sibling Flutter client owns the end-to-end database smoke flow. From
+`../cashlenx-app`, use `scripts/smoke-api.ps1` for MongoDB (default) or pass
+`-Database mysql` for MySQL 8.
 
 Test coverage is still uneven while the project is under development. GitHub Actions uses `scripts/ci-test.sh` to run the full Go test suite with race detection and `coverage.out` generation for Codecov. DeepSource handles code analysis.
 
