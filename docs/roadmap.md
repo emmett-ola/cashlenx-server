@@ -10,6 +10,16 @@ This roadmap tracks backend work by versioned milestones. During the `v0.x` phas
 - Next enhancement milestone: `v0.9.0` performance and caching
 - Integration status: MongoDB and MySQL runtime smoke coverage is complete; the remaining `v0.8.0` work is migration/index lifecycle tooling, backup/restore preflight progress, and rollback behavior.
 
+## Next Execution Order
+
+1. Reconcile `docker/mongodb/init-mongo.js`, `migrations/001_add_indexes.js`, and `service/manage_service/indexes.go` with the current user + type + parent + name category uniqueness model; remove obsolete cash-flow `flow_type` indexes.
+2. Add a MySQL migration runner and applied-version table, with explicit detection of partially applied or out-of-order migrations.
+3. Add backup/restore preflight validation and progress reporting to both admin and user CLI flows.
+4. Define and implement rollback behavior for failed migration and restore operations; do not imply transactional rollback where a backend cannot provide it.
+5. Add `dev/**` to `.github/workflows/smoke.yml` triggers so the managed MongoDB smoke workflow follows the active branch policy.
+
+After `v0.8.0`, continue with the remaining security/performance work in `v0.9.0`, prioritizing the MySQL query-safety review before broader caching work.
+
 ## Versioning Policy
 
 - Use minor version increments for milestone-sized work during active development.
@@ -203,6 +213,8 @@ These items were left behind from beta-readiness work and should be resolved del
 - The main CI workflow includes `dev/**`, but `.github/workflows/smoke.yml` currently triggers only for `main`, `develop`, and `test`; align smoke triggers with the active development branch policy.
 - `service/manage_service/indexes.go` contains index-creation helpers, but they are not currently called from application startup and should not be treated as completed migration tooling.
 - `migrations/001_add_indexes.js` is a legacy MongoDB asset with obsolete `flow_type` and global category-name indexes; it must be reconciled before use with the current multi-user schema.
+- `docker/mongodb/init-mongo.js` is mounted for fresh Compose data directories but has the same obsolete `flow_type` indexes and a category uniqueness key that omits type and parent. Existing persistent volumes are not updated when this file changes.
+- `docker/mongodb/init-mongo-demo.js` is a legacy single-user fixture and is not compatible with current ownership, audit, category-type, or BSON date fields; use managed API smoke data instead.
 - `../cashlenx-app/scripts/smoke-api.ps1 -Database mysql` runs the Flutter/API contract against disposable MySQL; `scripts/smoke-mysql-migrations.ps1` validates the numbered SQL sequence independently.
 
 ## Notes

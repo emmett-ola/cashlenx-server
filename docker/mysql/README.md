@@ -60,7 +60,7 @@ test data.
 
 ## Related Files
 
-- Docker Compose: `../../docker-compose.yml`
+- Docker Compose: `../../compose.yml`
 - Current models: `../../model/`
 - MySQL mappers: `../../mapper/`
 - Numbered migrations: `../../migrations/`

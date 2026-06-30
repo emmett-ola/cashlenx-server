@@ -1,7 +1,7 @@
 # CashLenX CLI Reference
 
 **Version**: 0.8.0
-**Last Updated**: 2026-06-12
+**Last Updated**: 2026-06-30
 
 The CashLenX CLI is implemented with Cobra and starts from `main.go -> cmd.Execute()`. The current executable name is `cashlenx` when built, or `go run main.go` during local development.
 

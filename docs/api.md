@@ -1,7 +1,7 @@
 # CashLenX API Notes
 
 **Version**: 0.8.0
-**Last Updated**: 2026-06-12
+**Last Updated**: 2026-06-30
 
 This document is a human-readable companion to `docs/openapi.yaml`. The OpenAPI file is the detailed API contract and is used by schema validation when enabled.
 
@@ -176,5 +176,5 @@ curl -H "Authorization: Bearer <access_token>" \
 
 - Keep `docs/openapi.yaml` synchronized with `controller/server.go` when changing routes.
 - Keep enum examples lowercase for cash/category types: `income` and `expense`.
-- Treat SMTP-backed flows as in-progress until provider-level smoke testing is completed.
+- Configured SMTP delivery has been manually verified. Keep automated registration and password-reset tests provider-free by replacing email delivery.
 - If this document and code disagree, trust code first, then update this document and OpenAPI together.

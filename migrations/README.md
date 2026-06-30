@@ -14,6 +14,9 @@ powershell -ExecutionPolicy Bypass -File scripts/smoke-mysql-migrations.ps1
 This validates the migration sequence but does not track applied versions.
 Production migration version tracking remains roadmap work.
 
+The Docker bootstrap files under `docker/` are fresh-install snapshots, not an
+applied migration history. Changing them does not update an existing database.
+
 ## Available Assets
 
 ### MongoDB: `001_add_indexes.js`
@@ -23,6 +26,11 @@ This is a legacy index script. It still contains pre-category-type
 it to the current multi-user schema as-is. Reconciliation with current
 user-scoped queries and safe startup validation remains a `v0.8.0` roadmap
 item.
+
+The automatically mounted `docker/mongodb/init-mongo.js` has related index
+drift: it still creates `flow_type` indexes and enforces uniqueness on only
+`(belongs_user_id, name)`, while the service uniqueness rule also includes type
+and parent. Reconcile both files together.
 
 ## Migration Guidelines
 

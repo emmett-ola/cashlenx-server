@@ -13,7 +13,7 @@ This file defines the default categories that are automatically created for each
   "categories": [
     {
       "name": "Category Name",
-      "type": "INCOME or EXPENSE",
+      "type": "INCOME",
       "remark": "Description of the category"
     }
   ]
@@ -23,7 +23,7 @@ This file defines the default categories that are automatically created for each
 ### Fields
 
 - **name** (string, required): The display name of the category
-- **type** (string, required): Either "INCOME" or "EXPENSE"
+- **type** (string, required): Either `INCOME` or `EXPENSE`. The category service normalizes the value to lowercase before persistence.
 - **remark** (string, optional): A description or note about the category
 
 ### Behavior
@@ -39,6 +39,7 @@ To customize default categories for your deployment:
 
 1. Edit `config/default_categories.json` directly, or
 2. Create a custom file and set the path via environment variable:
+
    ```bash
    DEFAULT_CATEGORIES_PATH=/path/to/your/categories.json
    ```
@@ -48,12 +49,14 @@ To customize default categories for your deployment:
 The default configuration includes:
 
 **Income Categories:**
+
 - Salary
 - Freelance
 - Investment
 - Other Income
 
 **Expense Categories:**
+
 - Food & Dining
 - Transportation
 - Shopping

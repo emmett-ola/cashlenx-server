@@ -537,12 +537,20 @@ There are some package tests, but test coverage is uneven.
 
 Observed test locations include:
 
+- `auth/provider/local_auth_test.go`
 - `cache/category_cache_test.go`
+- `cmd/*/*_test.go` and `cmd/root_test.go`
+- `controller/*/*_test.go` and `controller/server_test.go`
 - `errors/errors_test.go`
+- `mapper/category_mapper/interface_test.go`
 - `middleware/cors_test.go`
+- `middleware/logging_test.go`
 - `validation/validators_test.go`
 - `middleware/schema_validation_test.go`
+- `util/config_util_test.go`
+- `util/database/mysql_util_test.go`
 - `util/date_util_test.go`
+- `util/email/rate_limiter_test.go`
 - `util/http_util_test.go`
 - `service/cash_flow_service/*_test.go`
 - `service/category_service/*_test.go`
@@ -633,12 +641,14 @@ Use this section as a lightweight backlog of mismatches between implementation, 
 - [x] Treat configured SMTP delivery as manually verified; keep registration and password-reset procedure tests deterministic and provider-free
 - [ ] Decide on the future provider strategy for email delivery, likely a third-party provider such as Mailgun, and document the intended integration approach
 - [x] Replace statistic CLI import/export default-admin fallback with an explicit user/auth model before treating those commands as production-ready multi-user workflows
-- [ ] Expand CI and/or local verification to cover more than `./errors` and `./validation`, especially DB-backed service paths as the project matures
+- [ ] Expand isolated integration coverage for mapper and database-backed service paths; normal CI already runs all Go package tests, while live database checks remain separate smoke workflows
 - [ ] Continue entry-layer coverage work by adding explicit service seams/fakes for Cobra command handlers and controllers; guard-path tests exist, but many success/error branches still couple directly to package-level services or mapper globals
 - [ ] Review legacy DB helper behavior that still uses package-global state plus `panic`/`log.Fatal`, and gradually normalize error handling
 - [ ] Confirm whether MongoDB-only eager initialization in the Cobra root command is still the intended default lifecycle, or if DB initialization should be made more explicit and symmetric across backends
 - [ ] Keep `/docs/roadmap.md` synchronized with the actual working branch/version plan as collaboration decisions evolve
 - [ ] Reconcile `migrations/001_add_indexes.js` with current category-type filtering and user-scoped category uniqueness before applying it
+- [ ] Reconcile `docker/mongodb/init-mongo.js` and `service/manage_service/indexes.go` at the same time: both still contain obsolete `flow_type` indexes, and the bootstrap category uniqueness key omits type and parent
+- [ ] Retire or rewrite `docker/mongodb/init-mongo-demo.js`; it is a legacy single-user fixture that does not match current ownership, audit, category-type, or BSON date fields
 
 ## Testing Expectation Right Now
 

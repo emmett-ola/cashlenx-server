@@ -1,241 +1,80 @@
-# MongoDB Initialization Files
+# MongoDB Initialization
 
-## Overview
+This directory contains the MongoDB bootstrap assets used by `compose.yml`.
+MongoDB is the default development and beta deployment backend.
 
-This directory contains MongoDB initialization scripts for CashLenX. The scripts are separated into schema initialization and optional demo data to provide flexibility for different deployment scenarios.
+## Canonical Bootstrap
 
-## Files
+`init-mongo.js` is mounted under `/docker-entrypoint-initdb.d/` and runs only
+when MongoDB initializes a new data directory. It currently:
 
-### 1. `init-mongo.js` (Primary - Auto-Executed)
-**Purpose**: Schema initialization with basic default categories
+- selects the database from `MONGO_INITDB_DATABASE`, which Compose derives from
+  `DB_NAME`;
+- creates the `users`, `refresh_tokens`, `operation_confirm_codes`,
+  `cash_flows`, and `categories` collections;
+- creates bootstrap indexes;
+- leaves user and transaction data empty.
 
-**Executed Automatically On**: `docker-compose up` (first run)
+Default categories are not global database seed data. The application creates
+a user-scoped copy from `config/default_categories.json` whenever a user is
+created. The bootstrap admin is created by the server on first startup.
 
-**What It Does**:
-- Creates `cash_flows` collection
-- Creates `categories` collection
-- Inserts 10 default categories (Salary, Freelance, Investment, Food & Dining, Transportation, Shopping, Entertainment, Healthcare, Utilities, Other Income)
-- Creates indexes for query performance
-- No transaction/demo data (clean slate)
+Start a fresh MongoDB container with:
 
-**Data Model Alignment**:
-- Matches Go `CategoryEntity` model with optional `parent_id` for hierarchical categories
-- Matches Go `CashFlowEntity` model with proper field names (`category_id`, `belongs_date`, `flow_type`, `remark`)
-- Uses `create_time` and `modify_time` instead of `created_at`/`updated_at`
-
-### 2. `init-mongo-demo.js` (Optional - Manual Import)
-**Purpose**: Demo transaction data for testing and development
-
-**When to Use**:
-- Development environment testing
-- Demo/POC deployments
-- Testing queries and analytics
-
-**How to Load**:
-
-**Option A: Manual database import**
 ```bash
-docker exec -i cashlenx-mongodb mongosh -u cashlenx -p cashlenx123 \
-  --authenticationDatabase admin cashlenx < docker/mongodb/init-mongo-demo.js
+docker compose --profile mongodb up -d mongodb
 ```
 
-**Option B: Via CLI (Recommended)**
-1. Convert demo data to Excel format
-2. Run: `cashlenx manage import -i demo-data.xlsx`
+Changing `init-mongo.js` does not update an existing data directory. Recreate
+only disposable development data, or apply a reviewed migration to persistent
+data.
 
-**Data Included**:
-- 15 sample transactions spread across the past month
-- Mix of income and expense transactions
-- Realistic amounts and categories
-- Includes today, yesterday, this week, and earlier month data
+## Current Schema Shape
 
-## Schema Design
+Cash flows are user-scoped and store `belongs_user_id`, `category_id`,
+`belongs_date` as a BSON datetime, `amount`, `description`, `remark`, and the
+soft-delete/audit fields from `BaseEntity`. Flow type is derived from the
+referenced category; `flow_type` is no longer stored on current cash-flow
+documents.
 
-### Categories Collection
-```javascript
-{
-  _id: ObjectId(),              // MongoDB ID
-  parent_id: ObjectId(),        // Optional: hierarchical structure
-  name: String,                 // Category name
-  remark: String,               // Additional notes
-  create_time: Date,            // Creation timestamp
-  modify_time: Date             // Last modified timestamp
-}
-```
+Categories are user-scoped and store `belongs_user_id`, `parent_id`, `name`,
+`type`, `remark`, and soft-delete/audit fields. The service permits a category
+name to repeat when its type or parent differs, so the intended uniqueness key
+is user + type + parent + name.
 
-**Default Categories**:
-- **Income**: Salary, Freelance, Investment, Other Income
-- **Expense**: Food & Dining, Transportation, Shopping, Entertainment, Healthcare, Utilities
+## Known Bootstrap Drift
 
-### Cash Flows Collection
-```javascript
-{
-  _id: ObjectId(),              // MongoDB ID
-  category_id: ObjectId(),      // Reference to categories
-  belongs_date: String,         // Date string (YYYY-MM-DD format)
-  flow_type: String,            // 'income' or 'expense'
-  amount: Number,               // Transaction amount
-  description: String,          // Transaction description
-  remark: String,               // Additional notes
-  create_time: Date,            // Creation timestamp
-  modify_time: Date             // Last modified timestamp
-}
-```
+The current `init-mongo.js` still creates obsolete `flow_type` indexes and a
+unique `(belongs_user_id, name)` category index. That category index is stricter
+than the service contract and can reject otherwise valid categories. Reconcile
+the bootstrap indexes with the mapper queries and service uniqueness rules
+before treating them as production migration definitions.
 
-### Indexes
-- `belongs_date: -1` - Query by date (descending for latest first)
-- `category_id: 1` - Filter by category
-- `flow_type: 1` - Filter by income/expense
-- `belongs_date: -1, flow_type: 1` - Common combined query
+`migrations/001_add_indexes.js` has related legacy index definitions and must
+also not be applied as-is. Index lifecycle reconciliation is tracked in the
+`v0.8.0` roadmap.
 
-## Improvements Over Original
+## Demo Script Status
 
-### 1. Entity Model Alignment
-- **Before**: Used `date`, `type`, `category` (string reference)
-- **After**: Uses `belongs_date`, `flow_type`, `category_id` (ObjectId reference)
+`init-mongo-demo.js` is retained as a legacy fixture only. Do not load it into
+the current schema: it expects global categories, writes obsolete `flow_type`
+fields, stores dates as strings, and does not set user ownership or audit
+metadata. Use the managed API smoke flow or the sibling Flutter smoke flow to
+create isolated, user-scoped test data instead.
 
-### 2. Better Category References
-- **Before**: String-based category names
-- **After**: ObjectId references for data integrity and query performance
-
-### 3. Hierarchical Categories
-- **Before**: Flat category structure
-- **After**: `parent_id` field enables category hierarchies
-
-### 4. Field Name Consistency
-- **Before**: `created_at`
-- **After**: `create_time`, `modify_time` (matches Go models)
-
-### 5. Separated Demo Data
-- **Before**: Schema and demo data mixed
-- **After**: Clean separation for production readiness
-
-### 6. Enhanced Indexes
-- Better index strategy for common query patterns
-- Index on hierarchical parent_id lookups (for future use)
-
-### 7. Better Documentation
-- Clear comments explaining field purposes
-- Schema alignment documentation
-
-## Usage Examples
-
-### Start with Schema Only (Default)
 ```bash
-# Docker Compose automatically uses init-mongo.js
-docker-compose up -d mongodb
-
-# Verify collections and indexes
-docker exec -it cashlenx-mongodb mongosh -u cashlenx -p cashlenx123 --authenticationDatabase admin cashlenx
-# Then: db.getCollectionNames()
+# Starts disposable MongoDB plus the API and runs the backend smoke flow.
+scripts/smoke-api.sh --managed
 ```
 
-### Load Demo Data Manually
-```bash
-# Option 1: Direct MongoDB script
-docker exec -i cashlenx-mongodb mongosh -u cashlenx -p cashlenx123 \
-  --authenticationDatabase admin cashlenx < docker/mongodb/init-mongo-demo.js
-
-# Option 2: Via CLI (after building cashlenx)
-cd backend
-go build -o cashlenx main.go
-
-# Create Excel from demo JS (manual step) or use CLI:
-./cashlenx manage import -i path/to/demo-data.xlsx
-```
-
-### Query Examples
-```bash
-# View categories
-docker exec -it cashlenx-mongodb mongosh -u cashlenx -p cashlenx123 \
-  --authenticationDatabase admin cashlenx \
-  -e "db.categories.find({}, {name: 1, _id: 1}).pretty()"
-
-# View transactions for today
-docker exec -it cashlenx-mongodb mongosh -u cashlenx -p cashlenx123 \
-  --authenticationDatabase admin cashlenx \
-  -e "db.cash_flows.find({belongs_date: new Date().toISOString().split('T')[0]}).pretty()"
-
-# Summary statistics
-docker exec -it cashlenx-mongodb mongosh -u cashlenx -p cashlenx123 \
-  --authenticationDatabase admin cashlenx \
-  -e "db.cash_flows.aggregate([
-    { \$group: { _id: '\$flow_type', total: { \$sum: '\$amount' }, count: { \$sum: 1 } } }
-  ]).pretty()"
-```
-
-## Migration from Old Schema
-
-If migrating from old schema with different field names:
-
-```javascript
-// Rename fields in cash_flows
-db.cash_flows.updateMany(
-  {},
-  [
-    {
-      $set: {
-        belongs_date: '$date',
-        flow_type: '$type',
-        create_time: '$created_at',
-        modify_time: '$updated_at'
-      }
-    },
-    {
-      $unset: ['date', 'type', 'created_at', 'updated_at']
-    }
-  ]
-);
-
-// Add category_id from category name (requires joining logic)
-db.categories.find({}).forEach(cat => {
-  const categoryName = cat.name;
-  db.cash_flows.updateMany(
-    { category: categoryName },
-    {
-      $set: { category_id: cat._id },
-      $unset: { category: 1 }
-    }
-  );
-});
-```
-
-## Production Considerations
-
-1. **Backup volumes** before production:
-   ```bash
-   docker run --rm -v cashlenx_mongodb_data:/data -v $(pwd):/backup ubuntu \
-     tar czf /backup/mongodb-backup.tar.gz /data
-   ```
-
-2. **Use strong passwords** instead of defaults:
-   ```yaml
-   environment:
-     MONGO_INITDB_ROOT_PASSWORD: <strong-password>
-   ```
-
-3. **Enable authentication** (already enabled by default):
-   ```yaml
-   environment:
-     MONGO_INITDB_ROOT_USERNAME: <username>
-     MONGO_INITDB_ROOT_PASSWORD: <strong-password>
-   ```
-
-4. **Configure backups** in cron or Docker backup service
-
-5. **Monitor** indexes and query performance
-
-6. **Use replica sets** for production (configure in docker-compose)
+From `../cashlenx-app`, `scripts/smoke-api.ps1` runs the broader Flutter/API
+contract against disposable infrastructure.
 
 ## Related Files
 
-- Docker Compose: `../../docker-compose.yml`
-- MySQL init: `../mysql/init-mysql.sql`
-- Backend models: `../../backend/model/`
-- CLI commands: `../../backend/cmd/manage_cmd/`
-
-## See Also
-
-- [MySQL README](../mysql/README.md) - MySQL initialization guide
-- [Docker Guide](../../docs/DOCKER.md) - Docker setup and usage
-- [Environment Guide](../../docs/ENVIRONMENT.md) - Configuration guide
+- Compose configuration: `../../compose.yml`
+- Default categories: `../../config/default_categories.json`
+- Current models: `../../model/`
+- MongoDB mappers: `../../mapper/`
+- Migration notes: `../../migrations/README.md`
+- MySQL initialization guide: `../mysql/README.md`
