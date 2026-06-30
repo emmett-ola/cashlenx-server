@@ -50,7 +50,7 @@ cp .env.sample .env
 
 MongoDB remains the default and supported beta deployment database. MySQL 8 is also runnable: the full Flutter/API contract and the numbered SQL sequence are verified against disposable containers. Server startup tracks and applies MySQL migrations through `schema_migrations`.
 
-MongoDB bootstrap, migration, and runtime index definitions now follow the current user/type/parent/name category scope. Applied-version tracking and rollback behavior remain roadmap work; see `docker/mongodb/README.md` and `docs/roadmap.md`.
+MongoDB bootstrap, migration, and runtime index definitions now follow the current user/type/parent/name category scope. MongoDB applied-version tracking is not implemented and remains unscheduled architecture debt; see `docker/mongodb/README.md` and `AGENTS.md`.
 
 ### 2. Start a Database
 
@@ -110,10 +110,12 @@ These endpoints are intentionally outside `/api/v0` and the OpenAPI/JWT middlewa
 
 ## Documentation
 
+- `docs/README.md` - documentation map and update rules
 - `AGENTS.md` - shared working guide for coding agents
 - `docs/cli.md` - CLI command reference
 - `docs/api.md` - REST API notes
-- `docs/roadmap.md` - versioned roadmap and task tracking
+- `docs/roadmap.md` - active/future milestone planning
+- `docs/milestones.md` - completed milestone history
 - `docs/openapi.yaml` - OpenAPI specification
 - `docker/mongodb/README.md` - MongoDB bootstrap status and known index drift
 - `docker/mysql/README.md` - MySQL bootstrap and migration validation notes

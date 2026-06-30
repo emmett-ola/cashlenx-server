@@ -487,8 +487,10 @@ When adding new input DTOs, extend validation here rather than scattering ad hoc
 
 ### Docs
 
+- `docs/README.md`
 - `docs/api.md`
 - `docs/cli.md`
+- `docs/milestones.md`
 - `docs/openapi.yaml`
 - `docs/roadmap.md`
 
@@ -642,7 +644,7 @@ When adding or changing a feature:
 
 Use this section as a lightweight backlog of mismatches between implementation, docs, tooling, and intended architecture. Keep it factual and safe to commit.
 
-- [ ] Keep `README.md`, `docs/openapi.yaml`, `docs/roadmap.md`, and `model/version.go` synchronized when the active milestone or API contract changes
+- [ ] Keep `README.md`, `docs/openapi.yaml`, `docs/roadmap.md`, `docs/milestones.md`, and `model/version.go` synchronized when the active milestone or API contract changes
 - [x] Treat `/open/auth/logout` as a public idempotent compatibility path; it only revokes sessions when a valid token is supplied
 - [x] Treat `/auth/tokens` as authenticated token-management API; keep OpenAPI/docs explicit about its auth expectation
 - [x] Treat configured SMTP delivery as manually verified; keep registration and password-reset procedure tests deterministic and provider-free
@@ -652,7 +654,8 @@ Use this section as a lightweight backlog of mismatches between implementation, 
 - [ ] Continue entry-layer coverage work by adding explicit service seams/fakes for Cobra command handlers and controllers; guard-path tests exist, but many success/error branches still couple directly to package-level services or mapper globals
 - [ ] Review legacy DB helper behavior that still uses package-global state plus `panic`/`log.Fatal`, and gradually normalize error handling
 - [ ] Confirm whether MongoDB-only eager initialization in the Cobra root command is still the intended default lifecycle, or if DB initialization should be made more explicit and symmetric across backends
-- [ ] Keep `/docs/roadmap.md` synchronized with the actual working branch/version plan as collaboration decisions evolve
+- [ ] Decide whether MongoDB needs applied-version tracking beyond startup index reconciliation; current MongoDB migration assets do not maintain an applied-version ledger
+- [ ] Keep `docs/roadmap.md` synchronized with the actual working branch/version plan as collaboration decisions evolve
 - [x] Reconcile MongoDB bootstrap, migration, and runtime indexes with user/type/parent/name category uniqueness and remove obsolete `flow_type` indexes
 - [ ] Retire or rewrite `docker/mongodb/init-mongo-demo.js`; it is a legacy single-user fixture that does not match current ownership, audit, category-type, or BSON date fields
 - [x] Parameterize dynamic MySQL ID-list queries and use exact user-scoped category cache keys with targeted invalidation
