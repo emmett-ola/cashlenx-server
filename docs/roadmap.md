@@ -6,12 +6,12 @@ This file tracks active and future work. Completed milestone history lives in
 
 ## Current Status
 
-- Active branch line: `dev/v0.8.0`
+- Active branch line: `dev/v0.9.0`
 - Active API path: `/api/v0`
-- Current implementation version: `0.8.0`
-- `v0.8.0` implementation and verification: complete
-- Remaining `v0.8.0` action: push/promote the branch, then create the `dev/v0.9.0` line
-- Next milestone: `v0.9.0` performance and caching
+- Current implementation version: `0.9.0`
+- `v0.8.0` implementation, verification, and branch publication: complete
+- Remaining release action: promote `dev/v0.8.0` to `main` when authorized
+- Active milestone: `v0.9.0` performance and caching
 
 The Go suite, MongoDB API smoke flow, MySQL migration runner, and independent
 numbered SQL sequence have passed against disposable Docker environments.
