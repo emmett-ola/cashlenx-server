@@ -60,7 +60,7 @@ CREATE TABLE `user_configurations`
 DROP TABLE IF EXISTS refresh_tokens;
 CREATE TABLE `refresh_tokens`
 (
-    `id`             VARCHAR(24)  NOT NULL,
+    `id`             VARCHAR(36)  NOT NULL,
     `user_id`        VARCHAR(24)  NOT NULL,
     `token`          VARCHAR(255) NOT NULL,
     `expires_at`     TIMESTAMP    NOT NULL,
@@ -78,9 +78,9 @@ CREATE TABLE `refresh_tokens`
     `delete_time`    TIMESTAMP             DEFAULT NULL,
     `is_delete`      BOOLEAN      NOT NULL DEFAULT FALSE,
     PRIMARY KEY (`id`),
-    UNIQUE INDEX refresh_tokens_token_unique_index ON refresh_tokens (token),
-    INDEX refresh_tokens_user_id_index ON refresh_tokens (user_id),
-    INDEX refresh_tokens_expires_at_index ON refresh_tokens (expires_at),
+    UNIQUE INDEX refresh_tokens_token_unique_index (token),
+    INDEX refresh_tokens_user_id_index (user_id),
+    INDEX refresh_tokens_expires_at_index (expires_at),
     CONSTRAINT refresh_tokens_user_id_fk FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE = InnoDB
   DEFAULT CHARSET = UTF8MB4
@@ -108,11 +108,11 @@ CREATE TABLE `operation_confirm_codes`
     `delete_time`     TIMESTAMP             DEFAULT NULL,
     `is_delete`       BOOLEAN      NOT NULL DEFAULT FALSE,
     PRIMARY KEY (`id`),
-    INDEX operation_confirm_codes_token_index ON operation_confirm_codes (token),
-    UNIQUE INDEX operation_confirm_codes_verification_token_unique_index ON operation_confirm_codes (verification_token),
-    INDEX operation_confirm_codes_user_id_index ON operation_confirm_codes (user_id),
-    INDEX operation_confirm_codes_operation_type_index ON operation_confirm_codes (operation_type),
-    INDEX operation_confirm_codes_expires_at_index ON operation_confirm_codes (expires_at)
+    INDEX operation_confirm_codes_token_index (token),
+    UNIQUE INDEX operation_confirm_codes_verification_token_unique_index (verification_token),
+    INDEX operation_confirm_codes_user_id_index (user_id),
+    INDEX operation_confirm_codes_operation_type_index (operation_type),
+    INDEX operation_confirm_codes_expires_at_index (expires_at)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = UTF8MB4
     COMMENT ='Operation Confirmation Codes';
@@ -153,7 +153,6 @@ CREATE TABLE `cash_flows`
     `belongs_user_id` VARCHAR(24)  NOT NULL,
     `category_id`     VARCHAR(24)  NOT NULL,
     `belongs_date`    TIMESTAMP    NOT NULL,
-    `flow_type`       VARCHAR(10)  NOT NULL COMMENT 'INCOME/EXPENSE',
     `amount`          DECIMAL      NOT NULL,
     `description`     VARCHAR(200) NOT NULL,
     `remark`          VARCHAR(200)          DEFAULT NULL COMMENT 'KEEP EMPTY',
@@ -170,7 +169,6 @@ CREATE TABLE `cash_flows`
 CREATE INDEX cash_flows_belongs_user_id_index ON cash_flows (belongs_user_id);
 CREATE INDEX cash_flows_category_id_index ON cash_flows (category_id);
 CREATE INDEX cash_flows_belongs_date_index ON cash_flows (belongs_date);
-CREATE INDEX cash_flows_flow_type_index ON cash_flows (flow_type);
 
 -- Note: Default categories are automatically created for each user when they register
 -- See config/default_categories.json for the list of default categories

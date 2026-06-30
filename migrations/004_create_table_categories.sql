@@ -1,5 +1,4 @@
-USE
-    `cashlenx`;
+USE `cashlenx`;
 
 -- -------------------
 -- Create table `categories`

@@ -146,7 +146,7 @@ These items were left behind from beta-readiness work and should be resolved del
 - [x] Run disposable MongoDB-backed Flutter-client smoke checks against `/api/v0` for login, registration, logout, token refresh, profile, password reset, cash flow, category, statistics, import/export, backup, and admin flows #flutter #api
 - [x] Resolve and verify currently known beta API smoke gaps: accepted gender values, compact cash-flow dates, period-specific statistic dates, and MySQL category mapper selection #flutter #api #data
 - [x] Confirm the MongoDB default path from a fresh disposable container through `scripts/smoke-api.sh --managed` and the managed smoke workflow #data #devops
-- [ ] Keep MySQL build-compatible in touched persistence code and add runtime coverage where practical #data
+- [x] Keep MySQL build-compatible and verify the full Flutter/API flow against disposable MySQL 8 #data #flutter
 
 ## Carried Enhancement Milestone
 
@@ -165,7 +165,7 @@ These items were left behind from beta-readiness work and should be resolved del
 - [ ] Reconcile MongoDB index definitions, validate them at startup, and invoke the existing index-management code or migration scripts safely #data
 - [ ] Extend the existing admin/user backup and restore CLI with progress reporting and explicit preflight validation #data #devops
 - [x] Run MongoDB API integration smoke checks against a fresh disposable container #data #devops
-- [ ] Add disposable MySQL integration coverage, separate from normal unit tests #data #devops
+- [x] Add disposable MySQL runtime and numbered-migration integration coverage, separate from normal unit tests #data #devops
 - [ ] Add rollback functionality for failed database operations #data #security
 
 ## Later Enhancement Milestones
@@ -201,6 +201,7 @@ These items were left behind from beta-readiness work and should be resolved del
 - CI now uses GitHub Actions for build/test/release automation, Codecov for coverage reporting, and DeepSource for code analysis; managed live API smoke testing is available through `.github/workflows/smoke.yml`.
 - The main CI workflow includes `dev/**`, but `.github/workflows/smoke.yml` currently triggers only for `main`, `develop`, and `test`; align smoke triggers with the active development branch policy.
 - `service/manage_service/indexes.go` contains index-creation helpers, but they are not currently called from application startup and should not be treated as completed migration tooling.
+- `../cashlenx-app/scripts/smoke-api.ps1 -Database mysql` runs the Flutter/API contract against disposable MySQL; `scripts/smoke-mysql-migrations.ps1` validates the numbered SQL sequence independently.
 
 ## Notes
 

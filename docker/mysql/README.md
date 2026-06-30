@@ -48,10 +48,11 @@ mysql -u cashlenx -p cashlenx123 cashlenx < docker/mysql/init-mysql-demo.sql
 - Realistic amounts and categories
 - Includes today, yesterday, this week, and earlier month data
 
-### 3. `init-mysql-schema.sql` (Backup - Mirror of init-mysql.sql)
-**Purpose**: Backup/reference of schema-only initialization
+### 3. `init-mysql-schema.sql` (Legacy reference)
 
-**Note**: This is identical to `init-mysql.sql` for redundancy. Use `init-mysql.sql` in docker-compose.
+This file is retained for historical comparison and is not the canonical
+bootstrap schema. Use `init-mysql.sql` or the numbered migrations for current
+development environments.
 
 ## Schema Design
 

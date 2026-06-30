@@ -2,6 +2,18 @@
 
 This directory contains database migration scripts for CashLenX.
 
+## Validation
+
+On Windows, apply every numbered SQL migration to disposable MySQL 8 and
+verify the expected tables with:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/smoke-mysql-migrations.ps1
+```
+
+This validates the migration sequence but does not track applied versions.
+Production migration version tracking remains roadmap work.
+
 ## Available Migrations
 
 ### 001_add_indexes.js
@@ -10,11 +22,6 @@ Creates performance indexes on frequently queried fields.
 **MongoDB Usage**:
 ```bash
 mongosh <connection_string> < 001_add_indexes.js
-```
-
-**Or use CLI command**:
-```bash
-cashlenx manage indexes
 ```
 
 **Indexes Created**:
@@ -50,11 +57,9 @@ db.cash_flow.dropIndex("idx_category_id");
 db.category.dropIndex("idx_category_name_unique");
 ```
 
-## Future Migrations
+### MySQL
 
-Future migrations will be numbered sequentially:
-- 002_*.js
-- 003_*.js
-- etc.
-
-Always run migrations in order.
+SQL migrations `002` through `011` create the current development schema.
+Always apply them in filename order. Migrations `008` through `010` are retained
+as compatibility markers from the earlier development sequence; the canonical
+table definitions already contain their final fields.

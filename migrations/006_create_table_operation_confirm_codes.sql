@@ -22,11 +22,11 @@ CREATE TABLE `operation_confirm_codes`
     `delete_time`    TIMESTAMP             DEFAULT NULL,
     `is_delete`      BOOLEAN      NOT NULL DEFAULT FALSE,
     PRIMARY KEY (`id`),
-    INDEX operation_confirm_codes_token_index ON operation_confirm_codes (token),
-    UNIQUE INDEX operation_confirm_codes_verification_token_unique_index ON operation_confirm_codes (verification_token),
-    INDEX operation_confirm_codes_user_id_index ON operation_confirm_codes (user_id),
-    INDEX operation_confirm_codes_operation_type_index ON operation_confirm_codes (operation_type),
-    INDEX operation_confirm_codes_expires_at_index ON operation_confirm_codes (expires_at)
+    INDEX operation_confirm_codes_token_index (token),
+    UNIQUE INDEX operation_confirm_codes_verification_token_unique_index (verification_token),
+    INDEX operation_confirm_codes_user_id_index (user_id),
+    INDEX operation_confirm_codes_operation_type_index (operation_type),
+    INDEX operation_confirm_codes_expires_at_index (expires_at)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = UTF8MB4
     COMMENT ='Operation Confirmation Codes';

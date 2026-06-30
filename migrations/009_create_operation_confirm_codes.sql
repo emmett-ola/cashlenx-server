@@ -1,3 +1,5 @@
+USE `cashlenx`;
+
 CREATE TABLE IF NOT EXISTS operation_confirm_codes (
     id VARCHAR(36) PRIMARY KEY,
     user_id VARCHAR(36),

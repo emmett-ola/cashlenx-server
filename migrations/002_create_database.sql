@@ -1,1 +1,1 @@
-create schema cashlenx;
+CREATE SCHEMA IF NOT EXISTS cashlenx;

@@ -564,6 +564,7 @@ Unit test guidance:
 - Service unit tests should instantiate service structs with in-memory fake mapper implementations instead of overriding mapper globals
 - Mapper integration tests should be isolated from normal unit tests, use explicit integration naming/build tags or scripts, and run only against disposable test databases
 - API integration tests should exercise controller-to-database behavior separately from `go test ./...`, for example through the smoke script against Docker-backed services
+- MySQL runtime parity is covered by the Flutter smoke script in `../cashlenx-app`; numbered migrations are checked independently by `scripts/smoke-mysql-migrations.ps1`
 
 ## Development Commands
 
@@ -602,6 +603,12 @@ go test ./...
 
 # Run API smoke flow against a running local server
 BASE_URL=http://localhost:8080/api/v0 scripts/smoke-api.sh
+
+# Validate the numbered SQL sequence against disposable MySQL 8 (Windows)
+powershell -ExecutionPolicy Bypass -File scripts/smoke-mysql-migrations.ps1
+
+# From ../cashlenx-app, run the full Flutter/API flow against disposable MySQL
+powershell -ExecutionPolicy Bypass -File scripts/smoke-api.ps1 -Database mysql
 ```
 
 ## Guidelines For Future Changes

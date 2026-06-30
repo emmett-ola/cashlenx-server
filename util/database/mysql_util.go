@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"log"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/macar-x/cashlenx-server/util"
@@ -30,7 +31,8 @@ func GetMySqlConnection() *sql.DB {
 
 func openMySqlConnection() {
 	var err error
-	connection, err = sql.Open("mysql", defaultDatabaseUri+"/"+defaultDatabaseName)
+	dsn := buildMySqlDSN(defaultDatabaseUri, defaultDatabaseName)
+	connection, err = sql.Open("mysql", dsn)
 	if err != nil {
 		panic(err)
 	}
@@ -40,6 +42,27 @@ func openMySqlConnection() {
 
 	isConnected = true
 	util.Logger.Debugln("database connection created")
+}
+
+func buildMySqlDSN(databaseURI, databaseName string) string {
+	parts := strings.SplitN(databaseURI, "?", 2)
+	dsn := parts[0] + "/" + databaseName
+	options := []string{}
+	if len(parts) == 2 && parts[1] != "" {
+		options = strings.Split(parts[1], "&")
+	}
+
+	foundParseTime := false
+	for index, option := range options {
+		if strings.HasPrefix(strings.ToLower(option), "parsetime=") {
+			options[index] = "parseTime=true"
+			foundParseTime = true
+		}
+	}
+	if !foundParseTime {
+		options = append(options, "parseTime=true")
+	}
+	return dsn + "?" + strings.Join(options, "&")
 }
 
 func CloseMySqlConnection() {
