@@ -33,8 +33,8 @@ disposable MySQL 8 container with:
 powershell -ExecutionPolicy Bypass -File scripts/smoke-mysql-migrations.ps1
 ```
 
-This verifies the files in order but does not track applied versions. The
-migration runner and version table remain `v0.8.0` roadmap work.
+This verifies the files in order. Server startup also runs the embedded SQL
+sequence and records checksums and dirty/applied state in `schema_migrations`.
 
 ## Legacy Files
 

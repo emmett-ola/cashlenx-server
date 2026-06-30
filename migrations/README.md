@@ -11,8 +11,13 @@ verify the expected tables with:
 powershell -ExecutionPolicy Bypass -File scripts/smoke-mysql-migrations.ps1
 ```
 
-This validates the migration sequence but does not track applied versions.
-Production migration version tracking remains roadmap work.
+This validates the migration sequence independently. The application runner
+tracks versions, filenames, checksums, dirty state, and timestamps in the
+MySQL `schema_migrations` table.
+
+At startup, an existing complete pre-runner schema is baselined through version
+`011`; a partial schema is rejected. Empty schemas apply all SQL migrations in
+order. Failed migrations remain dirty and require explicit repair or restore.
 
 The Docker bootstrap files under `docker/` are fresh-install snapshots, not an
 applied migration history. Changing them does not update an existing database.
@@ -34,16 +39,16 @@ type, parent, and active records.
 4. **Monitor performance** after migration
 5. **Have a rollback plan** ready
 
-### MySQL: `002` through `011`
+### MySQL: `002` through `012`
 
-SQL migrations `002` through `011` create the current development schema.
+SQL migrations `002` through `011` create the base development schema, and
+`012` reconciles active category uniqueness with type, parent, and soft-delete behavior.
 Always apply them in filename order. Migrations `008` through `010` are retained
 as compatibility markers from the earlier development sequence; the canonical
 table definitions already contain their final fields.
 
 The disposable validation script applies only `*.sql`; the JavaScript assets
-are MongoDB-specific. There is not yet an application migration runner or an
-applied-version table.
+are MongoDB-specific.
 
 ## Rollback
 

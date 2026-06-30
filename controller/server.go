@@ -13,10 +13,12 @@ import (
 	"github.com/macar-x/cashlenx-server/controller/user_controller"
 	"github.com/macar-x/cashlenx-server/controller/verification_controller"
 	"github.com/macar-x/cashlenx-server/middleware"
+	dbmigrations "github.com/macar-x/cashlenx-server/migrations"
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/service/manage_service"
 	"github.com/macar-x/cashlenx-server/service/user_service"
 	"github.com/macar-x/cashlenx-server/util"
+	"github.com/macar-x/cashlenx-server/util/database"
 )
 
 func StartServer(port int32) {
@@ -28,6 +30,13 @@ func StartServer(port int32) {
 		util.Logger.Warnf("Failed to initialize Snowflake generator with worker ID %d: %v, using default", workerID, err)
 	} else {
 		fmt.Printf("Snowflake ID generator initialized with worker ID: %d\n", workerID)
+	}
+
+	if util.GetConfigByKey("db.type") == "mysql" {
+		if err := dbmigrations.Run(database.GetMySqlConnection()); err != nil {
+			util.Logger.Fatalw("MySQL migration failed", "error", err)
+			return
+		}
 	}
 
 	user_service.InitAdminUser()

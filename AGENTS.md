@@ -520,7 +520,7 @@ Important: CI unit tests do not run the live MongoDB-backed `scripts/smoke-api.s
 Migration assets include:
 
 - Legacy MongoDB index script `migrations/001_add_indexes.js`; it is not safe for the current multi-user schema until its obsolete indexes are reconciled
-- MySQL schema creation scripts `002` through `011`
+- MySQL schema creation and reconciliation scripts `002` through `012`
 - `config/default_categories.json` for category seeding
 - Docker init scripts under `docker/mongodb/` and `docker/mysql/`
 

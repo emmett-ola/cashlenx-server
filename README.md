@@ -47,7 +47,7 @@ cashlenx-server/
 cp .env.sample .env
 ```
 
-MongoDB remains the default and supported beta deployment database. MySQL 8 is also runnable: the full Flutter/API contract and the numbered SQL sequence are verified against disposable containers. Applied-version tracking and an automated migration runner remain roadmap work.
+MongoDB remains the default and supported beta deployment database. MySQL 8 is also runnable: the full Flutter/API contract and the numbered SQL sequence are verified against disposable containers. Server startup tracks and applies MySQL migrations through `schema_migrations`.
 
 MongoDB bootstrap, migration, and runtime index definitions now follow the current user/type/parent/name category scope. Applied-version tracking and rollback behavior remain roadmap work; see `docker/mongodb/README.md` and `docs/roadmap.md`.
 

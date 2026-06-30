@@ -137,12 +137,16 @@ CREATE TABLE `categories`
     `delete_user_id`  VARCHAR(24)           DEFAULT NULL,
     `delete_time`     TIMESTAMP             DEFAULT NULL,
     `is_delete`       BOOLEAN      NOT NULL DEFAULT FALSE,
+    `active_scope_key` VARCHAR(300) GENERATED ALWAYS AS (
+        IF(`is_delete` = FALSE, CONCAT(`belongs_user_id`, '|', `type`, '|', COALESCE(`parent_id`, ''), '|', `name`), NULL)
+    ) STORED,
     PRIMARY KEY (`id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = UTF8MB4 COMMENT ='Category Table';
 
 CREATE INDEX categories_belongs_user_id_index ON categories (belongs_user_id);
 CREATE INDEX categories_parent_id_index ON categories (parent_id);
-CREATE UNIQUE INDEX categories_belongs_user_id_name_unique_index ON categories (belongs_user_id, name);
+CREATE UNIQUE INDEX categories_active_scope_unique_index ON categories (active_scope_key);
+CREATE INDEX categories_user_scope_index ON categories (belongs_user_id, type, parent_id, name, is_delete);
 
 -- -------------------
 -- Create table `cash_flows`

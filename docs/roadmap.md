@@ -13,7 +13,7 @@ This roadmap tracks backend work by versioned milestones. During the `v0.x` phas
 ## Next Execution Order
 
 1. [Completed] Reconcile `docker/mongodb/init-mongo.js`, `migrations/001_add_indexes.js`, and `service/manage_service/indexes.go` with the current user + type + parent + name category uniqueness model; remove obsolete cash-flow `flow_type` indexes.
-2. Add a MySQL migration runner and applied-version table, with explicit detection of partially applied or out-of-order migrations.
+2. [Completed] Add a MySQL migration runner and applied-version table, with explicit detection of partially applied or out-of-order migrations.
 3. Add backup/restore preflight validation and progress reporting to both admin and user CLI flows.
 4. Define and implement rollback behavior for failed migration and restore operations; do not imply transactional rollback where a backend cannot provide it.
 5. Add `dev/**` to `.github/workflows/smoke.yml` triggers so the managed MongoDB smoke workflow follows the active branch policy.
@@ -172,7 +172,7 @@ These items were left behind from beta-readiness work and should be resolved del
 ### v0.8.0 - Migration Tooling
 
 - [x] Maintain numbered MongoDB and MySQL migration assets under `migrations/` #data
-- [ ] Introduce a MySQL migration runner with applied-version tracking; numbered SQL assets alone are not sufficient tooling #data #devops
+- [x] Introduce a MySQL migration runner with checksums, dirty-state detection, existing-schema baselining, and applied-version tracking #data #devops
 - [x] Reconcile MongoDB index definitions, validate them at startup, and invoke index management safely #data
 - [ ] Extend the existing admin/user backup and restore CLI with progress reporting and explicit preflight validation #data #devops
 - [x] Run MongoDB API integration smoke checks against a fresh disposable container #data #devops
