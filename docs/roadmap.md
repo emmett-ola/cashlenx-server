@@ -30,15 +30,23 @@ numbered SQL sequence have passed against disposable Docker environments.
 
 ### Remaining work
 
-- [ ] Add deterministic benchmarks for cash-flow summaries and statistic summary/dashboard calculations
+- [x] Add deterministic benchmarks for cash-flow summaries and statistic summary/dashboard calculations
 - [ ] Add disposable integration benchmarks for MongoDB and MySQL filtered/date-range mapper queries
 - [ ] Capture benchmark baselines before adding another cache layer
 - [ ] Decide from measurements whether a recent-query cache provides a material benefit
 - [ ] If justified, implement a bounded TTL read-through cache with user-scoped keys, defensive copies, and explicit invalidation on cash/category writes, imports, restores, and account deletion
 
 There is currently no recent-query cache and no `Benchmark...` coverage in the
-repository. Statistic and dashboard endpoints repeatedly read user/date-range
-cash flows, so those paths are candidates, not preselected cache targets.
+repository outside the deterministic service benchmarks. Those benchmarks use
+fixed fixtures of 100, 1,000, and 10,000 transactions with 10 categories. Run
+them with:
+
+```bash
+go test -run '^$' -bench 'Summary|Dashboard' -benchmem ./service/cash_flow_service ./service/statistic_service
+```
+
+Statistic and dashboard endpoints repeatedly read user/date-range cash flows,
+so those paths are candidates, not preselected cache targets.
 
 ## v0.9.0 Execution Order
 
