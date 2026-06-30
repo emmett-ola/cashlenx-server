@@ -21,6 +21,42 @@ func AdminRestoreDatabase(filePath string) (OperationStats, error) {
 }
 
 func AdminRestoreDatabaseWithProgress(filePath string, progress ProgressFunc) (OperationStats, error) {
+	var empty OperationStats
+	if _, err := PreflightRestore(filePath); err != nil {
+		return empty, err
+	}
+	snapshot, err := os.CreateTemp("", "cashlenx-restore-rollback-*.json")
+	if err != nil {
+		return empty, fmt.Errorf("create restore rollback snapshot: %w", err)
+	}
+	snapshotPath := snapshot.Name()
+	if err := snapshot.Close(); err != nil {
+		os.Remove(snapshotPath)
+		return empty, fmt.Errorf("close restore rollback snapshot: %w", err)
+	}
+	defer os.Remove(snapshotPath)
+	if _, err := AdminDumpDatabase(snapshotPath); err != nil {
+		return empty, fmt.Errorf("create restore rollback snapshot: %w", err)
+	}
+	emit(progress, "snapshot", "database", 1, 1, "Rollback snapshot created")
+
+	stats, restoreErr := adminRestoreDatabaseOnce(filePath, progress)
+	if restoreErr == nil && !hasFailures(stats) {
+		return stats, nil
+	}
+	if restoreErr == nil {
+		restoreErr = fmt.Errorf("restore completed with failed records")
+	}
+	emit(progress, "rollback", "database", 0, 1, "Restore failed; restoring pre-operation snapshot")
+	rollbackStats, rollbackErr := adminRestoreDatabaseOnce(snapshotPath, nil)
+	if rollbackErr != nil || hasFailures(rollbackStats) {
+		return stats, fmt.Errorf("%w; rollback failed: %v", restoreErr, rollbackErr)
+	}
+	emit(progress, "rollback", "database", 1, 1, "Pre-operation snapshot restored")
+	return stats, fmt.Errorf("%w; database was rolled back", restoreErr)
+}
+
+func adminRestoreDatabaseOnce(filePath string, progress ProgressFunc) (OperationStats, error) {
 	stats := OperationStats{
 		Users:       EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
 		UserConfigs: EntityStats{Success: 0, Failed: 0, FailedList: []string{}},
@@ -336,6 +372,10 @@ func AdminRestoreDatabaseWithProgress(filePath string, progress ProgressFunc) (O
 	emit(progress, "restore", "cash_flows", stats.CashFlows.Success, totalCashFlows, "Cash flows restored")
 
 	return stats, nil
+}
+
+func hasFailures(stats OperationStats) bool {
+	return stats.Users.Failed > 0 || stats.UserConfigs.Failed > 0 || stats.Categories.Failed > 0 || stats.CashFlows.Failed > 0
 }
 
 // UserImportData imports user data from a backup file with upsert logic (skips deleted records)

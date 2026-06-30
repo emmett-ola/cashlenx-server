@@ -13,6 +13,9 @@ func TestLoadMigrationsInVersionOrder(t *testing.T) {
 	if len(items) == 0 || items[0].Version != 2 || items[len(items)-1].Version != 12 {
 		t.Fatalf("unexpected migration range: %#v", items)
 	}
+	if items[len(items)-1].Down == "" {
+		t.Fatal("migration 012 must provide rollback SQL")
+	}
 	for i := 1; i < len(items); i++ {
 		if items[i-1].Version >= items[i].Version {
 			t.Fatal("migrations are not strictly ordered")

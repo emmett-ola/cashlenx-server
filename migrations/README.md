@@ -19,6 +19,10 @@ At startup, an existing complete pre-runner schema is baselined through version
 `011`; a partial schema is rejected. Empty schemas apply all SQL migrations in
 order. Failed migrations remain dirty and require explicit repair or restore.
 
+Migrations that provide a matching `.down.sql` file are compensated
+automatically when an up statement fails. If any down statement fails, the
+dirty row is retained and startup remains blocked for explicit repair.
+
 The Docker bootstrap files under `docker/` are fresh-install snapshots, not an
 applied migration history. Changing them does not update an existing database.
 

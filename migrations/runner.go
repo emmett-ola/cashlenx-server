@@ -5,8 +5,10 @@ import (
 	"database/sql"
 	"embed"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io/fs"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -21,6 +23,7 @@ type Migration struct {
 	Name     string
 	SQL      string
 	Checksum string
+	Down     string
 }
 
 var baselineTables = []string{"users", "categories", "cash_flows", "operation_confirm_codes", "refresh_tokens", "user_configurations"}
@@ -32,7 +35,7 @@ func Load() ([]Migration, error) {
 	}
 	items := make([]Migration, 0, len(entries))
 	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".sql") {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".sql") || strings.HasSuffix(entry.Name(), ".down.sql") {
 			continue
 		}
 		prefix, _, ok := strings.Cut(entry.Name(), "_")
@@ -48,7 +51,12 @@ func Load() ([]Migration, error) {
 			return nil, err
 		}
 		sum := sha256.Sum256(content)
-		items = append(items, Migration{Version: version, Name: entry.Name(), SQL: string(content), Checksum: hex.EncodeToString(sum[:])})
+		downName := strings.TrimSuffix(entry.Name(), ".sql") + ".down.sql"
+		down, downErr := migrationFiles.ReadFile(downName)
+		if downErr != nil && !errors.Is(downErr, fs.ErrNotExist) {
+			return nil, downErr
+		}
+		items = append(items, Migration{Version: version, Name: entry.Name(), SQL: string(content), Checksum: hex.EncodeToString(sum[:]), Down: string(down)})
 	}
 	sort.Slice(items, func(i, j int) bool { return items[i].Version < items[j].Version })
 	for i := 1; i < len(items); i++ {
@@ -179,13 +187,55 @@ func apply(db *sql.DB, item Migration) error {
 			continue
 		}
 		if _, err := db.Exec(statement); err != nil {
-			return fmt.Errorf("apply migration %03d (%s): %w", item.Version, item.Name, err)
+			applyErr := fmt.Errorf("apply migration %03d (%s): %w", item.Version, item.Name, err)
+			if rollbackErr := rollback(db, item); rollbackErr != nil {
+				return fmt.Errorf("%w; automatic rollback also failed: %v", applyErr, rollbackErr)
+			}
+			return fmt.Errorf("%w; migration was rolled back", applyErr)
 		}
 	}
 	if _, err := db.Exec(`UPDATE schema_migrations SET dirty = FALSE, applied_at = ? WHERE version = ?`, time.Now().UTC(), item.Version); err != nil {
 		return fmt.Errorf("complete migration %03d: %w", item.Version, err)
 	}
 	return nil
+}
+
+func rollback(db *sql.DB, item Migration) error {
+	if strings.TrimSpace(item.Down) == "" {
+		return fmt.Errorf("migration %03d has no down script", item.Version)
+	}
+	var rollbackErrors []string
+	for _, statement := range splitSQL(item.Down) {
+		if _, err := db.Exec(statement); err != nil && !ignorableRollbackError(err) {
+			rollbackErrors = append(rollbackErrors, err.Error())
+		}
+	}
+	if len(rollbackErrors) > 0 {
+		return fmt.Errorf("migration %03d rollback errors: %s", item.Version, strings.Join(rollbackErrors, "; "))
+	}
+	if _, err := db.Exec("DELETE FROM schema_migrations WHERE version = ? AND dirty = TRUE", item.Version); err != nil {
+		return fmt.Errorf("clear rolled-back migration %03d: %w", item.Version, err)
+	}
+	return nil
+}
+
+func ignorableRollbackError(err error) bool {
+	for current := err; current != nil; current = errors.Unwrap(current) {
+		value := reflect.ValueOf(current)
+		if value.Kind() == reflect.Ptr && !value.IsNil() {
+			value = value.Elem()
+		}
+		if value.Kind() != reflect.Struct {
+			continue
+		}
+		field := value.FieldByName("Number")
+		if field.IsValid() && field.CanUint() {
+			number := field.Uint()
+			// 1091: object to drop does not exist. 1061: duplicate index name.
+			return number == 1091 || number == 1061
+		}
+	}
+	return false
 }
 
 func splitSQL(input string) []string {

@@ -143,6 +143,7 @@ go run main.go admin database restore -i backup.json --force
 - `admin database backup` exports a full database dump.
 - `admin database restore` restores a full database dump.
 - Backup commands validate the destination before querying data. Restore commands validate backup version, size, required fields, ownership, and category/cash-flow relationships before mutating data; both print phase and entity progress.
+- Before an admin restore clears data, it creates a temporary full snapshot. Any restore error or failed record triggers automatic restoration of that snapshot; the command reports whether compensation succeeded.
 - Admin commands require a saved CLI session whose JWT role is `admin`, matching `/admin/*` API access checks.
 
 ## User Commands
