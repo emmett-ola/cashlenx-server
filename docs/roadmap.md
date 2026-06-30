@@ -31,7 +31,7 @@ numbered SQL sequence have passed against disposable Docker environments.
 ### Remaining work
 
 - [x] Add deterministic benchmarks for cash-flow summaries and statistic summary/dashboard calculations
-- [ ] Add disposable integration benchmarks for MongoDB and MySQL filtered/date-range mapper queries
+- [x] Add disposable integration benchmarks for MongoDB and MySQL filtered/date-range mapper queries
 - [ ] Capture benchmark baselines before adding another cache layer
 - [ ] Decide from measurements whether a recent-query cache provides a material benefit
 - [ ] If justified, implement a bounded TTL read-through cache with user-scoped keys, defensive copies, and explicit invalidation on cash/category writes, imports, restores, and account deletion
@@ -47,6 +47,22 @@ go test -run '^$' -bench 'Summary|Dashboard' -benchmem ./service/cash_flow_servi
 
 Statistic and dashboard endpoints repeatedly read user/date-range cash flows,
 so those paths are candidates, not preselected cache targets.
+
+The mapper benchmarks are excluded from normal tests by the `integration` build
+tag. They seed 1,000- and 10,000-row user-isolated fixtures, validate the query
+result, and remove only those fixtures after each run. Use a disposable database
+with an initialized CashLenX schema. The explicit opt-in prevents accidental
+database writes:
+
+```bash
+# MongoDB
+CASHLENX_BENCHMARKS=1 DB_TYPE=mongodb DB_NAME=cashlenx MONGO_DB_URI='<mongodb-uri>' \
+  go test -tags=integration -run '^$' -bench '^BenchmarkCashFlowMapper' -benchmem ./mapper/cash_flow_mapper
+
+# MySQL
+CASHLENX_BENCHMARKS=1 DB_TYPE=mysql DB_NAME=cashlenx MYSQL_DB_URI='<mysql-uri-without-database>' \
+  go test -tags=integration -run '^$' -bench '^BenchmarkCashFlowMapper' -benchmem ./mapper/cash_flow_mapper
+```
 
 ## v0.9.0 Execution Order
 
