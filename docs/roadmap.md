@@ -6,9 +6,9 @@ This roadmap tracks backend work by versioned milestones. During the `v0.x` phas
 
 - Active branch line: `dev/v0.8.0`
 - Active API path version: `/api/v0`
-- Current roadmap milestone: `v0.8.0` implementation complete; final verification and branch promotion remain
+- Current roadmap milestone: `v0.8.0` implementation and final verification complete; branch promotion remains
 - Next enhancement milestone: `v0.9.0` performance and caching
-- Integration status: MongoDB and MySQL runtime smoke coverage exists, and the planned `v0.8.0` migration, preflight/progress, rollback, and branch-trigger work is implemented.
+- Integration status: MongoDB API smoke, MySQL migration-runner integration, and the independent numbered SQL sequence pass against fresh disposable containers. The planned `v0.8.0` work is implemented and verified.
 
 ## Next Execution Order
 
@@ -18,7 +18,7 @@ This roadmap tracks backend work by versioned milestones. During the `v0.x` phas
 4. [Completed] Define and implement compensating rollback for failed migrations and destructive admin restores, retaining dirty migration state when compensation cannot complete.
 5. [Completed] Add `dev/**` to `.github/workflows/smoke.yml` triggers so the managed MongoDB smoke workflow follows the active branch policy.
 
-After final `v0.8.0` verification, continue with the remaining `v0.9.0` work: optional recent-query caching, benchmarks, and a Redis decision.
+After promoting `v0.8.0`, continue with the remaining `v0.9.0` work: optional recent-query caching, benchmarks, and a Redis decision.
 
 ## Versioning Policy
 

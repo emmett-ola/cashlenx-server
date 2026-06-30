@@ -88,6 +88,9 @@ func Run(db *sql.DB) error {
 			return err
 		}
 	}
+	if err := validateAppliedHistory(items, applied); err != nil {
+		return err
+	}
 	for _, item := range items {
 		state, ok := applied[item.Version]
 		if ok {
@@ -107,8 +110,37 @@ func Run(db *sql.DB) error {
 }
 
 type appliedMigration struct {
+	name     string
 	checksum string
 	dirty    bool
+}
+
+func validateAppliedHistory(items []Migration, applied map[int]appliedMigration) error {
+	known := make(map[int]int, len(items))
+	for index, item := range items {
+		known[item.Version] = index
+	}
+
+	highestAppliedIndex := -1
+	for version, state := range applied {
+		index, ok := known[version]
+		if !ok {
+			return fmt.Errorf("schema_migrations contains unknown version %03d", version)
+		}
+		if state.name != items[index].Name {
+			return fmt.Errorf("migration %03d filename changed after application: have %q, expected %q", version, state.name, items[index].Name)
+		}
+		if index > highestAppliedIndex {
+			highestAppliedIndex = index
+		}
+	}
+
+	for index := 0; index <= highestAppliedIndex; index++ {
+		if _, ok := applied[items[index].Version]; !ok {
+			return fmt.Errorf("migration history is out of order: version %03d is missing before an applied migration", items[index].Version)
+		}
+	}
+	return nil
 }
 
 func ensureTrackingTable(db *sql.DB) error {
@@ -126,7 +158,7 @@ func ensureTrackingTable(db *sql.DB) error {
 }
 
 func loadApplied(db *sql.DB) (map[int]appliedMigration, error) {
-	rows, err := db.Query("SELECT version, checksum, dirty FROM schema_migrations ORDER BY version")
+	rows, err := db.Query("SELECT version, name, checksum, dirty FROM schema_migrations ORDER BY version")
 	if err != nil {
 		return nil, fmt.Errorf("query schema migrations: %w", err)
 	}
@@ -135,7 +167,7 @@ func loadApplied(db *sql.DB) (map[int]appliedMigration, error) {
 	for rows.Next() {
 		var version int
 		var state appliedMigration
-		if err := rows.Scan(&version, &state.checksum, &state.dirty); err != nil {
+		if err := rows.Scan(&version, &state.name, &state.checksum, &state.dirty); err != nil {
 			return nil, err
 		}
 		result[version] = state

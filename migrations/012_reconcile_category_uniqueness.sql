@@ -1,3 +1,5 @@
+USE cashlenx;
+
 ALTER TABLE categories
     ADD COLUMN active_scope_key VARCHAR(300)
     GENERATED ALWAYS AS (

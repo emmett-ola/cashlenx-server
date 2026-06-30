@@ -22,12 +22,15 @@ try {
     docker cp $migrationsPath "${container}:/tmp/migrations" | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "Failed to copy migrations" }
 
-    Get-ChildItem $migrationsPath -Filter *.sql | Sort-Object Name | ForEach-Object {
+    Get-ChildItem $migrationsPath -Filter *.sql |
+        Where-Object { -not $_.Name.EndsWith(".down.sql") } |
+        Sort-Object Name |
+        ForEach-Object {
         Write-Host "Applying $($_.Name)..."
         docker exec $container sh -c `
             "mysql -uroot -pcashlenx123 < /tmp/migrations/$($_.Name)" 2>$null | Out-Null
         if ($LASTEXITCODE -ne 0) { throw "Migration failed: $($_.Name)" }
-    }
+        }
 
     $tables = docker exec $container mysql -uroot -pcashlenx123 -N `
         -e "SELECT table_name FROM information_schema.tables WHERE table_schema='cashlenx' ORDER BY table_name" 2>$null

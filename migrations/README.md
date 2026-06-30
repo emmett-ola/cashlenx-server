@@ -15,6 +15,15 @@ This validates the migration sequence independently. The application runner
 tracks versions, filenames, checksums, dirty state, and timestamps in the
 MySQL `schema_migrations` table.
 
+The runner itself has a build-tagged integration test for clean application,
+compensating rollback, and out-of-order history rejection. Run it against a
+disposable MySQL database with:
+
+```bash
+MYSQL_TEST_DSN='user:password@tcp(localhost:3306)/cashlenx?parseTime=true' \
+  go test -tags=integration -run TestMySQLMigrationRunnerIntegration -v ./migrations
+```
+
 At startup, an existing complete pre-runner schema is baselined through version
 `011`; a partial schema is rejected. Empty schemas apply all SQL migrations in
 order. Failed migrations remain dirty and require explicit repair or restore.
@@ -51,11 +60,13 @@ Always apply them in filename order. Migrations `008` through `010` are retained
 as compatibility markers from the earlier development sequence; the canonical
 table definitions already contain their final fields.
 
-The disposable validation script applies only `*.sql`; the JavaScript assets
-are MongoDB-specific.
+The disposable validation script applies upgrade `*.sql` files and explicitly
+excludes `*.down.sql`; the JavaScript assets are MongoDB-specific.
 
 ## Rollback
 
-Automated rollback is not implemented. Recreate disposable development
-databases when validating the sequence, and take a verified backup before any
-manual migration of persistent data.
+The application runner automatically compensates a failed migration when that
+migration has a matching `.down.sql` asset. If compensation is unavailable or
+fails, the migration stays dirty and startup remains blocked. Recreate
+disposable development databases when validating the sequence, and take a
+verified backup before any manual migration of persistent data.

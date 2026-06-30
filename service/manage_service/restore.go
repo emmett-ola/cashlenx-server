@@ -21,6 +21,15 @@ func AdminRestoreDatabase(filePath string) (OperationStats, error) {
 }
 
 func AdminRestoreDatabaseWithProgress(filePath string, progress ProgressFunc) (OperationStats, error) {
+	return adminRestoreDatabaseWithDependencies(filePath, progress, AdminDumpDatabase, adminRestoreDatabaseOnce)
+}
+
+func adminRestoreDatabaseWithDependencies(
+	filePath string,
+	progress ProgressFunc,
+	dump func(string) (OperationStats, error),
+	restore func(string, ProgressFunc) (OperationStats, error),
+) (OperationStats, error) {
 	var empty OperationStats
 	if _, err := PreflightRestore(filePath); err != nil {
 		return empty, err
@@ -35,12 +44,12 @@ func AdminRestoreDatabaseWithProgress(filePath string, progress ProgressFunc) (O
 		return empty, fmt.Errorf("close restore rollback snapshot: %w", err)
 	}
 	defer os.Remove(snapshotPath)
-	if _, err := AdminDumpDatabase(snapshotPath); err != nil {
+	if _, err := dump(snapshotPath); err != nil {
 		return empty, fmt.Errorf("create restore rollback snapshot: %w", err)
 	}
 	emit(progress, "snapshot", "database", 1, 1, "Rollback snapshot created")
 
-	stats, restoreErr := adminRestoreDatabaseOnce(filePath, progress)
+	stats, restoreErr := restore(filePath, progress)
 	if restoreErr == nil && !hasFailures(stats) {
 		return stats, nil
 	}
@@ -48,7 +57,7 @@ func AdminRestoreDatabaseWithProgress(filePath string, progress ProgressFunc) (O
 		restoreErr = fmt.Errorf("restore completed with failed records")
 	}
 	emit(progress, "rollback", "database", 0, 1, "Restore failed; restoring pre-operation snapshot")
-	rollbackStats, rollbackErr := adminRestoreDatabaseOnce(snapshotPath, nil)
+	rollbackStats, rollbackErr := restore(snapshotPath, nil)
 	if rollbackErr != nil || hasFailures(rollbackStats) {
 		return stats, fmt.Errorf("%w; rollback failed: %v", restoreErr, rollbackErr)
 	}
