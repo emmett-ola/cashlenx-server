@@ -63,6 +63,11 @@ docker compose --profile mongodb up -d mongodb
 docker compose --profile mysql up -d mysql
 ```
 
+Compose stores database state in managed `mongodb_data` and `mysql_data`
+volumes. Older `mongodb/data` and `mysql/data` bind-mounted directories are not
+removed automatically and can be archived or deleted after their data is no
+longer needed.
+
 ### 3. Run the API Server
 
 ```bash

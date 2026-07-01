@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # MongoDB Database
   mongodb:
@@ -13,12 +11,12 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-cashlenx123}
       MONGO_INITDB_DATABASE: ${DB_NAME:-cashlenx}
     volumes:
-      - ${MONGO_DATA_PATH:-./mongodb/data}:/data/db
+      - mongodb_data:/data/db
       - ./docker/mongodb/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
     networks:
       - cashlenx-network
     healthcheck:
-      test: echo 'db.runCommand(\"ping\").ok' | mongosh localhost:27017/${DB_NAME:-cashlenx} --quiet
+      test: ["CMD-SHELL", "mongosh --quiet --username \"$${MONGO_INITDB_ROOT_USERNAME}\" --password \"$${MONGO_INITDB_ROOT_PASSWORD}\" --authenticationDatabase admin --eval 'db.runCommand({ ping: 1 }).ok' localhost:27017/$${MONGO_INITDB_DATABASE}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -38,7 +36,7 @@ services:
       MYSQL_USER: ${MYSQL_USER:-cashlenx}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-cashlenx123}
     volumes:
-      - ${MYSQL_DATA_PATH:-./mysql/data}:/var/lib/mysql
+      - mysql_data:/var/lib/mysql
       - ./docker/mysql/init-mysql.sql:/docker-entrypoint-initdb.d/init-mysql.sql:ro
     networks:
       - cashlenx-network

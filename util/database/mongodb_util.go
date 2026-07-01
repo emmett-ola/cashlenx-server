@@ -33,27 +33,36 @@ func InitMongoDbConnection() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	clientOptions := options.Client().
-		ApplyURI(defaultDatabaseUri).
-		SetMaxPoolSize(50).
-		SetMinPoolSize(10).
-		SetMaxConnIdleTime(5 * time.Minute)
-
-	var err error
-	mongoClient, err = mongo.Connect(ctx, clientOptions)
+	client, err := connectMongoClient(ctx, defaultDatabaseUri, func(ctx context.Context, client *mongo.Client) error {
+		return client.Ping(ctx, nil)
+	})
 	if err != nil {
 		return err
 	}
 
-	// Ping to verify connection
-	if err = mongoClient.Ping(ctx, nil); err != nil {
-		return err
-	}
-
+	mongoClient = client
 	mongoDatabase = mongoClient.Database(defaultDatabaseName)
 	isConnected = true
 	util.Logger.Info("MongoDB connection pool initialized")
 	return nil
+}
+
+func connectMongoClient(ctx context.Context, uri string, ping func(context.Context, *mongo.Client) error) (*mongo.Client, error) {
+	clientOptions := options.Client().
+		ApplyURI(uri).
+		SetMaxPoolSize(50).
+		SetMinPoolSize(10).
+		SetMaxConnIdleTime(5 * time.Minute)
+
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return nil, err
+	}
+	if err := ping(ctx, client); err != nil {
+		_ = client.Disconnect(ctx)
+		return nil, err
+	}
+	return client, nil
 }
 
 // GetMongoCollection returns a collection from the connection pool
@@ -209,10 +218,6 @@ func CountInMongoDBWithErrorIncludeDeleted(filter bson.D) (int64, error) {
 
 	return result, nil
 }
-
-
-
-
 
 func InsertOneInMongoDB(data bson.D) primitive.ObjectID {
 	checkDbConnection()
