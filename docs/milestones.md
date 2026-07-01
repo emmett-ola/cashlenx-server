@@ -72,6 +72,16 @@ future work is tracked in [`roadmap.md`](roadmap.md).
 - Added disposable MongoDB API, MySQL runner, and numbered SQL verification
 - Added active `dev/**` smoke-workflow triggers
 
+## v0.9.0 - Performance and Caching
+
+- Added deterministic service benchmarks for cash-flow summaries and statistic summary/dashboard calculations
+- Added opt-in disposable MongoDB and MySQL mapper benchmarks for filtered and date-range queries
+- Strengthened mapper benchmarks to validate decoded entities and corrected MySQL cash-flow projection/DATE parity
+- Recorded reproducible service baselines for 100, 1,000, and 10,000 transaction fixtures
+- Kept the exact user-scoped category cache and removed its unused unscoped name index
+- Rejected a recent-query cache because measured service costs did not justify write/import/restore/account-deletion invalidation complexity
+- Deferred shared caching until multi-instance deployment requires cross-process coherence
+
 ## Durable Historical Decisions
 
 - API paths remain under `/api/v0` throughout active `v0.x` development.

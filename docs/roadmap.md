@@ -9,9 +9,9 @@ This file tracks active and future work. Completed milestone history lives in
 - Active branch line: `dev/v0.9.0`
 - Active API path: `/api/v0`
 - Current implementation version: `0.9.0`
-- `v0.8.0` implementation, verification, and branch publication: complete
-- Remaining release action: promote `dev/v0.8.0` to `main` when authorized
-- Active milestone: `v0.9.0` performance and caching
+- `v0.9.0` implementation and local verification: complete
+- Remaining release action: publish/promote the completed development branch when authorized
+- Active milestone: `v0.10.0` cloud and self-hosted hardening
 
 The Go suite, MongoDB API smoke flow, MySQL migration runner, and independent
 numbered SQL sequence have passed against disposable Docker environments.
@@ -25,6 +25,7 @@ numbered SQL sequence have passed against disposable Docker environments.
 - [x] Defensive entity copies and targeted ID/user invalidation
 - [x] Parameterized category-name queries for both mapper backends
 - [x] Parameterized dynamic MySQL ID lists and corrected user-scoped deletion columns
+- [x] Reconciled MySQL cash-flow projections and DATE decoding through live mapper benchmark validation
 - [x] Redis decision for this milestone: do not add Redis; reconsider it when multi-instance deployment requires shared cache coherence
 - [x] Removed the unused global name-only category-cache index and compatibility methods/tests
 
@@ -32,21 +33,22 @@ numbered SQL sequence have passed against disposable Docker environments.
 
 - [x] Add deterministic benchmarks for cash-flow summaries and statistic summary/dashboard calculations
 - [x] Add disposable integration benchmarks for MongoDB and MySQL filtered/date-range mapper queries
-- [ ] Capture benchmark baselines before adding another cache layer
-- [ ] Decide from measurements whether a recent-query cache provides a material benefit
-- [ ] If justified, implement a bounded TTL read-through cache with user-scoped keys, defensive copies, and explicit invalidation on cash/category writes, imports, restores, and account deletion
+- [x] Capture benchmark baselines before adding another cache layer
+- [x] Decide from measurements whether a recent-query cache provides a material benefit
+- [x] Reject a recent-query cache for this milestone because the measured cost does not justify its invalidation complexity
 
-There is currently no recent-query cache and no `Benchmark...` coverage in the
-repository outside the deterministic service benchmarks. Those benchmarks use
-fixed fixtures of 100, 1,000, and 10,000 transactions with 10 categories. Run
-them with:
+There is no recent-query cache. The measured decision and median service
+results are recorded in [`performance.md`](performance.md). The deterministic
+benchmarks use fixed fixtures of 100, 1,000, and 10,000 transactions with 10
+categories. Run them with:
 
 ```bash
 go test -run '^$' -bench 'Summary|Dashboard' -benchmem ./service/cash_flow_service ./service/statistic_service
 ```
 
-Statistic and dashboard endpoints repeatedly read user/date-range cash flows,
-so those paths are candidates, not preselected cache targets.
+Statistic and dashboard endpoints repeatedly read user/date-range cash flows.
+The dashboard's allocation profile makes in-request aggregation the preferred
+future optimization target if production traces justify more work.
 
 The mapper benchmarks are excluded from normal tests by the `integration` build
 tag. They seed 1,000- and 10,000-row user-isolated fixtures, validate the query
@@ -69,7 +71,7 @@ CASHLENX_BENCHMARKS=1 DB_TYPE=mysql DB_NAME=cashlenx MYSQL_DB_URI='<mysql-uri-wi
 1. Add service benchmarks using deterministic in-memory mapper fakes.
 2. Add build-tagged mapper benchmarks against disposable MongoDB and MySQL databases.
 3. Record baseline results and identify actual bottlenecks.
-4. Implement recent-query caching only when the measured improvement justifies invalidation complexity.
+4. Record the decision to reject recent-query caching because the measured service cost does not justify invalidation complexity.
 5. Re-run race tests, both database benchmark suites, and the MongoDB/MySQL smoke flows.
 
 ## v0.9.0 Guardrails

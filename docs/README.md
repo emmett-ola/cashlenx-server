@@ -9,6 +9,7 @@ Use this page to choose the authoritative document for a task.
 | [`cli.md`](cli.md) | Cobra command reference | Command hierarchy, flags, and examples |
 | [`roadmap.md`](roadmap.md) | Active and future work | Current milestone audit, execution order, and exit criteria |
 | [`milestones.md`](milestones.md) | Completed history | Delivered milestone capabilities and durable decisions |
+| [`performance.md`](performance.md) | Performance baseline | Reproducible benchmarks and cache decisions |
 | [`../AGENTS.md`](../AGENTS.md) | Repository working guide | Architecture, workflow, testing, security, and known drift |
 
 ## Update Rules

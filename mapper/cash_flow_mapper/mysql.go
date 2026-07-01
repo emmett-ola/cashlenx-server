@@ -42,7 +42,7 @@ func (CashFlowMySqlMapper) GetCashFlowsByObjectIdArray(plainIdList []string) []m
 		return []model.CashFlowEntity{}
 	}
 	var sqlString bytes.Buffer
-	sqlString.WriteString("SELECT ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION FROM ")
+	sqlString.WriteString("SELECT ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION, REMARK, CREATE_USER_ID, CREATE_TIME, UPDATE_USER_ID, UPDATE_TIME FROM ")
 	sqlString.WriteString(database.CashFlowTableName)
 	sqlString.WriteString(" WHERE ID in ")
 	placeholders := make([]string, len(plainIdList))
@@ -339,7 +339,7 @@ func (CashFlowMySqlMapper) DeleteCashFlowByBelongsDate(belongsDate time.Time) []
 
 func (CashFlowMySqlMapper) GetAllCashFlows(limit, offset int) []model.CashFlowEntity {
 	var sqlString bytes.Buffer
-	sqlString.WriteString("SELECT ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION FROM ")
+	sqlString.WriteString("SELECT ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION, REMARK, CREATE_USER_ID, CREATE_TIME, UPDATE_USER_ID, UPDATE_TIME FROM ")
 	sqlString.WriteString(database.CashFlowTableName)
 	sqlString.WriteString(" WHERE TRUE ")
 	sqlString.WriteString(database.SqlExcludeDeleted)
@@ -375,7 +375,7 @@ func (CashFlowMySqlMapper) GetAllCashFlows(limit, offset int) []model.CashFlowEn
 
 func (CashFlowMySqlMapper) GetAllCashFlowsIncludeDeleted(limit, offset int) []model.CashFlowEntity {
 	var sqlString bytes.Buffer
-	sqlString.WriteString("SELECT ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION FROM ")
+	sqlString.WriteString("SELECT ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION, REMARK, CREATE_USER_ID, CREATE_TIME, UPDATE_USER_ID, UPDATE_TIME FROM ")
 	sqlString.WriteString(database.CashFlowTableName)
 	sqlString.WriteString(" WHERE TRUE ")
 	// No SqlExcludeDeleted
@@ -479,7 +479,7 @@ func (CashFlowMySqlMapper) GetCashFlowByObjectIdAndUser(plainId string, userId p
 
 func (CashFlowMySqlMapper) GetCashFlowsByBelongsDateAndUser(belongsDate time.Time, userId primitive.ObjectID) []model.CashFlowEntity {
 	var sqlString bytes.Buffer
-	sqlString.WriteString("SELECT ID, BELONGS_USER_ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION FROM ")
+	sqlString.WriteString("SELECT ID, BELONGS_USER_ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION, REMARK, CREATE_USER_ID, CREATE_TIME, UPDATE_USER_ID, UPDATE_TIME FROM ")
 	sqlString.WriteString(database.CashFlowTableName)
 	sqlString.WriteString(" WHERE BELONGS_DATE = ? AND BELONGS_USER_ID = ? ")
 	sqlString.WriteString(database.SqlExcludeDeleted)
@@ -502,7 +502,7 @@ func (CashFlowMySqlMapper) GetCashFlowsByBelongsDateAndUser(belongsDate time.Tim
 
 func (CashFlowMySqlMapper) GetCashFlowsByDateRangeAndUser(from, to time.Time, userId primitive.ObjectID) []model.CashFlowEntity {
 	var sqlString bytes.Buffer
-	sqlString.WriteString("SELECT ID, BELONGS_USER_ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION FROM ")
+	sqlString.WriteString("SELECT ID, BELONGS_USER_ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION, REMARK, CREATE_USER_ID, CREATE_TIME, UPDATE_USER_ID, UPDATE_TIME FROM ")
 	sqlString.WriteString(database.CashFlowTableName)
 	sqlString.WriteString(" WHERE BELONGS_DATE BETWEEN ? AND ? AND BELONGS_USER_ID = ? AND IS_DELETE = FALSE ")
 
@@ -527,7 +527,7 @@ func (CashFlowMySqlMapper) GetCashFlowsByDateRangeAndUser(from, to time.Time, us
 
 func (CashFlowMySqlMapper) GetCashFlowsByCategoryIdAndUser(categoryPlainId string, userId primitive.ObjectID) []model.CashFlowEntity {
 	var sqlString bytes.Buffer
-	sqlString.WriteString("SELECT ID, BELONGS_USER_ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION FROM ")
+	sqlString.WriteString("SELECT ID, BELONGS_USER_ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION, REMARK, CREATE_USER_ID, CREATE_TIME, UPDATE_USER_ID, UPDATE_TIME FROM ")
 	sqlString.WriteString(database.CashFlowTableName)
 	sqlString.WriteString(" WHERE CATEGORY_ID = ? AND BELONGS_USER_ID = ? AND IS_DELETE = FALSE ")
 
@@ -549,7 +549,7 @@ func (CashFlowMySqlMapper) GetCashFlowsByCategoryIdAndUser(categoryPlainId strin
 
 func (CashFlowMySqlMapper) GetAllCashFlowsByUser(userId primitive.ObjectID, limit, offset int) []model.CashFlowEntity {
 	var sqlString bytes.Buffer
-	sqlString.WriteString("SELECT ID, BELONGS_USER_ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION FROM ")
+	sqlString.WriteString("SELECT ID, BELONGS_USER_ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION, REMARK, CREATE_USER_ID, CREATE_TIME, UPDATE_USER_ID, UPDATE_TIME FROM ")
 	sqlString.WriteString(database.CashFlowTableName)
 	sqlString.WriteString(" WHERE BELONGS_USER_ID = ? AND IS_DELETE = FALSE ")
 	sqlString.WriteString(" ORDER BY BELONGS_DATE DESC ")
@@ -879,7 +879,7 @@ func (CashFlowMySqlMapper) CountCashFlowsByFilter(filter model.CashFlowFilter) (
 
 func (CashFlowMySqlMapper) GetAllCashFlowsByUserIncludeDeleted(userId primitive.ObjectID) []model.CashFlowEntity {
 	var sqlString bytes.Buffer
-	sqlString.WriteString("SELECT ID, BELONGS_USER_ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION FROM ")
+	sqlString.WriteString("SELECT ID, BELONGS_USER_ID, CATEGORY_ID, BELONGS_DATE, AMOUNT, DESCRIPTION, REMARK, CREATE_USER_ID, CREATE_TIME, UPDATE_USER_ID, UPDATE_TIME FROM ")
 	sqlString.WriteString(database.CashFlowTableName)
 	sqlString.WriteString(" WHERE BELONGS_USER_ID = ? ")
 	// No SqlExcludeDeleted
@@ -922,9 +922,9 @@ func (CashFlowMySqlMapper) DeleteAllCashFlowsByUser(userId primitive.ObjectID) (
 // Helper functions
 
 func convertRow2CashFlowEntity(rows *sql.Rows) model.CashFlowEntity {
-	var id, categoryId, belongsDate, description, remark, createUserId, updateUserId string
+	var id, categoryId, description, remark, createUserId, updateUserId string
 	var amount float64
-	var createTime, updateTime time.Time
+	var belongsDate, createTime, updateTime time.Time
 
 	err := rows.Scan(&id, &categoryId, &belongsDate, &amount, &description, &remark, &createUserId, &createTime, &updateUserId, &updateTime)
 	if err != nil {
@@ -934,7 +934,7 @@ func convertRow2CashFlowEntity(rows *sql.Rows) model.CashFlowEntity {
 	return model.CashFlowEntity{
 		Id:          util.Convert2ObjectId(id),
 		CategoryId:  util.Convert2ObjectId(categoryId),
-		BelongsDate: util.FormatDateFromStringWithDash(belongsDate),
+		BelongsDate: belongsDate,
 		Amount:      amount,
 		Description: description,
 		Remark:      remark,
@@ -948,9 +948,9 @@ func convertRow2CashFlowEntity(rows *sql.Rows) model.CashFlowEntity {
 }
 
 func convertRow2CashFlowEntityWithUser(rows *sql.Rows) model.CashFlowEntity {
-	var id, userId, categoryId, belongsDate, description, remark, createUserId, updateUserId string
+	var id, userId, categoryId, description, remark, createUserId, updateUserId string
 	var amount float64
-	var createTime, updateTime time.Time
+	var belongsDate, createTime, updateTime time.Time
 
 	err := rows.Scan(&id, &userId, &categoryId, &belongsDate, &amount, &description, &remark, &createUserId, &createTime, &updateUserId, &updateTime)
 	if err != nil {
@@ -961,7 +961,7 @@ func convertRow2CashFlowEntityWithUser(rows *sql.Rows) model.CashFlowEntity {
 		Id:            util.Convert2ObjectId(id),
 		BelongsUserId: util.Convert2ObjectId(userId),
 		CategoryId:    util.Convert2ObjectId(categoryId),
-		BelongsDate:   util.FormatDateFromStringWithDash(belongsDate),
+		BelongsDate:   belongsDate,
 		Amount:        amount,
 		Description:   description,
 		Remark:        remark,

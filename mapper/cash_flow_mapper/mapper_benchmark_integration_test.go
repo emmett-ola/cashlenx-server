@@ -77,6 +77,7 @@ func benchmarkCashFlowMapperQueries(
 			if len(results) != expectedCount(fixture) {
 				b.Fatalf("warm-up returned %d rows, want %d", len(results), expectedCount(fixture))
 			}
+			validateCashFlowBenchmarkResults(b, results, fixture)
 
 			b.ReportAllocs()
 			b.ResetTimer()
@@ -88,6 +89,24 @@ func benchmarkCashFlowMapperQueries(
 				cashFlowMapperBenchmarkResult = results
 			}
 		})
+	}
+}
+
+func validateCashFlowBenchmarkResults(b *testing.B, results []model.CashFlowEntity, fixture cashFlowMapperBenchmarkFixture) {
+	b.Helper()
+	for i, result := range results {
+		if result.Id.IsZero() {
+			b.Fatalf("result %d has an empty ID", i)
+		}
+		if result.BelongsUserId != fixture.userID {
+			b.Fatalf("result %d belongs to user %s, want %s", i, result.BelongsUserId.Hex(), fixture.userID.Hex())
+		}
+		if result.BelongsDate.Before(fixture.from) || result.BelongsDate.After(fixture.to) {
+			b.Fatalf("result %d date %s is outside benchmark range", i, result.BelongsDate)
+		}
+		if result.Amount <= 0 {
+			b.Fatalf("result %d has invalid amount %v", i, result.Amount)
+		}
 	}
 }
 

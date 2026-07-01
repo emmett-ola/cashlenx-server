@@ -17,6 +17,7 @@ The project is still in active `v0.x` development. The current API path is `/api
 - Docker Compose profiles for local MongoDB, MySQL, and backend startup
 - OpenAPI contract in `docs/openapi.yaml`
 - Prometheus request metrics and development-only Go profiling endpoints
+- Reproducible service and mapper benchmarks with a measured `v0.9.0` cache decision
 
 ## Project Structure
 
@@ -116,6 +117,7 @@ These endpoints are intentionally outside `/api/v0` and the OpenAPI/JWT middlewa
 - `docs/api.md` - REST API notes
 - `docs/roadmap.md` - active/future milestone planning
 - `docs/milestones.md` - completed milestone history
+- `docs/performance.md` - benchmark baseline and cache decisions
 - `docs/openapi.yaml` - OpenAPI specification
 - `docker/mongodb/README.md` - MongoDB bootstrap status and known index drift
 - `docker/mysql/README.md` - MySQL bootstrap and migration validation notes

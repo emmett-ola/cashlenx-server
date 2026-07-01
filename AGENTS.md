@@ -580,6 +580,7 @@ Unit test guidance:
 - Service unit tests should instantiate service structs with in-memory fake mapper implementations instead of overriding mapper globals
 - Mapper integration tests should be isolated from normal unit tests, use explicit integration naming/build tags or scripts, and run only against disposable test databases
 - Cash-flow mapper integration benchmarks are build-tagged in `mapper/cash_flow_mapper/mapper_benchmark_integration_test.go`; they require `CASHLENX_BENCHMARKS=1`, select the backend through `DB_TYPE`, and must run only against an initialized disposable database
+- The `v0.9.0` service baseline and decision not to add a recent-query cache are recorded in `docs/performance.md`; revisit that decision only with production evidence or multi-instance coherence requirements
 - The MySQL migration runner integration test is build-tagged in `migrations/runner_integration_test.go`; run it only with `MYSQL_TEST_DSN` targeting a disposable database
 - API integration tests should exercise controller-to-database behavior separately from `go test ./...`, for example through the smoke script against Docker-backed services
 - MySQL runtime parity is covered by the Flutter smoke script in `../cashlenx-app`; numbered migrations are checked independently by `scripts/smoke-mysql-migrations.ps1`

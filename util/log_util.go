@@ -85,7 +85,7 @@ type dailyLogWriter struct {
 
 func createDailyLogWriter() zapcore.WriteSyncer {
 	// Get the log folder from config, default to ./logs
-	logFolder := GetConfigByKey("logger.file")
+	logFolder := configuredLogFolder()
 
 	// Extract folder path if a full filename was provided
 	if logFolder != "" {
@@ -130,6 +130,17 @@ func createDailyLogWriter() zapcore.WriteSyncer {
 		log.Fatal("failed to create log file: ", err)
 	}
 	return writer
+}
+
+func configuredLogFolder() string {
+	logFolder := GetConfigByKey("logger.file")
+	// Logger is initialized before config_util.init populates configurationMap.
+	// Read the environment directly during that startup window so LOG_FOLDER is
+	// honored instead of creating package-local ./logs directories.
+	if logFolder == "" {
+		logFolder = os.Getenv("LOG_FOLDER")
+	}
+	return logFolder
 }
 
 func (writer *dailyLogWriter) Write(p []byte) (int, error) {
