@@ -500,7 +500,7 @@ The docs are useful, but code should win when they disagree.
 
 Repo scripts include:
 
-- `scripts/start.ps1`, `scripts/start.sh`
+- `scripts/build.sh`, `scripts/start.sh`, `scripts/start.ps1`, `scripts/health.sh`
 - `scripts/interactive.ps1`, `scripts/interactive.sh`
 - `scripts/generate-docs.ps1`, `scripts/generate-docs.sh`
 - `scripts/smoke-api.sh`

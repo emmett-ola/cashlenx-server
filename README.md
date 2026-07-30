@@ -68,6 +68,28 @@ volumes. Older `mongodb/data` and `mysql/data` bind-mounted directories are not
 removed automatically and can be archived or deleted after their data is no
 longer needed.
 
+### Docker Deployment
+
+Build the server image, start MongoDB and the backend without deleting existing
+volumes, and verify the API health endpoint:
+
+```bash
+scripts/build.sh
+scripts/start.sh
+```
+
+`scripts/start.sh` defaults to `CASHLENX_PROFILES=mongodb,backend`. Select MySQL
+or an externally managed database explicitly:
+
+```bash
+CASHLENX_PROFILES=mysql,backend scripts/start.sh
+CASHLENX_PROFILES=backend scripts/start.sh
+```
+
+The script requires an existing reviewed `.env`; it never creates one from
+development defaults and never runs `docker compose down`. Run
+`scripts/health.sh` independently to verify the deployed API.
+
 ### 3. Run the API Server
 
 ```bash
