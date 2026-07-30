@@ -7,7 +7,7 @@ cd "$project_dir"
 command -v curl >/dev/null 2>&1 || { echo "curl is required." >&2; exit 1; }
 server_port="$(sed -n 's/^SERVER_PORT=//p' .env 2>/dev/null | tail -n 1)"
 api_version="$(sed -n 's/^API_VERSION=//p' .env 2>/dev/null | tail -n 1)"
-server_port="${server_port:-8080}"
+server_port="${server_port:-11063}"
 api_version="${api_version:-v0}"
 health_url="${SERVER_HEALTH_URL:-http://127.0.0.1:${server_port}/api/${api_version}/open/health}"
 

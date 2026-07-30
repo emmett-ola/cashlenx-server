@@ -87,8 +87,8 @@ services:
     env_file:
       - .env
     ports:
-      - "${SERVER_BIND_ADDRESS:-127.0.0.1}:${SERVER_PORT:-8080}:${SERVER_PORT:-8080}"
-    command: ["-p", "${SERVER_PORT:-8080}"]
+      - "${SERVER_BIND_ADDRESS:-127.0.0.1}:${SERVER_PORT:-11063}:${SERVER_PORT:-11063}"
+    command: ["-p", "${SERVER_PORT:-11063}"]
     environment:
       TZ: ${TZ:-Asia/Singapore}
       GIT_COMMIT: ${GIT_COMMIT:-unknown}
@@ -108,7 +108,7 @@ services:
         condition: service_healthy
         required: false
     healthcheck:
-      test: ["CMD-SHELL", "curl --fail --silent --show-error --max-time 3 http://127.0.0.1:$${SERVER_PORT:-8080}/api/$${API_VERSION:-v0}/open/health >/dev/null"]
+      test: ["CMD-SHELL", "curl --fail --silent --show-error --max-time 3 http://127.0.0.1:$${SERVER_PORT:-11063}/api/$${API_VERSION:-v0}/open/health >/dev/null"]
       interval: ${SERVER_HEALTHCHECK_INTERVAL:-15s}
       timeout: ${SERVER_HEALTHCHECK_TIMEOUT:-5s}
       retries: ${SERVER_HEALTHCHECK_RETRIES:-3}

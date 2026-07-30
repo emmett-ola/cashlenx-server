@@ -95,16 +95,18 @@ defines configurable CPU, memory, PID, graceful-stop, health-check, image, log
 path, and timezone settings. The server image records the source revision in
 the OCI `org.opencontainers.image.revision` label.
 
+The default container name is `cashlenx-server`.
+
 ### 3. Run the API Server
 
 ```bash
-go run main.go open start -p 8080
+go run main.go open start -p 11063
 ```
 
 The local base URL is:
 
 ```text
-http://localhost:8080/api/v0
+http://localhost:11063/api/v0
 ```
 
 ### 4. Useful CLI Commands
