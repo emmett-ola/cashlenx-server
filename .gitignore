@@ -24,9 +24,8 @@ cashlenx
 .trae/
 
 # Config Files
-.env
-.env.testing
-.env.production
+.env*
+!.env.sample
 
 # Node.js Files
 node_modules/
