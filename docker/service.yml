@@ -1,0 +1,48 @@
+services:
+  server:
+    image: "${SERVER_IMAGE_NAME:-cashlenx-server}:${SERVER_IMAGE_TAG:-latest}"
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      args:
+        GO_BUILD_IMAGE: ${GO_BUILD_IMAGE:?GO_BUILD_IMAGE is required from docker/images.env}
+        RUNTIME_IMAGE: ${RUNTIME_IMAGE:?RUNTIME_IMAGE is required from docker/images.env}
+        GIT_COMMIT: ${GIT_COMMIT:-unknown}
+    container_name: ${BACKEND_CONTAINER_NAME:-cashlenx-server}
+    restart: unless-stopped
+    cpus: ${SERVER_CPU_LIMIT:-2.0}
+    mem_limit: ${SERVER_MEMORY_LIMIT:-1g}
+    mem_reservation: ${SERVER_MEMORY_RESERVATION:-256m}
+    pids_limit: ${SERVER_PIDS_LIMIT:-256}
+    stop_grace_period: ${SERVER_STOP_GRACE_PERIOD:-30s}
+    deploy:
+      resources:
+        limits:
+          cpus: "${SERVER_CPU_LIMIT:-2.0}"
+          memory: ${SERVER_MEMORY_LIMIT:-1g}
+          pids: ${SERVER_PIDS_LIMIT:-256}
+        reservations:
+          cpus: "${SERVER_CPU_RESERVATION:-0.5}"
+          memory: ${SERVER_MEMORY_RESERVATION:-256m}
+    env_file:
+      - ../.env
+    environment:
+      TZ: ${TZ:-Asia/Singapore}
+      GIT_COMMIT: ${GIT_COMMIT:-unknown}
+      MONGO_DB_URI: ${DOCKER_MONGO_DB_URI:-mongodb://${MONGO_ROOT_USERNAME:-cashlenx}:${MONGO_ROOT_PASSWORD:-cashlenx123}@host.docker.internal:${MONGO_PORT:-27017}/${DB_NAME:-cashlenx}?authSource=admin&retryWrites=false}
+      MYSQL_DB_URI: ${DOCKER_MYSQL_DB_URI:-${MYSQL_USER:-cashlenx}:${MYSQL_PASSWORD:-cashlenx123}@tcp(host.docker.internal:${MYSQL_PORT:-3306})}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "${SERVER_BIND_ADDRESS:-127.0.0.1}:${SERVER_PORT:-11063}:${SERVER_PORT:-11063}"
+    command: ["-p", "${SERVER_PORT:-11063}"]
+    volumes:
+      - type: bind
+        source: ${SERVER_LOG_PATH:-../logs/docker}
+        target: /app/logs
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent --show-error --max-time 3 http://127.0.0.1:$${SERVER_PORT:-11063}/api/$${API_VERSION:-v0}/open/health >/dev/null"]
+      interval: ${SERVER_HEALTHCHECK_INTERVAL:-15s}
+      timeout: ${SERVER_HEALTHCHECK_TIMEOUT:-5s}
+      retries: ${SERVER_HEALTHCHECK_RETRIES:-3}
+      start_period: ${SERVER_HEALTHCHECK_START_PERIOD:-45s}

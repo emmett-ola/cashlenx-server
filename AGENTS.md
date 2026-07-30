@@ -590,14 +590,15 @@ Unit test guidance:
 Use these as the code-accurate defaults:
 
 ```bash
-# Start MongoDB
-docker compose --profile mongodb up -d mongodb
+# Start MongoDB dependency
+docker compose --env-file .env -f docker/dependencies/compose.mongodb.yml up -d --wait
 
-# Start MySQL
-docker compose --profile mysql up -d mysql
+# Start MySQL dependency
+docker compose --env-file .env -f docker/dependencies/compose.mysql.yml up -d --wait
 
-# Start backend in Docker
-docker compose --profile backend up -d server
+# Build and start the backend independently
+scripts/build.sh
+scripts/start.sh
 
 # Run API server locally
 go run main.go open start -p 8080

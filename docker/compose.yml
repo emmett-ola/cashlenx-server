@@ -1,0 +1,7 @@
+name: cashlenx-server
+
+include:
+  - path: service.yml
+    env_file:
+      - images.env
+      - ../.env

@@ -3,6 +3,7 @@ set -euo pipefail
 
 project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$project_dir"
+compose_file="$project_dir/docker/compose.yml"
 
 command -v curl >/dev/null 2>&1 || { echo "curl is required." >&2; exit 1; }
 server_port="$(sed -n 's/^SERVER_PORT=//p' .env 2>/dev/null | tail -n 1)"
@@ -20,5 +21,5 @@ for attempt in $(seq 1 30); do
 done
 
 echo "Server health check failed: $health_url" >&2
-docker compose ps server >&2
+docker compose -f "$compose_file" ps server >&2
 exit 1

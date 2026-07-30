@@ -14,7 +14,7 @@ The project is still in active `v0.x` development. The current API path is `/api
 - User import/export and backup/restore flows
 - Admin user management and full database backup/restore
 - MongoDB and MySQL persistence implementations
-- Docker Compose profiles for local MongoDB, MySQL, and backend startup
+- Independent Docker Compose projects for the server, MongoDB, and MySQL
 - OpenAPI contract in `docs/openapi.yaml`
 - Prometheus request metrics and development-only Go profiling endpoints
 - Reproducible service and mapper benchmarks with a measured `v0.9.0` cache decision
@@ -57,37 +57,28 @@ MongoDB bootstrap, migration, and runtime index definitions now follow the curre
 
 ```bash
 # MongoDB
-docker compose --profile mongodb up -d mongodb
+docker compose --env-file .env -f docker/dependencies/compose.mongodb.yml up -d --wait
 
 # MySQL
-docker compose --profile mysql up -d mysql
+docker compose --env-file .env -f docker/dependencies/compose.mysql.yml up -d --wait
 ```
 
-Compose stores database state in managed `mongodb_data` and `mysql_data`
-volumes. Older `mongodb/data` and `mysql/data` bind-mounted directories are not
-removed automatically and can be archived or deleted after their data is no
-longer needed.
+The dependencies are separate operator-managed projects and persist data in
+`cashlenx-mongodb-data` and `cashlenx-mysql-data`. Server build/start scripts do
+not start, stop, or remove them.
 
 ### Docker Deployment
 
-Build the server image, start MongoDB and the backend without deleting existing
-volumes, and verify the API health endpoint:
+Build the server image, start only the backend, and verify the API health
+endpoint. Start the selected dependency separately first.
 
 ```bash
 scripts/build.sh
 scripts/start.sh
 ```
 
-`scripts/start.sh` defaults to `CASHLENX_PROFILES=mongodb,backend`. Select MySQL
-or an externally managed database explicitly:
-
-```bash
-CASHLENX_PROFILES=mysql,backend scripts/start.sh
-CASHLENX_PROFILES=backend scripts/start.sh
-```
-
 The script requires an existing reviewed `.env`; it never creates one from
-development defaults and never runs `docker compose down`. Run
+development defaults and never manages dependency containers. Run
 `scripts/health.sh` independently to verify the deployed API.
 
 The server and database ports bind to `127.0.0.1` by default. `.env.sample`

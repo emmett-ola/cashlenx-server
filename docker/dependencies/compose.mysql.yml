@@ -1,0 +1,41 @@
+name: cashlenx-mysql
+
+services:
+  mysql:
+    image: ${MYSQL_IMAGE:-mysql:8.0}
+    container_name: ${MYSQL_CONTAINER_NAME:-cashlenx-mysql}
+    restart: unless-stopped
+    cpus: ${MYSQL_CPU_LIMIT:-1.0}
+    mem_limit: ${MYSQL_MEMORY_LIMIT:-1g}
+    mem_reservation: ${MYSQL_MEMORY_RESERVATION:-256m}
+    pids_limit: ${MYSQL_PIDS_LIMIT:-256}
+    stop_grace_period: ${MYSQL_STOP_GRACE_PERIOD:-30s}
+    environment:
+      TZ: ${TZ:-Asia/Singapore}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}
+      MYSQL_DATABASE: ${DB_NAME:-cashlenx}
+      MYSQL_USER: ${MYSQL_USER:?MYSQL_USER is required}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "${MYSQL_BIND_ADDRESS:-127.0.0.1}:${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - type: volume
+        source: mysql_data
+        target: /var/lib/mysql
+      - type: bind
+        source: ../mysql/init-mysql.sql
+        target: /docker-entrypoint-initdb.d/init-mysql.sql
+        read_only: true
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: ${MYSQL_HEALTHCHECK_INTERVAL:-5s}
+      timeout: ${MYSQL_HEALTHCHECK_TIMEOUT:-5s}
+      retries: ${MYSQL_HEALTHCHECK_RETRIES:-20}
+      start_period: ${MYSQL_HEALTHCHECK_START_PERIOD:-20s}
+
+volumes:
+  mysql_data:
+    name: cashlenx-mysql-data

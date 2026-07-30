@@ -3,6 +3,7 @@ set -euo pipefail
 
 project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$project_dir"
+compose_file="$project_dir/docker/compose.yml"
 
 command -v docker >/dev/null 2>&1 || { echo "Docker is required." >&2; exit 1; }
 docker compose version >/dev/null 2>&1 || { echo "Docker Compose is required." >&2; exit 1; }
@@ -13,4 +14,4 @@ if [[ "$git_commit" == "unknown" ]] && command -v git >/dev/null 2>&1; then
   git_commit="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
 fi
 
-GIT_COMMIT="$git_commit" docker compose --profile backend build server
+GIT_COMMIT="$git_commit" docker compose -f "$compose_file" build server
