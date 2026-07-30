@@ -97,6 +97,9 @@ the OCI `org.opencontainers.image.revision` label.
 
 The default container name is `cashlenx-server`.
 
+After changing `.env.sample`, run `scripts/sync-env.sh`. It appends missing keys
+to the ignored local `.env` without replacing existing configured values.
+
 ### 3. Run the API Server
 
 ```bash
