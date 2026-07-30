@@ -25,6 +25,8 @@ cashlenx
 
 # Config Files
 .env
+.env.testing
+.env.production
 
 # Node.js Files
 node_modules/
