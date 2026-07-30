@@ -1,7 +1,7 @@
-# Multi-stage build for fast container startup
+ARG GO_BUILD_IMAGE=golang:1.23-alpine
+ARG RUNTIME_IMAGE=alpine:3.18
 
-# Build stage
-FROM golang:1.23-alpine AS builder
+FROM ${GO_BUILD_IMAGE} AS builder
 WORKDIR /app
 
 # Install dependencies for building
@@ -15,8 +15,10 @@ RUN go mod download
 COPY . .
 RUN go build -o cashlenx-server main.go
 
-# Final stage
-FROM alpine:3.18
+FROM ${RUNTIME_IMAGE}
+
+ARG GIT_COMMIT=unknown
+LABEL org.opencontainers.image.revision="${GIT_COMMIT}"
 WORKDIR /app
 
 # Install curl for health checks

@@ -4,8 +4,13 @@ services:
     image: mongo:${MONGO_VERSION:-7.0}
     container_name: ${MONGO_CONTAINER_NAME:-cashlenx-mongodb}
     restart: unless-stopped
+    cpus: ${MONGO_CPU_LIMIT:-1.0}
+    mem_limit: ${MONGO_MEMORY_LIMIT:-1g}
+    mem_reservation: ${MONGO_MEMORY_RESERVATION:-256m}
+    pids_limit: ${MONGO_PIDS_LIMIT:-256}
+    stop_grace_period: ${MONGO_STOP_GRACE_PERIOD:-30s}
     ports:
-      - "${MONGO_PORT:-27017}:27017"
+      - "${MONGO_BIND_ADDRESS:-127.0.0.1}:${MONGO_PORT:-27017}:27017"
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-cashlenx}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-cashlenx123}
@@ -28,8 +33,13 @@ services:
     image: mysql:${MYSQL_VERSION:-8.0}
     container_name: ${MYSQL_CONTAINER_NAME:-cashlenx-mysql}
     restart: unless-stopped
+    cpus: ${MYSQL_CPU_LIMIT:-1.0}
+    mem_limit: ${MYSQL_MEMORY_LIMIT:-1g}
+    mem_reservation: ${MYSQL_MEMORY_RESERVATION:-256m}
+    pids_limit: ${MYSQL_PIDS_LIMIT:-256}
+    stop_grace_period: ${MYSQL_STOP_GRACE_PERIOD:-30s}
     ports:
-      - "${MYSQL_PORT:-3306}:3306"
+      - "${MYSQL_BIND_ADDRESS:-127.0.0.1}:${MYSQL_PORT:-3306}:3306"
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-cashlenx123}
       MYSQL_DATABASE: ${DB_NAME:-cashlenx}
@@ -53,18 +63,43 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        GO_BUILD_IMAGE: ${GO_BUILD_IMAGE:-golang:1.23-alpine}
+        RUNTIME_IMAGE: ${RUNTIME_IMAGE:-alpine:3.18}
+        GIT_COMMIT: ${GIT_COMMIT:-unknown}
+    image: "${SERVER_IMAGE_NAME:-cashlenx-server}:${SERVER_IMAGE_TAG:-latest}"
     container_name: ${BACKEND_CONTAINER_NAME:-cashlenx-server}
     restart: unless-stopped
+    cpus: ${SERVER_CPU_LIMIT:-2.0}
+    mem_limit: ${SERVER_MEMORY_LIMIT:-1g}
+    mem_reservation: ${SERVER_MEMORY_RESERVATION:-256m}
+    pids_limit: ${SERVER_PIDS_LIMIT:-256}
+    stop_grace_period: ${SERVER_STOP_GRACE_PERIOD:-30s}
+    deploy:
+      resources:
+        limits:
+          cpus: "${SERVER_CPU_LIMIT:-2.0}"
+          memory: ${SERVER_MEMORY_LIMIT:-1g}
+          pids: ${SERVER_PIDS_LIMIT:-256}
+        reservations:
+          cpus: "${SERVER_CPU_RESERVATION:-0.5}"
+          memory: ${SERVER_MEMORY_RESERVATION:-256m}
     env_file:
       - .env
     ports:
-      - "${SERVER_PORT:-8080}:${SERVER_PORT:-8080}"
+      - "${SERVER_BIND_ADDRESS:-127.0.0.1}:${SERVER_PORT:-8080}:${SERVER_PORT:-8080}"
     command: ["-p", "${SERVER_PORT:-8080}"]
     environment:
+      TZ: ${TZ:-Asia/Singapore}
+      GIT_COMMIT: ${GIT_COMMIT:-unknown}
       MONGO_DB_URI: ${DOCKER_MONGO_DB_URI:-mongodb://${MONGO_ROOT_USERNAME:-cashlenx}:${MONGO_ROOT_PASSWORD:-cashlenx123}@mongodb:27017/${DB_NAME:-cashlenx}?authSource=admin&retryWrites=false}
       MYSQL_DB_URI: ${DOCKER_MYSQL_DB_URI:-${MYSQL_USER:-cashlenx}:${MYSQL_PASSWORD:-cashlenx123}@tcp(mysql:3306)}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
-      - ./logs/docker:/app/logs
+      - type: bind
+        source: ${SERVER_LOG_PATH:-./logs/docker}
+        target: /app/logs
     depends_on:
       mongodb:
         condition: service_healthy
@@ -73,11 +108,11 @@ services:
         condition: service_healthy
         required: false
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:${SERVER_PORT:-8080}/api/${API_VERSION:-v0}/open/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
+      test: ["CMD-SHELL", "curl --fail --silent --show-error --max-time 3 http://127.0.0.1:$${SERVER_PORT:-8080}/api/$${API_VERSION:-v0}/open/health >/dev/null"]
+      interval: ${SERVER_HEALTHCHECK_INTERVAL:-15s}
+      timeout: ${SERVER_HEALTHCHECK_TIMEOUT:-5s}
+      retries: ${SERVER_HEALTHCHECK_RETRIES:-3}
+      start_period: ${SERVER_HEALTHCHECK_START_PERIOD:-45s}
     networks:
       - cashlenx-network
     profiles:

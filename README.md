@@ -90,6 +90,11 @@ The script requires an existing reviewed `.env`; it never creates one from
 development defaults and never runs `docker compose down`. Run
 `scripts/health.sh` independently to verify the deployed API.
 
+The server and database ports bind to `127.0.0.1` by default. `.env.sample`
+defines configurable CPU, memory, PID, graceful-stop, health-check, image, log
+path, and timezone settings. The server image records the source revision in
+the OCI `org.opencontainers.image.revision` label.
+
 ### 3. Run the API Server
 
 ```bash
