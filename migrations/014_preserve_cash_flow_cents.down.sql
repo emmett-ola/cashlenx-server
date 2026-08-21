@@ -1,0 +1,2 @@
+ALTER TABLE `cash_flows`
+    MODIFY COLUMN `amount` DECIMAL NOT NULL;

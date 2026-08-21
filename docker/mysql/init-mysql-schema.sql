@@ -177,7 +177,7 @@ CREATE TABLE `cash_flows`
     `belongs_user_id` VARCHAR(24)  NOT NULL,
     `category_id`     VARCHAR(24)  NOT NULL,
     `belongs_date`    TIMESTAMP    NOT NULL,
-    `amount`          DECIMAL      NOT NULL,
+    `amount`          DECIMAL(18, 2) NOT NULL,
     `description`     VARCHAR(200) NOT NULL,
     `remark`          VARCHAR(200)          DEFAULT NULL COMMENT 'KEEP EMPTY',
     `create_user_id`  VARCHAR(24)  NOT NULL,
