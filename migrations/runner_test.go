@@ -10,7 +10,7 @@ func TestLoadMigrationsInVersionOrder(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(items) == 0 || items[0].Version != 2 || items[len(items)-1].Version != 14 {
+	if len(items) == 0 || items[0].Version != 2 || items[len(items)-1].Version != 15 {
 		t.Fatalf("unexpected migration range: %#v", items)
 	}
 	if items[len(items)-1].Down == "" {

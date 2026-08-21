@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: CashLenX API
   description: Personal finance management API
-  version: 0.10.0
+  version: 0.11.0
   contact:
     name: CashLenX Team
     email: support@cashlenx.com
@@ -1388,6 +1388,15 @@ components:
         gender:
           type: string
           enum: [male, female, others, ""]
+        phone_number:
+          type: string
+          maxLength: 32
+        location:
+          type: string
+          maxLength: 200
+        birth_date:
+          type: string
+          format: date
 
     UserProfileResponse:
       type: object
@@ -1407,6 +1416,13 @@ components:
         gender:
           type: string
           enum: [male, female, others, ""]
+        phone_number:
+          type: string
+        location:
+          type: string
+        birth_date:
+          type: string
+          format: date
         is_active:
           type: boolean
           description: Whether this account is currently active.

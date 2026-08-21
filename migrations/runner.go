@@ -198,6 +198,20 @@ func initializeBaseline(db *sql.DB, items []Migration) error {
 	if activeScopeColumn == 1 {
 		baselineVersion = 12
 	}
+	var budgetsTable int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'budgets'`).Scan(&budgetsTable); err != nil {
+		return err
+	}
+	if budgetsTable == 1 {
+		baselineVersion = 14
+	}
+	var phoneNumberColumn int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'users' AND column_name = 'phone_number'`).Scan(&phoneNumberColumn); err != nil {
+		return err
+	}
+	if phoneNumberColumn == 1 {
+		baselineVersion = 15
+	}
 	for _, item := range items {
 		if item.Version > baselineVersion {
 			continue

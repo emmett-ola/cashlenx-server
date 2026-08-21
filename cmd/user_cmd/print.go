@@ -15,6 +15,9 @@ func printUser(user model.UserEntity) {
 	fmt.Printf("Email:           %s\n", user.EmailAddress)
 	fmt.Printf("Email Verified:  %t\n", user.IsEmailVerified)
 	fmt.Printf("Gender:          %s\n", user.Gender)
+	fmt.Printf("Phone:           %s\n", user.PhoneNumber)
+	fmt.Printf("Location:        %s\n", user.Location)
+	fmt.Printf("Birth Date:      %s\n", user.BirthDate)
 	fmt.Printf("Created At:      %s\n", user.CreateTime.Format("2006-01-02 15:04:05"))
 	fmt.Printf("Updated At:      %s\n", user.UpdateTime.Format("2006-01-02 15:04:05"))
 }

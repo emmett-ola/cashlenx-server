@@ -1,6 +1,6 @@
 # CashLenX API Notes
 
-**Version**: 0.9.0
+**Version**: 0.11.0
 **Last Updated**: 2026-06-30
 
 This document is a human-readable companion to `docs/openapi.yaml`. The OpenAPI file is the detailed API contract and is used by schema validation when enabled.
@@ -74,6 +74,8 @@ User and admin:
 - `GET /user/configuration`
 - `POST /user/configuration`
 - `PUT /user/configuration`
+
+Profile updates support `nickname`, `avatar_url`, `gender`, `phone_number`, `location`, and `birth_date` (`YYYY-MM-DD`). Configuration persists `display_language`, `currency_code`, and `active_theme_color` per user.
 - `PUT /user/password`
 - `POST /user/email/change`
 - `POST /user/email/confirm`

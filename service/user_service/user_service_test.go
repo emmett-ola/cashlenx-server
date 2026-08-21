@@ -219,9 +219,12 @@ func TestUpdateProfileServiceUpdatesAllowedProfileFields(t *testing.T) {
 	}
 
 	updated, err := UpdateProfileService(userID.Hex(), model.UserProfileUpdateRequest{
-		Nickname:  "Al",
-		AvatarUrl: "https://example.test/avatar.png",
-		Gender:    model.GenderOthers,
+		Nickname:    "Al",
+		AvatarUrl:   "https://example.test/avatar.png",
+		Gender:      model.GenderOthers,
+		PhoneNumber: "+65 6123 4567",
+		Location:    "Singapore",
+		BirthDate:   "1992-08-21",
 	})
 	if err != nil {
 		t.Fatalf("UpdateProfileService returned error: %v", err)
@@ -236,8 +239,22 @@ func TestUpdateProfileServiceUpdatesAllowedProfileFields(t *testing.T) {
 	if updated.Gender != model.GenderOthers {
 		t.Fatalf("Gender = %q, want %q", updated.Gender, model.GenderOthers)
 	}
+	if updated.PhoneNumber != "+65 6123 4567" || updated.Location != "Singapore" || updated.BirthDate != "1992-08-21" {
+		t.Fatalf("extended profile = %+v", updated)
+	}
 	if updated.UpdateUserId != userID {
 		t.Fatalf("UpdateUserId = %s, want %s", updated.UpdateUserId.Hex(), userID.Hex())
+	}
+}
+
+func TestUpdateProfileServiceRejectsInvalidBirthDate(t *testing.T) {
+	repo := installUserServiceTestDeps(t)
+	userID := primitive.NewObjectID()
+	repo.users[userID.Hex()] = model.UserEntity{Id: userID, Username: "alice"}
+
+	_, err := UpdateProfileService(userID.Hex(), model.UserProfileUpdateRequest{BirthDate: "21/08/1992"})
+	if err == nil {
+		t.Fatal("expected invalid birth date error")
 	}
 }
 

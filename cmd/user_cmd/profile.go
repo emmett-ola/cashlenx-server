@@ -12,6 +12,9 @@ var (
 	profileNickname string
 	profileAvatar   string
 	profileGender   string
+	profilePhone    string
+	profileLocation string
+	profileBirth    string
 )
 
 var profileCmd = &cobra.Command{
@@ -37,9 +40,12 @@ var profileUpdateCmd = &cobra.Command{
 	Short: "Update profile",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		updatedUser, err := updateUserProfile(userId, model.UserProfileUpdateRequest{
-			Nickname:  profileNickname,
-			AvatarUrl: profileAvatar,
-			Gender:    profileGender,
+			Nickname:    profileNickname,
+			AvatarUrl:   profileAvatar,
+			Gender:      profileGender,
+			PhoneNumber: profilePhone,
+			Location:    profileLocation,
+			BirthDate:   profileBirth,
 		})
 		if err != nil {
 			return err
@@ -57,4 +63,7 @@ func init() {
 	profileUpdateCmd.Flags().StringVar(&profileNickname, "nickname", "", "nickname")
 	profileUpdateCmd.Flags().StringVar(&profileAvatar, "avatar-url", "", "avatar URL")
 	profileUpdateCmd.Flags().StringVar(&profileGender, "gender", "", "gender: male, female, others")
+	profileUpdateCmd.Flags().StringVar(&profilePhone, "phone", "", "phone number")
+	profileUpdateCmd.Flags().StringVar(&profileLocation, "location", "", "location")
+	profileUpdateCmd.Flags().StringVar(&profileBirth, "birth-date", "", "birth date in YYYY-MM-DD")
 }

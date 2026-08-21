@@ -2,6 +2,7 @@ package user_service
 
 import (
 	std_errors "errors"
+	"time"
 
 	"github.com/macar-x/cashlenx-server/errors"
 	"github.com/macar-x/cashlenx-server/model"
@@ -124,7 +125,7 @@ func SetPasswordService(plainId string, password string) (model.UserEntity, erro
 	return updatedUser, nil
 }
 
-// UpdateProfileService updates user profile information (nickname, avatar, gender)
+// UpdateProfileService updates user profile information.
 // Note: Email updates are handled separately via email verification
 func UpdateProfileService(plainId string, requestBody model.UserProfileUpdateRequest) (model.UserEntity, error) {
 	// Get existing user
@@ -151,6 +152,26 @@ func UpdateProfileService(plainId string, requestBody model.UserProfileUpdateReq
 			return model.UserEntity{}, err
 		}
 		existingUser.Gender = requestBody.Gender
+	}
+	if len(requestBody.PhoneNumber) > 32 {
+		return model.UserEntity{}, errors.NewFieldValidationError("phone_number", "phone_number must not exceed 32 characters")
+	}
+	if len(requestBody.Location) > 200 {
+		return model.UserEntity{}, errors.NewFieldValidationError("location", "location must not exceed 200 characters")
+	}
+	if requestBody.BirthDate != "" {
+		if _, err := time.Parse("2006-01-02", requestBody.BirthDate); err != nil {
+			return model.UserEntity{}, errors.NewFieldValidationError("birth_date", "birth_date must use YYYY-MM-DD")
+		}
+	}
+	if requestBody.PhoneNumber != "" {
+		existingUser.PhoneNumber = requestBody.PhoneNumber
+	}
+	if requestBody.Location != "" {
+		existingUser.Location = requestBody.Location
+	}
+	if requestBody.BirthDate != "" {
+		existingUser.BirthDate = requestBody.BirthDate
 	}
 
 	// Update updated_at timestamp

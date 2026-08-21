@@ -20,6 +20,9 @@ type UserEntity struct {
 	EmailAddress    string             `json:"email_address,omitempty" bson:"email_address,omitempty"`
 	IsEmailVerified bool               `json:"is_email_verified" bson:"is_email_verified"`
 	Gender          string             `json:"gender,omitempty" bson:"gender,omitempty"`
+	PhoneNumber     string             `json:"phone_number,omitempty" bson:"phone_number,omitempty"`
+	Location        string             `json:"location,omitempty" bson:"location,omitempty"`
+	BirthDate       string             `json:"birth_date,omitempty" bson:"birth_date,omitempty"`
 	BaseEntity      `bson:",inline"`
 }
 
@@ -108,9 +111,12 @@ type UserRegistrationRequest struct {
 
 // UserProfileUpdateRequest represents a request to update user profile
 type UserProfileUpdateRequest struct {
-	Nickname  string `json:"nickname,omitempty"`
-	AvatarUrl string `json:"avatar_url,omitempty"`
-	Gender    string `json:"gender,omitempty"`
+	Nickname    string `json:"nickname,omitempty"`
+	AvatarUrl   string `json:"avatar_url,omitempty"`
+	Gender      string `json:"gender,omitempty"`
+	PhoneNumber string `json:"phone_number,omitempty"`
+	Location    string `json:"location,omitempty"`
+	BirthDate   string `json:"birth_date,omitempty"`
 }
 
 // UserProfileResponse represents current-user profile data returned to clients.
@@ -122,6 +128,9 @@ type UserProfileResponse struct {
 	EmailAddress    string `json:"email_address,omitempty"`
 	IsEmailVerified bool   `json:"is_email_verified"`
 	Gender          string `json:"gender,omitempty"`
+	PhoneNumber     string `json:"phone_number,omitempty"`
+	Location        string `json:"location,omitempty"`
+	BirthDate       string `json:"birth_date,omitempty"`
 	IsActive        bool   `json:"is_active"`
 	Role            string `json:"role,omitempty"`
 	CreatedAt       string `json:"created_at,omitempty"`

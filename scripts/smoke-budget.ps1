@@ -131,6 +131,29 @@ try {
     $token = $login.data.access_token
     if (-not $token) { throw "admin login did not return an access token" }
 
+    $profile = Invoke-Api -Method PUT -Path "/user/profile" -Token $token -Body @{
+        nickname = "Budget Admin"; gender = "others"; phone_number = "+65 6123 4567"
+        location = "Singapore"; birth_date = "1992-08-21"
+    }
+    if ($profile.data.phone_number -ne "+65 6123 4567" -or $profile.data.location -ne "Singapore" -or $profile.data.birth_date -ne "1992-08-21") {
+        throw "extended profile update did not persist: $($profile | ConvertTo-Json -Depth 8 -Compress)"
+    }
+    $profileRead = Invoke-Api -Method GET -Path "/user/profile" -Token $token
+    if ($profileRead.data.phone_number -ne "+65 6123 4567" -or $profileRead.data.location -ne "Singapore" -or $profileRead.data.birth_date -ne "1992-08-21") {
+        throw "extended profile read did not match update: $($profileRead | ConvertTo-Json -Depth 8 -Compress)"
+    }
+
+    $configuration = Invoke-Api -Method PUT -Path "/user/configuration" -Token $token -Body @{
+        display_language = "zh-Hans"; currency_code = "SGD"; active_theme_color = "#008080"
+    }
+    if ($configuration.data.display_language -ne "zh-Hans" -or $configuration.data.currency_code -ne "SGD" -or $configuration.data.active_theme_color -ne "#008080") {
+        throw "configuration update did not persist: $($configuration | ConvertTo-Json -Depth 8 -Compress)"
+    }
+    $configurationRead = Invoke-Api -Method GET -Path "/user/configuration" -Token $token
+    if ($configurationRead.data.display_language -ne "zh-Hans" -or $configurationRead.data.currency_code -ne "SGD" -or $configurationRead.data.active_theme_color -ne "#008080") {
+        throw "configuration read did not match update: $($configurationRead | ConvertTo-Json -Depth 8 -Compress)"
+    }
+
     $category = Invoke-Api -Method POST -Path "/category" -Token $token -Body @{
         name = "Budget Smoke"; type = "expense"; remark = "disposable budget smoke"
     }

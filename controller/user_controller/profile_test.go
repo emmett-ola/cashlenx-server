@@ -15,11 +15,14 @@ import (
 func TestBuildUserProfileResponseIncludesNicknameAndInactiveStatus(t *testing.T) {
 	userID := primitive.NewObjectID()
 	response := buildUserProfileResponse(model.UserEntity{
-		Id:       userID,
-		Username: "alice",
-		Nickname: "Alice Chen",
-		Gender:   model.GenderFemale,
-		IsActive: false,
+		Id:          userID,
+		Username:    "alice",
+		Nickname:    "Alice Chen",
+		Gender:      model.GenderFemale,
+		PhoneNumber: "+65 6123 4567",
+		Location:    "Singapore",
+		BirthDate:   "1992-08-21",
+		IsActive:    false,
 	})
 
 	if response.Id != userID.Hex() {
@@ -30,6 +33,9 @@ func TestBuildUserProfileResponseIncludesNicknameAndInactiveStatus(t *testing.T)
 	}
 	if response.Gender != model.GenderFemale {
 		t.Fatalf("Gender = %q, want %q", response.Gender, model.GenderFemale)
+	}
+	if response.PhoneNumber != "+65 6123 4567" || response.Location != "Singapore" || response.BirthDate != "1992-08-21" {
+		t.Fatalf("extended profile response = %+v", response)
 	}
 
 	payload, err := json.Marshal(response)
@@ -91,17 +97,20 @@ func TestUpdateProfilePassesRequestToService(t *testing.T) {
 		}
 		got = request
 		return model.UserEntity{
-			Id:        userID,
-			Username:  "alice",
-			Nickname:  request.Nickname,
-			AvatarUrl: request.AvatarUrl,
-			Gender:    request.Gender,
-			IsActive:  true,
+			Id:          userID,
+			Username:    "alice",
+			Nickname:    request.Nickname,
+			AvatarUrl:   request.AvatarUrl,
+			Gender:      request.Gender,
+			PhoneNumber: request.PhoneNumber,
+			Location:    request.Location,
+			BirthDate:   request.BirthDate,
+			IsActive:    true,
 		}, nil
 	}
 	t.Cleanup(func() { updateProfileUser = original })
 
-	req := httptest.NewRequest(http.MethodPut, "/user/profile", strings.NewReader(`{"nickname":"Alice","avatar_url":"https://example.test/a.png","gender":"female"}`))
+	req := httptest.NewRequest(http.MethodPut, "/user/profile", strings.NewReader(`{"nickname":"Alice","avatar_url":"https://example.test/a.png","gender":"female","phone_number":"+65 6123 4567","location":"Singapore","birth_date":"1992-08-21"}`))
 	req = req.WithContext(context.WithValue(req.Context(), "user_id", userID.Hex()))
 	rec := httptest.NewRecorder()
 
@@ -112,5 +121,8 @@ func TestUpdateProfilePassesRequestToService(t *testing.T) {
 	}
 	if got.Nickname != "Alice" || got.AvatarUrl != "https://example.test/a.png" || got.Gender != model.GenderFemale {
 		t.Fatalf("service request = %+v", got)
+	}
+	if got.PhoneNumber != "+65 6123 4567" || got.Location != "Singapore" || got.BirthDate != "1992-08-21" {
+		t.Fatalf("extended service request = %+v", got)
 	}
 }

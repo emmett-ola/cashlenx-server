@@ -18,7 +18,7 @@ type UserMySqlMapper struct{}
 func (m UserMySqlMapper) GetUserByObjectId(plainId string) model.UserEntity {
 	// Create the SQL query
 	var sqlString bytes.Buffer
-	sqlString.WriteString("SELECT id, username, password_hash, is_active, role, nickname, avatar_url, email_address, gender, create_user_id, create_time, update_user_id, update_time FROM ")
+	sqlString.WriteString("SELECT id, username, password_hash, is_active, role, nickname, avatar_url, email_address, gender, phone_number, location, birth_date, create_user_id, create_time, update_user_id, update_time FROM ")
 	sqlString.WriteString(database.UserTableName)
 	sqlString.WriteString(" WHERE id = ? ")
 	sqlString.WriteString(" AND is_delete = FALSE") // Added explicit check just in case SqlExcludeDeleted is not enough or for clarity
@@ -34,9 +34,9 @@ func (m UserMySqlMapper) GetUserByObjectId(plainId string) model.UserEntity {
 	var user model.UserEntity
 	var createTime, updateTime time.Time
 	var id, createUserId, updateUserId string
-	var nickname, avatarUrl, emailAddress, gender sql.NullString
+	var nickname, avatarUrl, emailAddress, gender, phoneNumber, location, birthDate sql.NullString
 
-	err := row.Scan(&id, &user.Username, &user.PasswordHash, &user.IsActive, &user.Role, &nickname, &avatarUrl, &emailAddress, &gender, &createUserId, &createTime, &updateUserId, &updateTime)
+	err := row.Scan(&id, &user.Username, &user.PasswordHash, &user.IsActive, &user.Role, &nickname, &avatarUrl, &emailAddress, &gender, &phoneNumber, &location, &birthDate, &createUserId, &createTime, &updateUserId, &updateTime)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			util.Logger.Debugw("User not found", "userId", plainId)
@@ -72,6 +72,15 @@ func (m UserMySqlMapper) GetUserByObjectId(plainId string) model.UserEntity {
 	}
 	if gender.Valid {
 		user.Gender = gender.String
+	}
+	if phoneNumber.Valid {
+		user.PhoneNumber = phoneNumber.String
+	}
+	if location.Valid {
+		user.Location = location.String
+	}
+	if birthDate.Valid {
+		user.BirthDate = birthDate.String
 	}
 
 	return user
@@ -322,7 +331,7 @@ func (m UserMySqlMapper) UpdateUserByEntity(plainId string, updatedEntity model.
 	updatedEntity.UpdateTime = time.Now()
 
 	// Create the SQL query
-	query := `UPDATE ` + database.UserTableName + ` SET username = ?, password_hash = ?, is_active = ?, role = ?, nickname = ?, avatar_url = ?, email_address = ?, gender = ?, update_user_id = ?, update_time = ? WHERE id = ? AND is_delete = FALSE`
+	query := `UPDATE ` + database.UserTableName + ` SET username = ?, password_hash = ?, is_active = ?, role = ?, nickname = ?, avatar_url = ?, email_address = ?, gender = ?, phone_number = COALESCE(NULLIF(?, ''), phone_number), location = COALESCE(NULLIF(?, ''), location), birth_date = COALESCE(NULLIF(?, ''), birth_date), update_user_id = ?, update_time = ? WHERE id = ? AND is_delete = FALSE`
 
 	// Get database connection
 	connection := database.GetMySqlConnection()
@@ -339,6 +348,9 @@ func (m UserMySqlMapper) UpdateUserByEntity(plainId string, updatedEntity model.
 		updatedEntity.AvatarUrl,
 		updatedEntity.EmailAddress,
 		updatedEntity.Gender,
+		updatedEntity.PhoneNumber,
+		updatedEntity.Location,
+		updatedEntity.BirthDate,
 		updatedEntity.UpdateUserId.Hex(),
 		updatedEntity.UpdateTime,
 		plainId,
@@ -537,9 +549,9 @@ func (m UserMySqlMapper) DeleteUserByObjectId(plainId string) model.UserEntity {
 	// For now, we'll set delete_user_id to the user's own ID or empty if unknown.
 	// Ideally, the interface should be updated, but for quick fix we use soft delete with current time.
 	// We no longer rename username to allow unique constraint check on registration to fail if username exists (even if deleted).
-	
+
 	now := time.Now()
-	
+
 	query := `UPDATE ` + database.UserTableName + ` SET is_delete = TRUE, delete_time = NOW() WHERE id = ? AND is_delete = FALSE`
 
 	// Get database connection

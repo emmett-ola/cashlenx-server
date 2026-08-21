@@ -32,9 +32,9 @@ func convertBsonM2UserEntity(bsonData bson.M) model.UserEntity {
 	}
 
 	// Validate gender (must be male, female, others or empty/null)
-	if user.Gender != "" && 
-		user.Gender != model.GenderMale && 
-		user.Gender != model.GenderFemale && 
+	if user.Gender != "" &&
+		user.Gender != model.GenderMale &&
+		user.Gender != model.GenderFemale &&
 		user.Gender != model.GenderOthers {
 		user.Gender = ""
 	}
@@ -53,6 +53,9 @@ func convertUserEntity2BsonD(user model.UserEntity) bson.D {
 		primitive.E{Key: "avatar_url", Value: user.AvatarUrl},
 		primitive.E{Key: "email_address", Value: user.EmailAddress},
 		primitive.E{Key: "gender", Value: user.Gender},
+		primitive.E{Key: "phone_number", Value: user.PhoneNumber},
+		primitive.E{Key: "location", Value: user.Location},
+		primitive.E{Key: "birth_date", Value: user.BirthDate},
 		primitive.E{Key: "create_user_id", Value: user.CreateUserId},
 		primitive.E{Key: "create_time", Value: user.CreateTime},
 		primitive.E{Key: "update_user_id", Value: user.UpdateUserId},
@@ -244,7 +247,7 @@ func (m UserMongoDbMapper) DeleteUserByObjectId(plainId string) model.UserEntity
 	filter := bson.D{
 		primitive.E{Key: "_id", Value: objectId},
 	}
-	
+
 	// Soft delete: Update is_delete to true
 	now := time.Now()
 	// No longer renaming username, keeping original for unique constraint check on registration

@@ -1,6 +1,6 @@
 # CashLenX CLI Reference
 
-**Version**: 0.9.0
+**Version**: 0.11.0
 **Last Updated**: 2026-06-30
 
 The CashLenX CLI is implemented with Cobra and starts from `main.go -> cmd.Execute()`. The current executable name is `cashlenx` when built, or `go run main.go` during local development.
@@ -156,7 +156,7 @@ go run main.go admin database restore -i backup.json --force
 
 ```bash
 go run main.go user profile get --user <user_id>
-go run main.go user profile update --nickname "Alice" --gender female --user <user_id>
+go run main.go user profile update --nickname "Alice" --gender female --phone "+65 6123 4567" --location "Singapore" --birth-date "1992-08-21" --user <user_id>
 go run main.go user configuration get --user <user_id>
 go run main.go user configuration upsert --currency-code USD --display-language en --active-theme-color "#2563eb" --user <user_id>
 go run main.go user password --old-password <old_password> --new-password <new_password> --user <user_id>
@@ -245,7 +245,7 @@ Build with explicit version metadata:
 
 ```bash
 go build -ldflags "\
-  -X github.com/macar-x/cashlenx-server/cmd/open_cmd.Version=0.9.0 \
+  -X github.com/macar-x/cashlenx-server/cmd/open_cmd.Version=0.11.0 \
   -X github.com/macar-x/cashlenx-server/cmd/open_cmd.BuildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
   -X github.com/macar-x/cashlenx-server/cmd/open_cmd.GitCommit=$(git rev-parse --short HEAD)" \
   -o cashlenx main.go
