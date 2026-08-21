@@ -78,6 +78,12 @@ cashlenx
 │   ├── tree
 │   ├── update
 │   └── delete
+├── budget
+│   ├── create
+│   ├── list
+│   ├── get
+│   ├── update
+│   └── delete
 └── statistic
     ├── summary
     ├── breakdown
@@ -194,6 +200,20 @@ go run main.go category delete --id <category_id>
 ```
 
 Category commands support `income` and `expense` category types plus the same create/update `remark` field used by the API. The category root command also supports a persistent `--user` flag for user-scoped operations.
+
+## Budget Commands
+
+```bash
+go run main.go budget create --category <expense_category_id> --period 2026-08 --amount 1200
+go run main.go budget list --period 2026-08
+go run main.go budget get <budget_id>
+go run main.go budget update <budget_id> --category <expense_category_id> --period 2026-08 --amount 1500
+go run main.go budget delete <budget_id>
+```
+
+Budget commands use the saved CLI session and accept an optional matching
+`--user` flag. List output includes ledger-derived spent and remaining values.
+Create and update accept expense categories only and use `YYYY-MM` periods.
 
 ## Statistic Commands
 

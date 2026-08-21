@@ -1,6 +1,6 @@
 # CashLenX Server
 
-CashLenX Server is a Go backend for personal finance tracking. It provides a Cobra CLI and a Gorilla Mux REST API for authentication, user accounts, cash flows, categories, statistics, import/export, and admin database management.
+CashLenX Server is a Go backend for personal finance tracking. It provides a Cobra CLI and a Gorilla Mux REST API for authentication, user accounts, cash flows, categories, monthly budgets, statistics, import/export, and admin database management.
 
 The project is still in active `v0.x` development. The current API path is `/api/v0`; stable `/api/v1` compatibility is planned for a later stable release.
 
@@ -10,6 +10,7 @@ The project is still in active `v0.x` development. The current API path is `/api
 - User profile, password change, password reset, email-change request/confirm, and account deletion flows
 - Per-user cash flow CRUD, date/range queries, summaries, pagination, and filtering
 - Per-user category CRUD, name lookup, children lookup, and tree APIs
+- Per-user monthly budget CRUD with ledger-derived spending for MongoDB and MySQL
 - Statistics, dashboard, and chart endpoints for summaries, breakdowns, trends, top expenses, income/expense charts, category distribution, monthly comparison, and spending heatmaps
 - User import/export and backup/restore flows
 - Admin user management and full database backup/restore
@@ -122,6 +123,7 @@ go run main.go admin database restore -i backup.json
 - `POST /api/v0/cash/income`
 - `GET /api/v0/cash`
 - `GET /api/v0/category/tree`
+- `GET /api/v0/budget?period=YYYY-MM`
 - `GET /api/v0/statistic/dashboard/{period}/{date}`
 - `GET /api/v0/statistic/chart/income-expense/{period}/{date}`
 
@@ -159,6 +161,10 @@ On Windows, validate the numbered MySQL migrations independently:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/smoke-mysql-migrations.ps1
+
+# Focused user-scoped budget parity against disposable databases
+powershell -ExecutionPolicy Bypass -File scripts/smoke-budget.ps1 -Database mongodb
+powershell -ExecutionPolicy Bypass -File scripts/smoke-budget.ps1 -Database mysql
 ```
 
 The sibling Flutter client owns the end-to-end database smoke flow. From

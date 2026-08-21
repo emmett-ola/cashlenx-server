@@ -50,7 +50,7 @@ Route groups:
 - `/open/*` is public by convention. `/open/auth/logout` is idempotent: it returns OK without credentials, revokes one session when a valid `refresh_token` is provided, and revokes all sessions when a valid bearer access token is provided without `refresh_token`.
 - `/auth/tokens` is authenticated token-management API.
 - `/admin/*` requires authenticated admin role.
-- `/user/*`, `/cash/*`, `/category/*`, and `/statistic/*` are authenticated user-scoped APIs.
+- `/user/*`, `/cash/*`, `/category/*`, `/budget/*`, and `/statistic/*` are authenticated user-scoped APIs.
 
 ## Implemented Route Surface
 
@@ -114,6 +114,18 @@ Category:
 - `GET /category/{id}`
 - `PUT /category/{id}`
 - `DELETE /category/{id}`
+
+Budget:
+
+- `POST /budget`
+- `GET /budget?period=YYYY-MM`
+- `GET /budget/{id}`
+- `PUT /budget/{id}`
+- `DELETE /budget/{id}`
+
+Budgets accept only user-owned expense categories and are unique per active
+user/category/month scope. Responses derive spent, remaining, and progress from
+the same user's cash flows rather than storing duplicate ledger totals.
 
 Statistic, dashboard, chart, and import/export:
 
