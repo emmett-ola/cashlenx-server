@@ -17,6 +17,7 @@ var (
 var (
 	CashFlowTableName             = "cash_flows"
 	CategoryTableName             = "categories"
+	BudgetTableName               = "budgets"
 	UserTableName                 = "users"
 	UserConfigurationTableName    = "user_configurations"
 	OperationConfirmCodeTableName = "operation_confirm_codes"

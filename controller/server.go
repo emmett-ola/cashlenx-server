@@ -7,6 +7,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/macar-x/cashlenx-server/controller/auth_controller"
+	"github.com/macar-x/cashlenx-server/controller/budget_controller"
 	"github.com/macar-x/cashlenx-server/controller/cash_flow_controller"
 	"github.com/macar-x/cashlenx-server/controller/category_controller"
 	"github.com/macar-x/cashlenx-server/controller/manage_controller"
@@ -62,6 +63,7 @@ func StartServer(port int32) {
 	registerUserRoutes(r, apiPrefix)
 	registerCashRoute(r, apiPrefix)
 	registerCategoryRoute(r, apiPrefix)
+	registerBudgetRoute(r, apiPrefix)
 	registerStatisticRoute(r, apiPrefix)
 
 	handler := buildHTTPHandler(r)
@@ -77,6 +79,14 @@ func StartServer(port int32) {
 	if err := http.ListenAndServe(addr, handler); err != nil {
 		util.Logger.Fatalw("API server stopped", "error", err)
 	}
+}
+
+func registerBudgetRoute(r *mux.Router, prefix string) {
+	r.HandleFunc(prefix+"/budget", budget_controller.Create).Methods(http.MethodPost)
+	r.HandleFunc(prefix+"/budget", budget_controller.List).Methods(http.MethodGet)
+	r.HandleFunc(prefix+"/budget/{id}", budget_controller.Get).Methods(http.MethodGet)
+	r.HandleFunc(prefix+"/budget/{id}", budget_controller.Update).Methods(http.MethodPut)
+	r.HandleFunc(prefix+"/budget/{id}", budget_controller.Delete).Methods(http.MethodDelete)
 }
 
 func buildHTTPHandler(r *mux.Router) http.Handler {
@@ -283,6 +293,13 @@ func versionInfo(w http.ResponseWriter, r *http.Request) {
 				"GET " + apiPrefix + "/category/tree",
 				"PUT " + apiPrefix + "/category/{id}",
 				"DELETE " + apiPrefix + "/category/{id}",
+			},
+			"budget": {
+				"POST " + apiPrefix + "/budget",
+				"GET " + apiPrefix + "/budget?period=YYYY-MM",
+				"GET " + apiPrefix + "/budget/{id}",
+				"PUT " + apiPrefix + "/budget/{id}",
+				"DELETE " + apiPrefix + "/budget/{id}",
 			},
 			"statistic": {
 				"GET " + apiPrefix + "/statistic/export?from_date=YYYYMMDD&to_date=YYYYMMDD&format=xlsx|csv|pdf (binary download)",

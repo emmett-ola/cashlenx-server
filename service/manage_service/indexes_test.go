@@ -21,11 +21,14 @@ func TestMongoIndexDefinitionsExcludeLegacyFlowType(t *testing.T) {
 	if got := len(mongoCategoryIndexes()); got != 3 {
 		t.Fatalf("expected 3 category indexes, got %d", got)
 	}
+	if got := len(mongoBudgetIndexes()); got != 2 {
+		t.Fatalf("expected 2 budget indexes, got %d", got)
+	}
 }
 
 func TestMySQLIndexDefinitionsUseCurrentTables(t *testing.T) {
 	for _, index := range mysqlIndexes() {
-		if index.table != "cash_flows" && index.table != "categories" {
+		if index.table != "cash_flows" && index.table != "categories" && index.table != "budgets" {
 			t.Fatalf("unexpected legacy table %q", index.table)
 		}
 	}

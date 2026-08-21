@@ -45,6 +45,13 @@ func mongoCategoryIndexes() []mongo.IndexModel {
 	}
 }
 
+func mongoBudgetIndexes() []mongo.IndexModel {
+	return []mongo.IndexModel{
+		{Keys: bson.D{{Key: "belongs_user_id", Value: 1}, {Key: "period", Value: 1}, {Key: "category_id", Value: 1}}, Options: options.Index().SetName("budgets_active_scope_unique_index").SetUnique(true).SetPartialFilterExpression(bson.D{{Key: "is_delete", Value: false}})},
+		{Keys: bson.D{{Key: "belongs_user_id", Value: 1}, {Key: "period", Value: 1}, {Key: "is_delete", Value: 1}}, Options: options.Index().SetName("budgets_user_period_active_index")},
+	}
+}
+
 func createMongoDBIndexes() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -56,6 +63,10 @@ func createMongoDBIndexes() error {
 	categories := database.GetMongoCollection(database.CategoryTableName)
 	if _, err := categories.Indexes().CreateMany(ctx, mongoCategoryIndexes()); err != nil {
 		return fmt.Errorf("create category indexes: %w", err)
+	}
+	budgets := database.GetMongoCollection(database.BudgetTableName)
+	if _, err := budgets.Indexes().CreateMany(ctx, mongoBudgetIndexes()); err != nil {
+		return fmt.Errorf("create budget indexes: %w", err)
 	}
 	if err := dropMongoIndexes(ctx, cashFlows, "idx_flow_type", "idx_belongs_date_flow_type", "flow_type_1", "belongs_date_-1_flow_type_1"); err != nil {
 		return err
@@ -105,6 +116,7 @@ func mysqlIndexes() []mysqlIndexDefinition {
 		{name: "cash_flows_user_category_index", table: database.CashFlowTableName, columns: "belongs_user_id, category_id"},
 		{name: "cash_flows_user_active_index", table: database.CashFlowTableName, columns: "belongs_user_id, is_delete"},
 		{name: "categories_user_scope_index", table: database.CategoryTableName, columns: "belongs_user_id, type, parent_id, name, is_delete"},
+		{name: "budgets_user_period_active_index", table: database.BudgetTableName, columns: "belongs_user_id, period, is_delete"},
 	}
 }
 

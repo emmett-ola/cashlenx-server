@@ -8,6 +8,7 @@ import (
 
 	"github.com/macar-x/cashlenx-server/cmd/admin_cmd"
 	"github.com/macar-x/cashlenx-server/cmd/auth_cmd"
+	"github.com/macar-x/cashlenx-server/cmd/budget_cmd"
 	"github.com/macar-x/cashlenx-server/cmd/cash_flow_cmd"
 	"github.com/macar-x/cashlenx-server/cmd/category_cmd"
 	"github.com/macar-x/cashlenx-server/cmd/open_cmd"
@@ -74,5 +75,6 @@ func init() {
 	rootCmd.AddCommand(user_cmd.UserCmd)
 	rootCmd.AddCommand(cash_flow_cmd.CashCmd)
 	rootCmd.AddCommand(category_cmd.CategoryCmd)
+	rootCmd.AddCommand(budget_cmd.BudgetCmd)
 	rootCmd.AddCommand(statistic_cmd.StatisticCmd)
 }
