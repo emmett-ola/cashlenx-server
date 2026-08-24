@@ -26,7 +26,7 @@ services:
         source: mysql_data
         target: /var/lib/mysql
       - type: bind
-        source: ../mysql/init-mysql.sql
+        source: ./init-mysql.sql
         target: /docker-entrypoint-initdb.d/init-mysql.sql
         read_only: true
     healthcheck:

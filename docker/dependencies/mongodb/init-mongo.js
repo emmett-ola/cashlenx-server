@@ -1,4 +1,4 @@
-// MongoDB initialization script for CashLenX - SCHEMA ONLY
+// MongoDB dependency initialization script for CashLenX - SCHEMA ONLY
 // This script creates the database collections and indexes. User-scoped default
 // categories are created by the application, not by this script.
 

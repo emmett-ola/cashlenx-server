@@ -1,4 +1,4 @@
--- MySQL Demo Data for CashLenX - FOR TESTING ONLY
+-- Legacy MySQL demo data for CashLenX - FOR TESTING ONLY
 -- This script inserts sample transactions for development and testing
 -- 
 -- To use this data:

@@ -1,9 +1,9 @@
-// MongoDB Demo Data for CashLenX - FOR TESTING ONLY
+// Legacy MongoDB demo data for CashLenX - FOR TESTING ONLY
 // This script inserts sample transactions for development and testing
 //
 // To use this data:
 // Option 1 (Manual import to database):
-//   docker exec -i cashlenx-mongodb mongosh -u cashlenx -p cashlenx123 --authenticationDatabase admin cashlenx < docker/mongodb/init-mongo-demo.js
+//   docker exec -i cashlenx-mongodb mongosh -u cashlenx -p <password> --authenticationDatabase admin cashlenx < docker/dependencies/mongodb/init-mongo-demo.js
 //
 // Option 2 (Via CLI - Recommended):
 //   1. Create Excel file from this data

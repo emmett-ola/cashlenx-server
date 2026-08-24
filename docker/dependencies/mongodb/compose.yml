@@ -22,7 +22,7 @@ services:
         source: mongodb_data
         target: /data/db
       - type: bind
-        source: ../mongodb/init-mongo.js
+        source: ./init-mongo.js
         target: /docker-entrypoint-initdb.d/init-mongo.js
         read_only: true
     healthcheck:

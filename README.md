@@ -28,14 +28,14 @@ cashlenx-server/
 ├── cmd/                     # CLI commands (Cobra)
 ├── config/                  # Runtime data files
 ├── controller/              # HTTP route registration and handlers
-├── docker/                  # Database initialization assets
+├── docker/                  # API Compose plus isolated dependency projects
 ├── docs/                    # API, CLI, OpenAPI, roadmap docs
 ├── errors/                  # Custom error types
 ├── mapper/                  # MongoDB/MySQL persistence mappers
 ├── middleware/              # Auth, admin, CORS, logging, schema validation
 ├── migrations/              # MongoDB/MySQL migration scripts
 ├── model/                   # Entities, DTOs, response types, constants
-├── scripts/                 # Container build/start/stop entry points
+├── scripts/                 # API and dependency lifecycle entry points
 ├── test/scripts/            # Disposable integration smoke checks
 ├── service/                 # Business logic
 ├── util/                    # Config, logging, DB, email, date, ID, HTTP helpers
@@ -53,21 +53,34 @@ cp .env.example .env
 
 MongoDB remains the default and supported beta deployment database. MySQL 8 is also runnable: the full Flutter/API contract and the numbered SQL sequence are verified against disposable containers. Server startup tracks and applies MySQL migrations through `schema_migrations`.
 
-MongoDB bootstrap, migration, and runtime index definitions now follow the current user/type/parent/name category scope. MongoDB applied-version tracking is not implemented and remains unscheduled architecture debt; see `docker/mongodb/README.md` and `AGENTS.md`.
+Database URIs in `.env.example` reuse the username, password, and database name
+defined above them. Docker Compose and the Server dotenv loader expand those
+references, so each credential has one configuration owner.
+
+MongoDB bootstrap, migration, and runtime index definitions now follow the current user/type/parent/name category scope. MongoDB applied-version tracking is not implemented and remains unscheduled architecture debt; see `docker/dependencies/mongodb/README.md` and `AGENTS.md`.
 
 ### 2. Start a Database
 
 ```bash
 # MongoDB
-docker compose --env-file .env -f docker/dependencies/compose.mongodb.yml up -d --wait
+scripts/dependencies/mongodb/build.sh
+scripts/dependencies/mongodb/start.sh
+# Stop it later when required:
+scripts/dependencies/mongodb/stop.sh
 
 # MySQL
-docker compose --env-file .env -f docker/dependencies/compose.mysql.yml up -d --wait
+scripts/dependencies/mysql/build.sh
+scripts/dependencies/mysql/start.sh
+# Stop it later when required:
+scripts/dependencies/mysql/stop.sh
 ```
 
 The dependencies are separate operator-managed projects and persist data in
-`cashlenx-mongodb-data` and `cashlenx-mysql-data`. Server build/start scripts do
-not start, stop, or remove them.
+`cashlenx-mongodb-data` and `cashlenx-mysql-data`. Each dependency `build.sh`
+pulls its configured upstream image, `start.sh` starts only that database and
+waits for health, and `stop.sh` removes its container and network while retaining
+the image and named volume. Root Server scripts do not start, stop, or remove
+dependencies, regardless of `DB_TYPE`.
 
 ### Docker Deployment
 
@@ -98,6 +111,14 @@ The server and database ports bind to `127.0.0.1` by default. `.env.example`
 defines configurable CPU, memory, PID, graceful-stop, health-check, image, log
 path, and timezone settings. The server image records the source revision in
 the OCI `org.opencontainers.image.revision` label.
+
+Dependency scripts support the same `ENV_FILE` selection. For example:
+
+```bash
+ENV_FILE=.env.testing scripts/dependencies/mongodb/build.sh
+ENV_FILE=.env.testing scripts/dependencies/mongodb/start.sh
+ENV_FILE=.env.testing scripts/dependencies/mongodb/stop.sh
+```
 
 The default container name is `cashlenx-server`.
 
@@ -158,8 +179,9 @@ These endpoints are intentionally outside `/api/v0` and the OpenAPI/JWT middlewa
 - `docs/milestones.md` - completed milestone history
 - `docs/performance.md` - benchmark baseline and cache decisions
 - `docs/openapi.yaml` - OpenAPI specification
-- `docker/mongodb/README.md` - MongoDB bootstrap status and known index drift
-- `docker/mysql/README.md` - MySQL bootstrap and migration validation notes
+- `docker/dependencies/README.md` - dependency lifecycle and ownership boundary
+- `docker/dependencies/mongodb/README.md` - MongoDB bootstrap status and index lifecycle
+- `docker/dependencies/mysql/README.md` - MySQL bootstrap and migration validation notes
 
 ## Build and Test
 

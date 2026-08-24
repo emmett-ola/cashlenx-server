@@ -1,12 +1,36 @@
-# Optional Runtime Dependencies
+# Runtime Dependencies
 
-MongoDB and MySQL are independent Compose projects for local and operator-managed environments. The CashLenX server build and startup scripts do not start, stop, or remove them.
+MongoDB and MySQL are separate Compose projects for local and operator-managed
+environments. Each dependency owns its Compose file, initialization assets,
+documentation, container, network, and named data volume under its own folder.
 
-From the server repository root, use the dependency required by `DB_TYPE`:
+The root `scripts/build.sh`, `scripts/start.sh`, and `scripts/stop.sh` manage only
+the API container. They never inspect `DB_TYPE` to start or stop a database.
+Select and manage the required dependency explicitly:
 
 ```bash
-docker compose --env-file .env -f docker/dependencies/compose.mongodb.yml up -d --wait
-docker compose --env-file .env -f docker/dependencies/compose.mysql.yml up -d --wait
+scripts/dependencies/mongodb/build.sh
+scripts/dependencies/mongodb/start.sh
+scripts/dependencies/mongodb/stop.sh
+
+scripts/dependencies/mysql/build.sh
+scripts/dependencies/mysql/start.sh
+scripts/dependencies/mysql/stop.sh
 ```
 
-Inspect or stop a dependency with the same `--env-file` and `-f` arguments followed by `ps`, `stop`, or `down`. `down` preserves its named data volume unless `--volumes` is explicitly supplied.
+Dependency `build.sh` pulls the configured upstream image, `start.sh` starts
+only that dependency and waits for its healthcheck, and `stop.sh` removes its
+container and project network without removing the image or named data volume.
+
+All dependency scripts use `.env` by default and accept the same repository-local
+selection interface as the API scripts:
+
+```bash
+ENV_FILE=.env.testing scripts/dependencies/mongodb/build.sh
+ENV_FILE=.env.testing scripts/dependencies/mongodb/start.sh
+ENV_FILE=.env.testing scripts/dependencies/mongodb/stop.sh
+```
+
+Compose remains available directly for diagnostics through
+`mongodb/compose.yml` and `mysql/compose.yml`, but the scripts are the supported
+lifecycle entry points.

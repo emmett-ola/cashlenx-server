@@ -71,12 +71,19 @@ missing_required_keys() {
       if (values["JWT_SECRET"] == "") print "JWT_SECRET"
       if (values["ADMIN_PASSWORD"] == "") print "ADMIN_PASSWORD"
       db_type = values["DB_TYPE"] == "" ? "mongodb" : values["DB_TYPE"]
-      if (db_type == "mongodb" && values["DOCKER_MONGO_DB_URI"] == "" && values["MONGO_ROOT_PASSWORD"] == "") {
-        print "MONGO_ROOT_PASSWORD"
+      if (db_type == "mongodb") {
+        docker_uri = values["DOCKER_MONGO_DB_URI"]
+        if ((docker_uri == "" || index(docker_uri, "MONGO_ROOT_USERNAME") > 0) && values["MONGO_ROOT_USERNAME"] == "") {
+          print "MONGO_ROOT_USERNAME"
+        }
+        if ((docker_uri == "" || index(docker_uri, "MONGO_ROOT_PASSWORD") > 0) && values["MONGO_ROOT_PASSWORD"] == "") {
+          print "MONGO_ROOT_PASSWORD"
+        }
       }
-      if (db_type == "mysql" && values["DOCKER_MYSQL_DB_URI"] == "") {
-        if (values["MYSQL_ROOT_PASSWORD"] == "") print "MYSQL_ROOT_PASSWORD"
-        if (values["MYSQL_PASSWORD"] == "") print "MYSQL_PASSWORD"
+      if (db_type == "mysql") {
+        docker_uri = values["DOCKER_MYSQL_DB_URI"]
+        if ((docker_uri == "" || index(docker_uri, "MYSQL_USER") > 0) && values["MYSQL_USER"] == "") print "MYSQL_USER"
+        if ((docker_uri == "" || index(docker_uri, "MYSQL_PASSWORD") > 0) && values["MYSQL_PASSWORD"] == "") print "MYSQL_PASSWORD"
       }
     }
   ' "$env_file"

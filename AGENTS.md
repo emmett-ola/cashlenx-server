@@ -123,7 +123,7 @@ cashlenx-server/
 ├── cmd/                     # Cobra commands
 ├── config/                  # Runtime data files (for example default categories)
 ├── controller/              # HTTP handlers and route registration
-├── docker/                  # DB initialization assets
+├── docker/                  # API Compose and isolated database dependency projects
 ├── docs/                    # API, CLI, roadmap, OpenAPI spec
 ├── errors/                  # Custom error types
 ├── mapper/                  # DB-specific persistence layer
@@ -411,6 +411,9 @@ Important keys currently loaded there:
 Important nuance:
 
 - Use `db.mongodb.url` and `db.mysql.url` for database connection strings; legacy `mongodb.uri` and `mysql.uri` keys are intentionally not registered.
+- `.env` values may reuse variables defined earlier with `${NAME}`. Both Docker
+  Compose and `godotenv` expand this form; do not use shell default expressions
+  such as `${NAME:-default}` when the same file must work in both paths.
 - SMTP keys are wired from `.env`, and configured delivery has been manually verified by the project owner. Automated registration and password-reset tests must replace email delivery rather than contact a real provider.
 
 ## Database Utilities
@@ -502,6 +505,10 @@ Repo scripts include:
 
 - `scripts/build.sh`, `scripts/start.sh`, and `scripts/stop.sh` for the API
   container lifecycle
+- `scripts/dependencies/mongodb/build.sh`, `start.sh`, and `stop.sh` for the
+  independent MongoDB project
+- `scripts/dependencies/mysql/build.sh`, `start.sh`, and `stop.sh` for the
+  independent MySQL project
 - `test/scripts/api-smoke.sh`
 - `test/scripts/budget-smoke.ps1`
 - `test/scripts/mysql-migrations-smoke.ps1`
@@ -532,7 +539,8 @@ Migration assets include:
 - Legacy MongoDB index script `migrations/001_add_indexes.js`; it is not safe for the current multi-user schema until its obsolete indexes are reconciled
 - MySQL schema creation and reconciliation scripts `002` through `012`
 - `config/default_categories.json` for category seeding
-- Docker init scripts under `docker/mongodb/` and `docker/mysql/`
+- Docker dependency Compose and initialization assets under
+  `docker/dependencies/mongodb/` and `docker/dependencies/mysql/`
 
 When changing persistence shape, update:
 
@@ -594,11 +602,15 @@ Unit test guidance:
 Use these as the code-accurate defaults:
 
 ```bash
-# Start MongoDB dependency
-docker compose --env-file .env -f docker/dependencies/compose.mongodb.yml up -d --wait
+# Prepare/start/stop the MongoDB dependency
+scripts/dependencies/mongodb/build.sh
+scripts/dependencies/mongodb/start.sh
+scripts/dependencies/mongodb/stop.sh
 
-# Start MySQL dependency
-docker compose --env-file .env -f docker/dependencies/compose.mysql.yml up -d --wait
+# Prepare/start/stop the MySQL dependency
+scripts/dependencies/mysql/build.sh
+scripts/dependencies/mysql/start.sh
+scripts/dependencies/mysql/stop.sh
 
 # Build and start the backend independently
 scripts/build.sh
@@ -666,7 +678,7 @@ Use this section as a lightweight backlog of mismatches between implementation, 
 - [ ] Decide whether MongoDB needs applied-version tracking beyond startup index reconciliation; current MongoDB migration assets do not maintain an applied-version ledger
 - [ ] Keep `docs/roadmap.md` synchronized with the actual working branch/version plan as collaboration decisions evolve
 - [x] Reconcile MongoDB bootstrap, migration, and runtime indexes with user/type/parent/name category uniqueness and remove obsolete `flow_type` indexes
-- [ ] Retire or rewrite `docker/mongodb/init-mongo-demo.js`; it is a legacy single-user fixture that does not match current ownership, audit, category-type, or BSON date fields
+- [ ] Retire or rewrite `docker/dependencies/mongodb/init-mongo-demo.js`; it is a legacy single-user fixture that does not match current ownership, audit, category-type, or BSON date fields
 - [x] Parameterize dynamic MySQL ID-list queries and use exact user-scoped category cache keys with targeted invalidation
 
 ## Testing Expectation Right Now

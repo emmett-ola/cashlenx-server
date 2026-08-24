@@ -1,4 +1,4 @@
--- MySQL initialization script for CashLenX - SCHEMA ONLY
+-- Legacy MySQL initialization script for CashLenX - SCHEMA ONLY
 -- This script creates tables with basic default categories
 -- Demo/test data is available in init-mysql-demo.sql (import manually via CLI: cashlenx manage import)
 

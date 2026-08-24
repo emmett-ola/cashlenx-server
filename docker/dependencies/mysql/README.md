@@ -1,9 +1,13 @@
-# MySQL Initialization Files
+# MySQL Dependency
+
+This directory owns the MySQL Compose project and bootstrap assets.
 
 ## Canonical Bootstrap
 
 `init-mysql.sql` is mounted by Docker Compose and runs only when a new MySQL
-data volume is initialized. It creates the current tables and indexes for:
+data volume is initialized. The official image executes it in `MYSQL_DATABASE`,
+which Compose derives from `DB_NAME`; the SQL does not repeat a database name.
+It creates the current tables and indexes for:
 
 - users and user configurations;
 - refresh tokens and operation confirmation codes;
@@ -13,11 +17,16 @@ data volume is initialized. It creates the current tables and indexes for:
 It does not insert categories or transactions. Default categories are created
 per user by the application from `config/default_categories.json`.
 
-Start a fresh MySQL 8 container with:
+Prepare and start MySQL 8 from the repository root with:
 
 ```bash
-docker compose --profile mysql up -d mysql
+scripts/dependencies/mysql/build.sh
+scripts/dependencies/mysql/start.sh
 ```
+
+Stop its container and network while retaining `cashlenx-mysql-data` with
+`scripts/dependencies/mysql/stop.sh`. These scripts never start or stop the API
+container.
 
 Changing an initialization SQL file does not update an existing Docker volume.
 Use the numbered migrations for deliberate schema work, or recreate a
@@ -26,7 +35,7 @@ disposable development volume.
 ## Numbered Migration Validation
 
 The current MySQL development schema is also represented by the SQL migrations
-under `../../migrations/`. On Windows, apply the complete sequence to a
+under `../../../migrations/`. On Windows, apply the complete sequence to a
 disposable MySQL 8 container with:
 
 ```powershell
@@ -58,7 +67,8 @@ The script uses disposable infrastructure and cleans up its test data.
 
 ## Related Files
 
-- Docker Compose: `../../compose.yml`
-- Current models: `../../model/`
-- MySQL mappers: `../../mapper/`
-- Numbered migrations: `../../migrations/`
+- Docker Compose: `compose.yml`
+- Lifecycle scripts: `../../../scripts/dependencies/mysql/`
+- Current models: `../../../model/`
+- MySQL mappers: `../../../mapper/`
+- Numbered migrations: `../../../migrations/`

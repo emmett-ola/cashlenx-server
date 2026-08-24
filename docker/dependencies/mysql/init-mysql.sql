@@ -1,9 +1,7 @@
--- MySQL initialization script for CashLenX - SCHEMA ONLY
+-- MySQL dependency initialization script for CashLenX - SCHEMA ONLY
 -- This script creates the current schema. The application creates default
 -- categories per user; the legacy init-mysql-demo.sql is not compatible with
 -- this schema.
-
-USE cashlenx;
 
 -- -------------------
 -- Create table `users`

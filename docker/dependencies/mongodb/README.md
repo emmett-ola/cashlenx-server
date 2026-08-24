@@ -1,7 +1,7 @@
-# MongoDB Initialization
+# MongoDB Dependency
 
-This directory contains the MongoDB bootstrap assets used by `compose.yml`.
-MongoDB is the default development and beta deployment backend.
+This directory owns the MongoDB Compose project and bootstrap assets. MongoDB is
+the default development and beta deployment backend.
 
 ## Canonical Bootstrap
 
@@ -19,11 +19,16 @@ Default categories are not global database seed data. The application creates
 a user-scoped copy from `config/default_categories.json` whenever a user is
 created. The bootstrap admin is created by the server on first startup.
 
-Start a fresh MongoDB container with:
+Prepare and start MongoDB from the repository root with:
 
 ```bash
-docker compose --profile mongodb up -d mongodb
+scripts/dependencies/mongodb/build.sh
+scripts/dependencies/mongodb/start.sh
 ```
+
+Stop its container and network while retaining `cashlenx-mongodb-data` with
+`scripts/dependencies/mongodb/stop.sh`. These scripts never start or stop the
+API container.
 
 Changing `init-mongo.js` does not update an existing data directory. Recreate
 only disposable development data, or apply a reviewed migration to persistent
@@ -67,9 +72,10 @@ the test environment for complete app journeys.
 
 ## Related Files
 
-- Compose configuration: `../../compose.yml`
-- Default categories: `../../config/default_categories.json`
-- Current models: `../../model/`
-- MongoDB mappers: `../../mapper/`
-- Migration notes: `../../migrations/README.md`
+- Compose configuration: `compose.yml`
+- Lifecycle scripts: `../../../scripts/dependencies/mongodb/`
+- Default categories: `../../../config/default_categories.json`
+- Current models: `../../../model/`
+- MongoDB mappers: `../../../mapper/`
+- Migration notes: `../../../migrations/README.md`
 - MySQL initialization guide: `../mysql/README.md`
