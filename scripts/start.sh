@@ -77,7 +77,9 @@ invalid_configuration_keys() {
       db_type = values["DB_TYPE"] == "" ? "mongodb" : values["DB_TYPE"]
       if (db_type == "mongodb") {
         docker_uri = values["DOCKER_MONGO_DB_URI"]
-        if (docker_uri == "" || index(docker_uri, "MONGO_ROOT_USERNAME") > 0 || index(docker_uri, "MONGO_ROOT_PASSWORD") > 0) {
+        if (docker_uri == "") {
+          print "DOCKER_MONGO_DB_URI"
+        } else if (index(docker_uri, "MONGO_ROOT_USERNAME") > 0 || index(docker_uri, "MONGO_ROOT_PASSWORD") > 0) {
           require_value("MONGO_ROOT_USERNAME")
           require_value("MONGO_ROOT_PASSWORD")
         } else if (unsafe("DOCKER_MONGO_DB_URI", docker_uri)) {
@@ -85,7 +87,9 @@ invalid_configuration_keys() {
         }
       } else if (db_type == "mysql") {
         docker_uri = values["DOCKER_MYSQL_DB_URI"]
-        if (docker_uri == "" || index(docker_uri, "MYSQL_USER") > 0 || index(docker_uri, "MYSQL_PASSWORD") > 0) {
+        if (docker_uri == "") {
+          print "DOCKER_MYSQL_DB_URI"
+        } else if (index(docker_uri, "MYSQL_USER") > 0 || index(docker_uri, "MYSQL_PASSWORD") > 0) {
           require_value("MYSQL_USER")
           require_value("MYSQL_PASSWORD")
         } else if (unsafe("DOCKER_MYSQL_DB_URI", docker_uri)) {

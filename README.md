@@ -53,9 +53,11 @@ cp .env.example .env
 
 MongoDB remains the default and supported beta deployment database. MySQL 8 is also runnable: the full Flutter/API contract and the numbered SQL sequence are verified against disposable containers. Server startup tracks and applies MySQL migrations through `schema_migrations`.
 
-Database URIs in `.env.example` reuse the username, password, and database name
-defined above them. Docker Compose and the Server dotenv loader expand those
-references, so each credential has one configuration owner.
+Local and Docker database URIs in `.env.example` reuse the username, password,
+port, and database name defined above them. Their hostnames remain intentionally
+different. Docker Compose and the Server dotenv loader expand those references,
+so each atomic value has one configuration owner; Compose does not repeat
+credential or port fallback constants.
 
 Every assignment in `.env.example` is active. Optional capabilities use explicit
 lowercase boolean switches such as `SMTP_ENABLED=false`; database dependency

@@ -29,8 +29,8 @@ services:
     environment:
       TZ: ${TIMEZONE:-UTC}
       GIT_COMMIT: ${GIT_COMMIT:-unknown}
-      MONGO_DB_URI: ${DOCKER_MONGO_DB_URI:-mongodb://${MONGO_ROOT_USERNAME:-cashlenx}:${MONGO_ROOT_PASSWORD:-cashlenx123}@host.docker.internal:${MONGO_PORT:-27017}/${DB_NAME:-cashlenx}?authSource=admin&retryWrites=false}
-      MYSQL_DB_URI: ${DOCKER_MYSQL_DB_URI:-${MYSQL_USER:-cashlenx}:${MYSQL_PASSWORD:-cashlenx123}@tcp(host.docker.internal:${MYSQL_PORT:-3306})}
+      MONGO_DB_URI: ${DOCKER_MONGO_DB_URI:-}
+      MYSQL_DB_URI: ${DOCKER_MYSQL_DB_URI:-}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:

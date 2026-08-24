@@ -202,6 +202,18 @@ sed 's/^MYSQL_DATA_VOLUME_NAME=.*$/MYSQL_DATA_VOLUME_NAME=invalid name/' \
 reset_log
 assert_rejected "$invalid_storage_env_name" scripts/dependencies/mysql/start.sh MYSQL_DATA_VOLUME_NAME 'invalid name'
 
+sed 's|^DOCKER_MONGO_DB_URI=.*$|DOCKER_MONGO_DB_URI=|' \
+  "$api_env" > "$invalid_storage_env"
+reset_log
+assert_rejected "$invalid_storage_env_name" scripts/start.sh DOCKER_MONGO_DB_URI
+run_script scripts/build.sh "$invalid_storage_env_name"
+assert_log_contains "build server"
+
+sed 's|^DOCKER_MYSQL_DB_URI=.*$|DOCKER_MYSQL_DB_URI=|' \
+  "$mysql_env" > "$invalid_storage_env"
+reset_log
+assert_rejected "$invalid_storage_env_name" scripts/start.sh DOCKER_MYSQL_DB_URI
+
 reset_log
 assert_rejected .env.lifecycle-missing scripts/dependencies/mongodb/build.sh "Missing environment file"
 assert_rejected "$outside_env" scripts/dependencies/mongodb/build.sh "ENV_FILE must stay inside"

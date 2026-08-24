@@ -414,6 +414,10 @@ Important nuance:
 - `.env` values may reuse variables defined earlier with `${NAME}`. Both Docker
   Compose and `godotenv` expand this form; do not use shell default expressions
   such as `${NAME:-default}` when the same file must work in both paths.
+- `MONGO_DB_URI`, `MYSQL_DB_URI`, and their Docker-specific counterparts derive
+  credentials, ports, and database names from earlier atomic keys. Keep direct
+  local and container hostnames distinct, but do not repeat atomic values as URI
+  fallback constants in Compose or environment files.
 - `.env.example` keeps every assignment active. Optional capabilities use
   explicit lowercase boolean switches; disabled capability values and
   unselected database values remain present but are ignored by startup
