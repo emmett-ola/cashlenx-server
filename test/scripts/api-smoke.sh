@@ -24,7 +24,7 @@ SERVER_PID=""
 
 usage() {
   cat <<'EOF'
-Usage: scripts/smoke-api.sh [--with-mongodb] [--managed]
+Usage: test/scripts/api-smoke.sh [--with-mongodb] [--managed]
 
 Runs the CashLenX API smoke flow.
 

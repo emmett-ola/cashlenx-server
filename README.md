@@ -35,7 +35,8 @@ cashlenx-server/
 ├── middleware/              # Auth, admin, CORS, logging, schema validation
 ├── migrations/              # MongoDB/MySQL migration scripts
 ├── model/                   # Entities, DTOs, response types, constants
-├── scripts/                 # Start and docs helper scripts
+├── scripts/                 # Container build/start/stop entry points
+├── test/scripts/            # Disposable integration smoke checks
 ├── service/                 # Business logic
 ├── util/                    # Config, logging, DB, email, date, ID, HTTP helpers
 ├── validation/              # Validation helpers and tests
@@ -76,11 +77,15 @@ endpoint. Start the selected dependency separately first.
 ```bash
 scripts/build.sh
 scripts/start.sh
+scripts/stop.sh
 ```
 
-The script requires an existing reviewed `.env`; it never creates one from
-development defaults and never manages dependency containers. Run
-`scripts/health.sh` independently to verify the deployed API.
+The scripts require an existing reviewed `.env`; they never create one from
+development defaults and never manage dependency containers. `build.sh`
+compiles the server and builds its image. `start.sh` starts or updates the API
+container from that existing image and waits for the Compose healthcheck.
+`stop.sh` removes the API container and its project network while preserving
+the image, bind-mounted logs, database projects, and database volumes.
 
 The server and database ports bind to `127.0.0.1` by default. `.env.sample`
 defines configurable CPU, memory, PID, graceful-stop, health-check, image, log
@@ -154,24 +159,26 @@ These endpoints are intentionally outside `/api/v0` and the OpenAPI/JWT middlewa
 ```bash
 go build -o cashlenx main.go
 go test ./...
-scripts/ci-test.sh
+go test -v -race -covermode=atomic -coverprofile=coverage.out ./...
 ```
 
 On Windows, validate the numbered MySQL migrations independently:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/smoke-mysql-migrations.ps1
+powershell -ExecutionPolicy Bypass -File test/scripts/mysql-migrations-smoke.ps1
 
 # Focused user-scoped budget parity against disposable databases
-powershell -ExecutionPolicy Bypass -File scripts/smoke-budget.ps1 -Database mongodb
-powershell -ExecutionPolicy Bypass -File scripts/smoke-budget.ps1 -Database mysql
+powershell -ExecutionPolicy Bypass -File test/scripts/budget-smoke.ps1 -Database mongodb
+powershell -ExecutionPolicy Bypass -File test/scripts/budget-smoke.ps1 -Database mysql
 ```
 
-The sibling Flutter client owns the end-to-end database smoke flow. From
-`../cashlenx-app`, use `scripts/smoke-api.ps1` for MongoDB (default) or pass
-`-Database mysql` for MySQL 8.
+Run the managed MongoDB API smoke flow with
+`test/scripts/api-smoke.sh --managed`. The sibling Flutter client does not
+currently ship a maintained live API harness.
 
-Test coverage is still uneven while the project is under development. GitHub Actions uses `scripts/ci-test.sh` to run the full Go test suite with race detection and `coverage.out` generation for Codecov. DeepSource handles code analysis.
+Test coverage is still uneven while the project is under development. GitHub
+Actions runs the full Go test suite with race detection and `coverage.out`
+generation for Codecov. DeepSource handles code analysis.
 
 ## Technology
 

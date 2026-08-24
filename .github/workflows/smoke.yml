@@ -31,7 +31,7 @@ jobs:
           cache: true
 
       - name: Verify smoke script syntax
-        run: bash -n scripts/smoke-api.sh
+        run: bash -n test/scripts/api-smoke.sh
 
       - name: Run managed MongoDB API smoke test
         env:
@@ -39,4 +39,4 @@ jobs:
           ADMIN_PASSWORD: admin
           API_VERSION: v0
           SMOKE_SERVER_PORT: 18080
-        run: scripts/smoke-api.sh --managed
+        run: test/scripts/api-smoke.sh --managed

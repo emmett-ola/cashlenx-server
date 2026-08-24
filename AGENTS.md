@@ -500,11 +500,11 @@ The docs are useful, but code should win when they disagree.
 
 Repo scripts include:
 
-- `scripts/build.sh`, `scripts/start.sh`, `scripts/start.ps1`, `scripts/health.sh`
-- `scripts/interactive.ps1`, `scripts/interactive.sh`
-- `scripts/generate-docs.ps1`, `scripts/generate-docs.sh`
-- `scripts/smoke-api.sh`
-- `scripts/ci-test.sh`
+- `scripts/build.sh`, `scripts/start.sh`, and `scripts/stop.sh` for the API
+  container lifecycle
+- `test/scripts/api-smoke.sh`
+- `test/scripts/budget-smoke.ps1`
+- `test/scripts/mysql-migrations-smoke.ps1`
 
 ### CI
 
@@ -515,13 +515,15 @@ DeepSource configuration: `.deepsource.toml`
 Current CI behavior:
 
 - builds the repo
-- runs `scripts/ci-test.sh`, which executes `go test -v -race -covermode=atomic -coverprofile=coverage.out ./...`
+- runs `go test -v -race -covermode=atomic -coverprofile=coverage.out ./...`
 - uploads coverage to Codecov from GitHub Actions when provider credentials/network are available
 - uses DeepSource for repository code analysis
 - builds Docker image
 - generates Swagger UI HTML docs from `docs/openapi.yaml`
 
-Important: CI unit tests do not run the live MongoDB-backed `scripts/smoke-api.sh`; that remains an environment smoke check against a running server.
+Important: the main CI unit-test job does not run the live MongoDB-backed
+`test/scripts/api-smoke.sh`; the separate smoke workflow runs it against
+disposable infrastructure.
 
 ## Migrations and Data Setup
 
@@ -583,7 +585,9 @@ Unit test guidance:
 - The `v0.9.0` service baseline and decision not to add a recent-query cache are recorded in `docs/performance.md`; revisit that decision only with production evidence or multi-instance coherence requirements
 - The MySQL migration runner integration test is build-tagged in `migrations/runner_integration_test.go`; run it only with `MYSQL_TEST_DSN` targeting a disposable database
 - API integration tests should exercise controller-to-database behavior separately from `go test ./...`, for example through the smoke script against Docker-backed services
-- MySQL runtime parity is covered by the Flutter smoke script in `../cashlenx-app`; numbered migrations are checked independently by `scripts/smoke-mysql-migrations.ps1`
+- Numbered MySQL migrations are checked independently by
+  `test/scripts/mysql-migrations-smoke.ps1`; the Flutter client currently has no
+  maintained live API harness
 
 ## Development Commands
 
@@ -599,6 +603,7 @@ docker compose --env-file .env -f docker/dependencies/compose.mysql.yml up -d --
 # Build and start the backend independently
 scripts/build.sh
 scripts/start.sh
+scripts/stop.sh
 
 # Run API server locally
 go run main.go open start -p 8080
@@ -622,13 +627,14 @@ go build -o cashlenx main.go
 go test ./...
 
 # Run API smoke flow against a running local server
-BASE_URL=http://localhost:8080/api/v0 scripts/smoke-api.sh
+BASE_URL=http://localhost:8080/api/v0 test/scripts/api-smoke.sh
 
 # Validate the numbered SQL sequence against disposable MySQL 8 (Windows)
-powershell -ExecutionPolicy Bypass -File scripts/smoke-mysql-migrations.ps1
+powershell -ExecutionPolicy Bypass -File test/scripts/mysql-migrations-smoke.ps1
 
-# From ../cashlenx-app, run the full Flutter/API flow against disposable MySQL
-powershell -ExecutionPolicy Bypass -File scripts/smoke-api.ps1 -Database mysql
+# Run focused budget parity against disposable MongoDB or MySQL (Windows)
+powershell -ExecutionPolicy Bypass -File test/scripts/budget-smoke.ps1 -Database mongodb
+powershell -ExecutionPolicy Bypass -File test/scripts/budget-smoke.ps1 -Database mysql
 ```
 
 ## Guidelines For Future Changes

@@ -7,7 +7,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$serverRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
+$serverRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
 $runId = "$(Get-Date -Format yyyyMMddHHmmss)-$PID"
 $container = "cashlenx-budget-smoke-$Database-$runId"
 $dbName = if ($Database -eq "mongodb") { "cashlenx_budget_smoke_$($runId -replace '-', '_')" } else { "cashlenx" }

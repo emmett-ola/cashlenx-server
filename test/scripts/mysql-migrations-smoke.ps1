@@ -1,7 +1,7 @@
 param([string]$MySqlImage = "mysql:8.0")
 
 $ErrorActionPreference = "Continue"
-$repoRoot = Split-Path -Parent $PSScriptRoot
+$repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
 $container = "cashlenx-mysql-migrations-$(Get-Date -Format yyyyMMddHHmmss)-$PID"
 
 try {

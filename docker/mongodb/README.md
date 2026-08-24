@@ -54,16 +54,16 @@ broad category-name indexes after current replacements are created.
 `init-mongo-demo.js` is retained as a legacy fixture only. Do not load it into
 the current schema: it expects global categories, writes obsolete `flow_type`
 fields, stores dates as strings, and does not set user ownership or audit
-metadata. Use the managed API smoke flow or the sibling Flutter smoke flow to
-create isolated, user-scoped test data instead.
+metadata. Use the managed API smoke flow to create isolated, user-scoped test
+data instead.
 
 ```bash
 # Starts disposable MongoDB plus the API and runs the backend smoke flow.
-scripts/smoke-api.sh --managed
+test/scripts/api-smoke.sh --managed
 ```
 
-From `../cashlenx-app`, `scripts/smoke-api.ps1` runs the broader Flutter/API
-contract against disposable infrastructure.
+The sibling Flutter client currently has no maintained live API harness; use
+the test environment for complete app journeys.
 
 ## Related Files
 

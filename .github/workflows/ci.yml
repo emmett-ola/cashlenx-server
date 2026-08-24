@@ -31,7 +31,7 @@ jobs:
       run: go build -v ./...
 
     - name: Run tests with coverage
-      run: scripts/ci-test.sh
+      run: go test -v -race -covermode=atomic -coverprofile=coverage.out ./...
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4

@@ -8,7 +8,7 @@ On Windows, apply every numbered SQL migration to disposable MySQL 8 and
 verify the expected tables with:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/smoke-mysql-migrations.ps1
+powershell -ExecutionPolicy Bypass -File test/scripts/mysql-migrations-smoke.ps1
 ```
 
 This validates the migration sequence independently. The application runner
