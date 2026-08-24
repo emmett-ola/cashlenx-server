@@ -41,7 +41,7 @@ services:
         source: ${SERVER_LOG_PATH:-../logs/docker}
         target: /app/logs
     healthcheck:
-      test: ["CMD-SHELL", "curl --fail --silent --show-error --max-time 3 http://127.0.0.1:$${SERVER_PORT:-11063}/api/$${API_VERSION:-v0}/open/health >/dev/null"]
+      test: ["CMD-SHELL", "wget -q -T 3 -O /dev/null http://127.0.0.1:$${SERVER_PORT:-11063}/api/$${API_VERSION:-v0}/open/health"]
       interval: ${SERVER_HEALTHCHECK_INTERVAL:-15s}
       timeout: ${SERVER_HEALTHCHECK_TIMEOUT:-5s}
       retries: ${SERVER_HEALTHCHECK_RETRIES:-3}

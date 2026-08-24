@@ -4,9 +4,6 @@ ARG RUNTIME_IMAGE=alpine:3.18
 FROM ${GO_BUILD_IMAGE} AS builder
 WORKDIR /app
 
-# Install dependencies for building
-RUN apk add --no-cache git
-
 # Copy go mod files and download dependencies
 COPY go.mod go.sum ./
 RUN go mod download
@@ -20,9 +17,6 @@ FROM ${RUNTIME_IMAGE}
 ARG GIT_COMMIT=unknown
 LABEL org.opencontainers.image.revision="${GIT_COMMIT}"
 WORKDIR /app
-
-# Install curl for health checks and IANA timezone data for TIMEZONE/TZ.
-RUN apk add --no-cache curl tzdata
 
 # Create necessary directories
 RUN mkdir -p docs

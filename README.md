@@ -133,6 +133,10 @@ as its standard `TZ` environment variable. Compose only passes the string
 through; lifecycle validation and the Go runtime enforce the shared timezone
 contract. The server image records the source revision in
 the OCI `org.opencontainers.image.revision` label.
+The image build does not install Alpine packages: Go embeds the IANA timezone
+database, and the Compose healthcheck uses the Alpine base image's BusyBox
+`wget` applet. A temporary Alpine package-index outage therefore does not block
+the Server image build.
 
 Dependency scripts support the same `ENV_FILE` selection. For example:
 

@@ -433,6 +433,10 @@ Important nuance:
   `*_DATA_VOLUME_NAME`; non-empty values must be absolute host bind paths.
   Changing a storage source never migrates or deletes existing data, and
   dependency stop must preserve both storage forms.
+- The Server Dockerfile intentionally avoids `apk add`. Go embeds IANA timezone
+  data through `time/tzdata`, and the API Compose healthcheck uses the Alpine
+  base image's BusyBox `wget`; preserve this package-repository-independent
+  image build unless a new runtime requirement proves necessary.
 - SMTP keys are wired from `.env`, and configured delivery has been manually verified by the project owner. Automated registration and password-reset tests must replace email delivery rather than contact a real provider.
 
 ## Database Utilities
