@@ -21,8 +21,8 @@ ARG GIT_COMMIT=unknown
 LABEL org.opencontainers.image.revision="${GIT_COMMIT}"
 WORKDIR /app
 
-# Install curl for health checks
-RUN apk add --no-cache curl
+# Install curl for health checks and IANA timezone data for TIMEZONE/TZ.
+RUN apk add --no-cache curl tzdata
 
 # Create necessary directories
 RUN mkdir -p docs

@@ -11,7 +11,7 @@ services:
     pids_limit: ${MONGO_PIDS_LIMIT:-256}
     stop_grace_period: ${MONGO_STOP_GRACE_PERIOD:-30s}
     environment:
-      TZ: ${TZ:-Asia/Singapore}
+      TZ: ${TIMEZONE:-UTC}
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:?MONGO_ROOT_USERNAME is required}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?MONGO_ROOT_PASSWORD is required}
       MONGO_INITDB_DATABASE: ${DB_NAME:-cashlenx}

@@ -414,6 +414,13 @@ Important nuance:
 - `.env` values may reuse variables defined earlier with `${NAME}`. Both Docker
   Compose and `godotenv` expand this form; do not use shell default expressions
   such as `${NAME:-default}` when the same file must work in both paths.
+- `.env.example` keeps every assignment active. Optional capabilities use
+  explicit lowercase boolean switches; disabled capability values and
+  unselected database values remain present but are ignored by startup
+  validation. Dependency script selection, not `DB_TYPE` or an enable flag,
+  determines which database container is managed.
+- `TIMEZONE` is the only operator-facing timezone key. Compose maps it to the
+  standard container `TZ` variable for the API, MongoDB, and MySQL projects.
 - SMTP keys are wired from `.env`, and configured delivery has been manually verified by the project owner. Automated registration and password-reset tests must replace email delivery rather than contact a real provider.
 
 ## Database Utilities

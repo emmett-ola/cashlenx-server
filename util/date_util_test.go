@@ -18,6 +18,19 @@ func TestLoadTimezone_UTC(t *testing.T) {
 	}
 }
 
+func TestLoadTimezone_IANAName(t *testing.T) {
+	originalTz := GetConfigByKey("timezone")
+	defer SetConfigByKey("timezone", originalTz)
+
+	SetConfigByKey("timezone", "Asia/Shanghai")
+	loadTimezone()
+
+	testUTC := time.Date(2023, 1, 1, 12, 0, 0, 0, time.UTC)
+	if got := testUTC.In(timezone).Hour(); got != 20 {
+		t.Fatalf("Asia/Shanghai hour = %d, want 20", got)
+	}
+}
+
 func TestLoadTimezone_UTCOffsetHours(t *testing.T) {
 	// Save original timezone
 	originalTz := GetConfigByKey("timezone")

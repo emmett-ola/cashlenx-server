@@ -4,11 +4,14 @@ set -euo pipefail
 project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 fake_dir="$(mktemp -d)"
 fake_log="$fake_dir/docker.log"
-test_env="$(mktemp "$project_dir/.env.lifecycle-test.XXXXXX")"
+api_env="$(mktemp "$project_dir/.env.lifecycle-api.XXXXXX")"
+mysql_env="$(mktemp "$project_dir/.env.lifecycle-mysql.XXXXXX")"
+smtp_env="$(mktemp "$project_dir/.env.lifecycle-smtp.XXXXXX")"
+invalid_boolean_env="$(mktemp "$project_dir/.env.lifecycle-boolean.XXXXXX")"
 outside_env="$(mktemp)"
 
 cleanup() {
-  rm -f "$test_env" "$outside_env"
+  rm -f "$api_env" "$mysql_env" "$smtp_env" "$invalid_boolean_env" "$outside_env"
   rm -rf "$fake_dir"
 }
 trap cleanup EXIT
@@ -24,16 +27,20 @@ sed \
   -e 's/CHANGE_ME_MONGO_PASSWORD/lifecycle-mongo-password/g' \
   -e 's/CHANGE_ME_JWT_SECRET/lifecycle-jwt-secret-with-more-than-32-bytes/g' \
   -e 's/CHANGE_ME_ADMIN_PASSWORD/lifecycle-admin-password/g' \
-  "$project_dir/.env.example" > "$test_env"
-cat >> "$test_env" <<'EOF'
-MYSQL_ROOT_PASSWORD=lifecycle-mysql-root-password
-MYSQL_USER=cashlenx
-MYSQL_PASSWORD=lifecycle-mysql-password
-MYSQL_DB_URI=${MYSQL_USER}:${MYSQL_PASSWORD}@tcp(localhost:3306)
-EOF
+  "$project_dir/.env.example" > "$api_env"
+sed \
+  -e 's/CHANGE_ME_MYSQL_ROOT_PASSWORD/lifecycle-mysql-root-password/g' \
+  -e 's/CHANGE_ME_MYSQL_PASSWORD/lifecycle-mysql-password/g' \
+  -e 's/^DB_TYPE=mongodb$/DB_TYPE=mysql/' \
+  "$api_env" > "$mysql_env"
+sed 's/^SMTP_ENABLED=false$/SMTP_ENABLED=true/' "$api_env" > "$smtp_env"
+sed 's/^SMTP_ENABLED=false$/SMTP_ENABLED=ture/' "$api_env" > "$invalid_boolean_env"
 printf 'ENV=dev\n' > "$outside_env"
 
-env_name="${test_env#"$project_dir/"}"
+api_env_name="${api_env#"$project_dir/"}"
+mysql_env_name="${mysql_env#"$project_dir/"}"
+smtp_env_name="${smtp_env#"$project_dir/"}"
+invalid_boolean_env_name="${invalid_boolean_env#"$project_dir/"}"
 test_path="$fake_dir:$PATH"
 
 reset_log() {
@@ -42,7 +49,8 @@ reset_log() {
 
 run_script() {
   local script="$1"
-  PATH="$test_path" FAKE_DOCKER_LOG="$fake_log" ENV_FILE="$env_name" \
+  local selected_env="${2:-$api_env_name}"
+  PATH="$test_path" FAKE_DOCKER_LOG="$fake_log" ENV_FILE="$selected_env" \
     bash "$project_dir/$script"
 }
 
@@ -105,7 +113,7 @@ if grep -F -- ' up ' "$fake_log" >/dev/null; then
 fi
 
 reset_log
-run_script scripts/dependencies/mysql/start.sh
+run_script scripts/dependencies/mysql/start.sh "$mysql_env_name"
 assert_log_contains "--pull never --remove-orphans --wait mysql"
 
 reset_log
@@ -120,6 +128,20 @@ if grep -F -- 'dependencies/' "$fake_log" >/dev/null; then
   echo "API start unexpectedly invoked a dependency Compose project" >&2
   exit 1
 fi
+
+reset_log
+run_script scripts/start.sh "$mysql_env_name"
+assert_log_contains "-f $project_dir/docker/compose.yml up -d --no-build --remove-orphans --wait server"
+
+reset_log
+assert_rejected "$smtp_env_name" scripts/start.sh SMTP_PASSWORD
+if grep -F -- ' up ' "$fake_log" >/dev/null; then
+  echo "API start reached Docker with enabled placeholder SMTP credentials" >&2
+  exit 1
+fi
+
+reset_log
+assert_rejected "$invalid_boolean_env_name" scripts/start.sh SMTP_ENABLED
 
 reset_log
 assert_rejected .env.lifecycle-missing scripts/dependencies/mongodb/build.sh "Missing environment file"

@@ -31,7 +31,7 @@ resolve_env_file() {
   esac
 }
 
-unsafe_value_keys() {
+invalid_configuration_keys() {
   awk -F= '
     function clean(value) {
       gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
@@ -41,49 +41,59 @@ unsafe_value_keys() {
       }
       return value
     }
-    /^[A-Za-z_][A-Za-z0-9_]*=/ {
-      key = $1
-      value = clean(substr($0, index($0, "=") + 1))
-      invalid = index(value, "CHANGE_ME") > 0
-      invalid = invalid || (key == "JWT_SECRET" && value == "your-secret-key-here-change-in-production")
-      invalid = invalid || (key == "ADMIN_PASSWORD" && value == "admin")
-      invalid = invalid || ((key == "MONGO_ROOT_PASSWORD" || key == "MYSQL_ROOT_PASSWORD" || key == "MYSQL_PASSWORD") && value == "cashlenx123")
-      invalid = invalid || ((key == "MONGO_DB_URI" || key == "MYSQL_DB_URI") && index(value, "cashlenx123") > 0)
-      if (invalid) print key
+    function unsafe(key, value) {
+      if (index(value, "CHANGE_ME") > 0) return 1
+      if (key == "JWT_SECRET" && value == "your-secret-key-here-change-in-production") return 1
+      if (key == "ADMIN_PASSWORD" && value == "admin") return 1
+      if ((key == "MONGO_ROOT_PASSWORD" || key == "MYSQL_PASSWORD") && value == "cashlenx123") return 1
+      if ((key == "DOCKER_MONGO_DB_URI" || key == "DOCKER_MYSQL_DB_URI") && index(value, "cashlenx123") > 0) return 1
+      return 0
     }
-  ' "$env_file"
-}
-
-missing_required_keys() {
-  awk -F= '
-    function clean(value) {
-      gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
-      if ((substr(value, 1, 1) == "\"" && substr(value, length(value), 1) == "\"") ||
-          (substr(value, 1, 1) == "\047" && substr(value, length(value), 1) == "\047")) {
-        value = substr(value, 2, length(value) - 2)
-      }
-      return value
+    function require_value(key) {
+      if (values[key] == "" || unsafe(key, values[key])) print key
     }
     /^[A-Za-z_][A-Za-z0-9_]*=/ {
       values[$1] = clean(substr($0, index($0, "=") + 1))
     }
     END {
-      if (values["JWT_SECRET"] == "") print "JWT_SECRET"
-      if (values["ADMIN_PASSWORD"] == "") print "ADMIN_PASSWORD"
+      boolean_keys[1] = "SCHEMA_VALIDATION"
+      boolean_keys[2] = "AUTH_REGISTRATION_ENABLED"
+      boolean_keys[3] = "SMTP_ENABLED"
+      for (i = 1; i <= 3; i++) {
+        key = boolean_keys[i]
+        if (values[key] != "" && values[key] != "true" && values[key] != "false") print key
+      }
+
+      require_value("JWT_SECRET")
+      require_value("ADMIN_PASSWORD")
+
       db_type = values["DB_TYPE"] == "" ? "mongodb" : values["DB_TYPE"]
       if (db_type == "mongodb") {
         docker_uri = values["DOCKER_MONGO_DB_URI"]
-        if ((docker_uri == "" || index(docker_uri, "MONGO_ROOT_USERNAME") > 0) && values["MONGO_ROOT_USERNAME"] == "") {
-          print "MONGO_ROOT_USERNAME"
+        if (docker_uri == "" || index(docker_uri, "MONGO_ROOT_USERNAME") > 0 || index(docker_uri, "MONGO_ROOT_PASSWORD") > 0) {
+          require_value("MONGO_ROOT_USERNAME")
+          require_value("MONGO_ROOT_PASSWORD")
+        } else if (unsafe("DOCKER_MONGO_DB_URI", docker_uri)) {
+          print "DOCKER_MONGO_DB_URI"
         }
-        if ((docker_uri == "" || index(docker_uri, "MONGO_ROOT_PASSWORD") > 0) && values["MONGO_ROOT_PASSWORD"] == "") {
-          print "MONGO_ROOT_PASSWORD"
-        }
-      }
-      if (db_type == "mysql") {
+      } else if (db_type == "mysql") {
         docker_uri = values["DOCKER_MYSQL_DB_URI"]
-        if ((docker_uri == "" || index(docker_uri, "MYSQL_USER") > 0) && values["MYSQL_USER"] == "") print "MYSQL_USER"
-        if ((docker_uri == "" || index(docker_uri, "MYSQL_PASSWORD") > 0) && values["MYSQL_PASSWORD"] == "") print "MYSQL_PASSWORD"
+        if (docker_uri == "" || index(docker_uri, "MYSQL_USER") > 0 || index(docker_uri, "MYSQL_PASSWORD") > 0) {
+          require_value("MYSQL_USER")
+          require_value("MYSQL_PASSWORD")
+        } else if (unsafe("DOCKER_MYSQL_DB_URI", docker_uri)) {
+          print "DOCKER_MYSQL_DB_URI"
+        }
+      } else {
+        print "DB_TYPE"
+      }
+
+      if (values["SMTP_ENABLED"] == "true") {
+        require_value("SMTP_HOST")
+        require_value("SMTP_PORT")
+        require_value("SMTP_USERNAME")
+        require_value("SMTP_PASSWORD")
+        require_value("SMTP_FROM_ADDRESS")
       }
     }
   ' "$env_file"
@@ -91,7 +101,7 @@ missing_required_keys() {
 
 validate_start_configuration() {
   local invalid_keys
-  invalid_keys="$({ unsafe_value_keys; missing_required_keys; } | sort -u)"
+  invalid_keys="$(invalid_configuration_keys | sort -u)"
   if [[ -n "$invalid_keys" ]]; then
     echo "Unsafe, placeholder, or missing environment values must be fixed before start:" >&2
     while IFS= read -r key; do

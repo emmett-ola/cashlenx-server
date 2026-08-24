@@ -57,6 +57,11 @@ Database URIs in `.env.example` reuse the username, password, and database name
 defined above them. Docker Compose and the Server dotenv loader expand those
 references, so each credential has one configuration owner.
 
+Every assignment in `.env.example` is active. Optional capabilities use explicit
+lowercase boolean switches such as `SMTP_ENABLED=false`; database dependency
+selection remains the explicit script invocation rather than an enable flag.
+`TIMEZONE` is the single application and container timezone source.
+
 MongoDB bootstrap, migration, and runtime index definitions now follow the current user/type/parent/name category scope. MongoDB applied-version tracking is not implemented and remains unscheduled architecture debt; see `docker/dependencies/mongodb/README.md` and `AGENTS.md`.
 
 ### 2. Start a Database
@@ -103,13 +108,16 @@ the image, bind-mounted logs, database projects, and database volumes.
 Use another repository-local configuration consistently with
 `ENV_FILE=.env.testing scripts/build.sh`, `scripts/start.sh`, and
 `scripts/stop.sh`. Missing files and paths outside this repository are rejected.
-Builds may use placeholder values, but startup reports only the unsafe or
-missing key names and stops until they are replaced. Stop remains available
-with an existing file even when its values are incomplete.
+Builds may use placeholder values. Startup validates only the selected database
+and enabled capabilities, reports only unsafe or missing key names, and stops
+until relevant values are replaced. Disabled SMTP and unselected database
+placeholders do not block API startup. Stop remains available with an existing
+file even when its values are incomplete.
 
 The server and database ports bind to `127.0.0.1` by default. `.env.example`
-defines configurable CPU, memory, PID, graceful-stop, health-check, image, log
-path, and timezone settings. The server image records the source revision in
+explicitly sets CPU, memory, PID, graceful-stop, health-check, image, log path,
+and timezone values. `TIMEZONE` is passed to every Server and database container
+as its standard `TZ` environment variable. The server image records the source revision in
 the OCI `org.opencontainers.image.revision` label.
 
 Dependency scripts support the same `ENV_FILE` selection. For example:
