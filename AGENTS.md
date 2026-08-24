@@ -416,8 +416,9 @@ Important nuance:
   such as `${NAME:-default}` when the same file must work in both paths.
 - `MONGO_DB_URI`, `MYSQL_DB_URI`, and their Docker-specific counterparts derive
   credentials, ports, and database names from earlier atomic keys. Keep direct
-  local and container hostnames distinct, but do not repeat atomic values as URI
-  fallback constants in Compose or environment files.
+  local host ports and shared-network container routes distinct, but do not
+  repeat atomic values as URI fallback constants in Compose or environment
+  files. Docker routes use configured container names and internal ports.
 - `.env.example` keeps every assignment active. Optional capabilities use
   explicit lowercase boolean switches; disabled capability values and
   unselected database values remain present but are ignored by startup
@@ -433,7 +434,12 @@ Important nuance:
   `*_DATA_VOLUME_NAME`; non-empty values must be absolute host bind paths.
   Changing a storage source never migrates or deletes existing data, and
   dependency stop must preserve both storage forms.
-- The Server Dockerfile intentionally avoids `apk add`. Go embeds IANA timezone
+- Dockerfile and Compose definitions live under `docker/` or the owning
+  `docker/dependencies/<name>/` subtree. All application and dependency services
+  use explicit project and container name keys and one shared absolute
+  `DOCKER_NETWORK_NAME`; start creates the network idempotently, while stop
+  removes it only when no containers remain connected.
+- The Server `docker/Dockerfile` intentionally avoids `apk add`. Go embeds IANA timezone
   data through `time/tzdata`, and the API Compose healthcheck uses the Alpine
   base image's BusyBox `wget`; preserve this package-repository-independent
   image build unless a new runtime requirement proves necessary.

@@ -2,7 +2,9 @@
 
 MongoDB and MySQL are separate Compose projects for local and operator-managed
 environments. Each dependency owns its Compose file, initialization assets,
-documentation, container, network, and named data volume under its own folder.
+documentation, container, and named data volume under its own folder. All
+projects use explicit project/container names and attach to the absolute shared
+network selected by `DOCKER_NETWORK_NAME`.
 
 The root `scripts/build.sh`, `scripts/start.sh`, and `scripts/stop.sh` manage only
 the API container. They never inspect `DB_TYPE` to start or stop a database.
@@ -20,7 +22,9 @@ scripts/dependencies/mysql/stop.sh
 
 Dependency `build.sh` pulls the configured upstream image, `start.sh` starts
 only that dependency and waits for its healthcheck, and `stop.sh` removes its
-container and project network without removing the image or named data volume.
+container without removing the image or named data volume. Any start creates
+the shared network when absent; stop removes it only after the final attached
+container is gone.
 Each project uses its existing named volume by default. An absolute
 `MONGO_DATA_PATH` or `MYSQL_DATA_PATH` selects a host bind mount instead, while
 the matching `*_DATA_VOLUME_NAME` changes the Docker volume identity when the

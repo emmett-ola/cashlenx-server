@@ -54,10 +54,11 @@ cp .env.example .env
 MongoDB remains the default and supported beta deployment database. MySQL 8 is also runnable: the full Flutter/API contract and the numbered SQL sequence are verified against disposable containers. Server startup tracks and applies MySQL migrations through `schema_migrations`.
 
 Local and Docker database URIs in `.env.example` reuse the username, password,
-port, and database name defined above them. Their hostnames remain intentionally
-different. Docker Compose and the Server dotenv loader expand those references,
-so each atomic value has one configuration owner; Compose does not repeat
-credential or port fallback constants.
+port, and database name defined above them. Direct local routes use the
+published host port; Docker routes use the configured dependency container name
+and internal port on the shared network. Docker Compose and the Server dotenv
+loader expand those references, so each atomic value has one configuration
+owner.
 
 Every assignment in `.env.example` is active. Optional capabilities use explicit
 lowercase boolean switches such as `SMTP_ENABLED=false`; database dependency
@@ -88,9 +89,11 @@ scripts/dependencies/mysql/stop.sh
 The dependencies are separate operator-managed projects and persist data in
 `cashlenx-mongodb-data` and `cashlenx-mysql-data`. Each dependency `build.sh`
 pulls its configured upstream image, `start.sh` starts only that database and
-waits for health, and `stop.sh` removes its container and network while retaining
-the image and named volume. Root Server scripts do not start, stop, or remove
-dependencies, regardless of `DB_TYPE`.
+waits for health, and `stop.sh` removes its container while retaining the image
+and named volume. Every start attaches to the explicitly configured
+`DOCKER_NETWORK_NAME`; a stop removes that network only when no CashLenX
+container remains attached. Root Server
+scripts do not start, stop, or remove dependencies, regardless of `DB_TYPE`.
 
 The named volumes remain the default. Set `MONGO_DATA_PATH` or
 `MYSQL_DATA_PATH` to an absolute host path to use a bind mount instead. Relative
@@ -114,8 +117,9 @@ The scripts require an existing reviewed `.env`; they never create one from
 development defaults and never manage dependency containers. `build.sh`
 compiles the server and builds its image. `start.sh` starts or updates the API
 container from that existing image and waits for the Compose healthcheck.
-`stop.sh` removes the API container and its project network while preserving
-the image, bind-mounted logs, database projects, and database volumes.
+`stop.sh` removes the API container while preserving the image, bind-mounted
+logs, database projects, and database volumes. It removes the shared external
+network only when the network has no connected containers.
 
 Use another repository-local configuration consistently with
 `ENV_FILE=.env.testing scripts/build.sh`, `scripts/start.sh`, and
@@ -137,6 +141,14 @@ The image build does not install Alpine packages: Go embeds the IANA timezone
 database, and the Compose healthcheck uses the Alpine base image's BusyBox
 `wget` applet. A temporary Alpine package-index outage therefore does not block
 the Server image build.
+
+The Server Dockerfile and main Compose definitions live at `docker/Dockerfile`
+and `docker/compose.yml`. `SERVER_PROJECT_NAME`, `MONGO_PROJECT_NAME`, and
+`MYSQL_PROJECT_NAME` explicitly name the three independent Compose projects;
+their matching container-name keys remain independent. All attach to the
+absolute `DOCKER_NETWORK_NAME`, which any start script creates idempotently. The
+API reaches project-managed databases through their configured container DNS
+name and internal port, without a host-gateway route.
 
 Dependency scripts support the same `ENV_FILE` selection. For example:
 

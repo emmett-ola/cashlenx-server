@@ -24,9 +24,11 @@ scripts/dependencies/mysql/build.sh
 scripts/dependencies/mysql/start.sh
 ```
 
-Stop its container and network while retaining `cashlenx-mysql-data` with
+Stop its container while retaining `cashlenx-mysql-data` with
 `scripts/dependencies/mysql/stop.sh`. These scripts never start or stop the API
-container.
+container. Start attaches MySQL to `DOCKER_NETWORK_NAME`; stop removes it only
+if no other container remains attached. `MYSQL_PROJECT_NAME` and
+`MYSQL_CONTAINER_NAME` explicitly control its Compose and container identities.
 
 Leave `MYSQL_DATA_PATH` empty to use the named volume configured by
 `MYSQL_DATA_VOLUME_NAME`. Set it to an absolute host path to bind that directory

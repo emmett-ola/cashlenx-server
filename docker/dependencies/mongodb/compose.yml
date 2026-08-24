@@ -1,4 +1,4 @@
-name: cashlenx-mongodb
+name: ${MONGO_PROJECT_NAME:-cashlenx-mongodb}
 
 services:
   mongodb:
@@ -12,11 +12,13 @@ services:
     stop_grace_period: ${MONGO_STOP_GRACE_PERIOD:-30s}
     environment:
       TZ: ${TIMEZONE:-UTC}
+      MONGO_CONTAINER_PORT: ${MONGO_CONTAINER_PORT:-27017}
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:?MONGO_ROOT_USERNAME is required}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?MONGO_ROOT_PASSWORD is required}
       MONGO_INITDB_DATABASE: ${DB_NAME:-cashlenx}
+    command: ["mongod", "--bind_ip_all", "--port", "${MONGO_CONTAINER_PORT:-27017}"]
     ports:
-      - "${MONGO_BIND_ADDRESS:-127.0.0.1}:${MONGO_PORT:-27017}:27017"
+      - "${MONGO_BIND_ADDRESS:-127.0.0.1}:${MONGO_PORT:-27017}:${MONGO_CONTAINER_PORT:-27017}"
     volumes:
       - "${MONGO_DATA_PATH:-mongodb_data}:/data/db"
       - type: bind
@@ -24,12 +26,19 @@ services:
         target: /docker-entrypoint-initdb.d/init-mongo.js
         read_only: true
     healthcheck:
-      test: ["CMD-SHELL", "mongosh --quiet --username \"$${MONGO_INITDB_ROOT_USERNAME}\" --password \"$${MONGO_INITDB_ROOT_PASSWORD}\" --authenticationDatabase admin --eval 'db.runCommand({ ping: 1 }).ok' 127.0.0.1:27017/$${MONGO_INITDB_DATABASE} >/dev/null"]
+      test: ["CMD-SHELL", "mongosh --quiet --username \"$${MONGO_INITDB_ROOT_USERNAME}\" --password \"$${MONGO_INITDB_ROOT_PASSWORD}\" --authenticationDatabase admin --eval 'db.runCommand({ ping: 1 }).ok' 127.0.0.1:$${MONGO_CONTAINER_PORT:-27017}/$${MONGO_INITDB_DATABASE} >/dev/null"]
       interval: ${MONGO_HEALTHCHECK_INTERVAL:-5s}
       timeout: ${MONGO_HEALTHCHECK_TIMEOUT:-5s}
       retries: ${MONGO_HEALTHCHECK_RETRIES:-20}
       start_period: ${MONGO_HEALTHCHECK_START_PERIOD:-20s}
+    networks:
+      - cashlenx-network
 
 volumes:
   mongodb_data:
     name: ${MONGO_DATA_VOLUME_NAME:-cashlenx-mongodb-data}
+
+networks:
+  cashlenx-network:
+    name: ${DOCKER_NETWORK_NAME:-cashlenx-network}
+    external: true

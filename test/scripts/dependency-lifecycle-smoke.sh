@@ -24,6 +24,13 @@ cat > "$fake_dir/docker" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
 printf '%s\n' "$*" >> "$FAKE_DOCKER_LOG"
+if [[ "${1:-}" == "network" && "${2:-}" == "inspect" ]]; then
+  if [[ "$*" == *"--format"* ]]; then
+    printf '%s\n' "${FAKE_NETWORK_CONNECTIONS:-1}"
+    exit 0
+  fi
+  [[ "${FAKE_NETWORK_EXISTS:-true}" == "true" ]] || exit 1
+fi
 EOF
 chmod +x "$fake_dir/docker"
 
@@ -57,7 +64,10 @@ reset_log() {
 run_script() {
   local script="$1"
   local selected_env="${2:-$api_env_name}"
-  PATH="$test_path" FAKE_DOCKER_LOG="$fake_log" ENV_FILE="$selected_env" \
+  PATH="$test_path" FAKE_DOCKER_LOG="$fake_log" \
+    FAKE_NETWORK_EXISTS="${FAKE_NETWORK_EXISTS:-true}" \
+    FAKE_NETWORK_CONNECTIONS="${FAKE_NETWORK_CONNECTIONS:-1}" \
+    ENV_FILE="$selected_env" \
     bash "$project_dir/$script"
 }
 
@@ -105,13 +115,19 @@ if grep -F -- ' up ' "$fake_log" >/dev/null; then
 fi
 
 reset_log
-run_script scripts/dependencies/mongodb/start.sh
+FAKE_NETWORK_EXISTS=false run_script scripts/dependencies/mongodb/start.sh
+assert_log_contains "network create --driver bridge cashlenx-network"
 assert_log_contains "--pull never --remove-orphans --wait mongodb"
 
 reset_log
 ENV_FILE=.env.example PATH="$test_path" FAKE_DOCKER_LOG="$fake_log" \
+  FAKE_NETWORK_EXISTS=true FAKE_NETWORK_CONNECTIONS=1 \
   bash "$project_dir/scripts/dependencies/mongodb/stop.sh"
 assert_log_contains "-f $project_dir/docker/dependencies/mongodb/compose.yml down --remove-orphans"
+if grep -F -- 'network rm' "$fake_log" >/dev/null; then
+  echo "MongoDB stop removed a shared network with attached containers" >&2
+  exit 1
+fi
 
 reset_log
 run_script scripts/dependencies/mysql/build.sh
@@ -140,6 +156,11 @@ if grep -F -- 'dependencies/' "$fake_log" >/dev/null; then
   echo "API start unexpectedly invoked a dependency Compose project" >&2
   exit 1
 fi
+
+reset_log
+FAKE_NETWORK_EXISTS=true FAKE_NETWORK_CONNECTIONS=0 run_script scripts/stop.sh
+assert_log_contains "-f $project_dir/docker/compose.yml down --remove-orphans"
+assert_log_contains "network rm cashlenx-network"
 
 reset_log
 run_script scripts/start.sh "$mysql_env_name"
@@ -213,6 +234,15 @@ sed 's|^DOCKER_MYSQL_DB_URI=.*$|DOCKER_MYSQL_DB_URI=|' \
   "$mysql_env" > "$invalid_storage_env"
 reset_log
 assert_rejected "$invalid_storage_env_name" scripts/start.sh DOCKER_MYSQL_DB_URI
+
+sed 's/^DOCKER_NETWORK_NAME=.*$/DOCKER_NETWORK_NAME=invalid network name/' \
+  "$api_env" > "$invalid_storage_env"
+reset_log
+assert_rejected "$invalid_storage_env_name" scripts/start.sh DOCKER_NETWORK_NAME 'invalid network name'
+if grep -F -- ' up ' "$fake_log" >/dev/null; then
+  echo "Start reached Compose with an invalid Docker network name" >&2
+  exit 1
+fi
 
 reset_log
 assert_rejected .env.lifecycle-missing scripts/dependencies/mongodb/build.sh "Missing environment file"

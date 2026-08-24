@@ -3,7 +3,7 @@ services:
     image: "${SERVER_IMAGE_NAME:-cashlenx-server}:${SERVER_IMAGE_TAG:-latest}"
     build:
       context: ..
-      dockerfile: Dockerfile
+      dockerfile: docker/Dockerfile
       args:
         GO_BUILD_IMAGE: ${GO_BUILD_IMAGE:?GO_BUILD_IMAGE is required from docker/images.env}
         RUNTIME_IMAGE: ${RUNTIME_IMAGE:?RUNTIME_IMAGE is required from docker/images.env}
@@ -31,8 +31,6 @@ services:
       GIT_COMMIT: ${GIT_COMMIT:-unknown}
       MONGO_DB_URI: ${DOCKER_MONGO_DB_URI:-}
       MYSQL_DB_URI: ${DOCKER_MYSQL_DB_URI:-}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     ports:
       - "${SERVER_BIND_ADDRESS:-127.0.0.1}:${SERVER_PORT:-11063}:${SERVER_PORT:-11063}"
     command: ["-p", "${SERVER_PORT:-11063}"]
@@ -46,3 +44,10 @@ services:
       timeout: ${SERVER_HEALTHCHECK_TIMEOUT:-5s}
       retries: ${SERVER_HEALTHCHECK_RETRIES:-3}
       start_period: ${SERVER_HEALTHCHECK_START_PERIOD:-45s}
+    networks:
+      - cashlenx-network
+
+networks:
+  cashlenx-network:
+    name: ${DOCKER_NETWORK_NAME:-cashlenx-network}
+    external: true

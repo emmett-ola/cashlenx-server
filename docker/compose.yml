@@ -1,4 +1,4 @@
-name: cashlenx-server
+name: ${SERVER_PROJECT_NAME:-cashlenx-server}
 
 include:
   - path: service.yml
