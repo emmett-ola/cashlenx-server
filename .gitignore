@@ -25,7 +25,7 @@ cashlenx
 
 # Config Files
 .env*
-!.env.sample
+!.env.example
 
 # Node.js Files
 node_modules/

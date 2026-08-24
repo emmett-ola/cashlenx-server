@@ -25,7 +25,7 @@ services:
           cpus: "${SERVER_CPU_RESERVATION:-0.5}"
           memory: ${SERVER_MEMORY_RESERVATION:-256m}
     env_file:
-      - ../.env
+      - ${RUNTIME_ENV_FILE:-../.env}
     environment:
       TZ: ${TZ:-Asia/Singapore}
       GIT_COMMIT: ${GIT_COMMIT:-unknown}

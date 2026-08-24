@@ -48,7 +48,7 @@ cashlenx-server/
 ### 1. Configure
 
 ```bash
-cp .env.sample .env
+cp .env.example .env
 ```
 
 MongoDB remains the default and supported beta deployment database. MySQL 8 is also runnable: the full Flutter/API contract and the numbered SQL sequence are verified against disposable containers. Server startup tracks and applies MySQL migrations through `schema_migrations`.
@@ -87,7 +87,14 @@ container from that existing image and waits for the Compose healthcheck.
 `stop.sh` removes the API container and its project network while preserving
 the image, bind-mounted logs, database projects, and database volumes.
 
-The server and database ports bind to `127.0.0.1` by default. `.env.sample`
+Use another repository-local configuration consistently with
+`ENV_FILE=.env.testing scripts/build.sh`, `scripts/start.sh`, and
+`scripts/stop.sh`. Missing files and paths outside this repository are rejected.
+Builds may use placeholder values, but startup reports only the unsafe or
+missing key names and stops until they are replaced. Stop remains available
+with an existing file even when its values are incomplete.
+
+The server and database ports bind to `127.0.0.1` by default. `.env.example`
 defines configurable CPU, memory, PID, graceful-stop, health-check, image, log
 path, and timezone settings. The server image records the source revision in
 the OCI `org.opencontainers.image.revision` label.
