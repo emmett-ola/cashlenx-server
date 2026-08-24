@@ -26,9 +26,10 @@ scripts/dependencies/mongodb/build.sh
 scripts/dependencies/mongodb/start.sh
 ```
 
-Stop its container and network while retaining `cashlenx-mongodb-data` with
+Stop its container while retaining `cashlenx-mongodb-data` with
 `scripts/dependencies/mongodb/stop.sh`. These scripts never start or stop the
-API container.
+API container. Start attaches MongoDB to `DOCKER_NETWORK_NAME`; stop removes the
+shared network only if no other container remains attached.
 
 Leave `MONGO_DATA_PATH` empty to use the named volume configured by
 `MONGO_DATA_VOLUME_NAME`. Set it to an absolute host path to bind that directory

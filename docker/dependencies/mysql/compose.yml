@@ -12,6 +12,7 @@ services:
     stop_grace_period: ${MYSQL_STOP_GRACE_PERIOD:-30s}
     environment:
       TZ: ${TIMEZONE:-UTC}
+      MYSQL_CONTAINER_PORT: ${MYSQL_CONTAINER_PORT:-3306}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}
       MYSQL_DATABASE: ${DB_NAME:-cashlenx}
       MYSQL_USER: ${MYSQL_USER:?MYSQL_USER is required}
@@ -19,8 +20,9 @@ services:
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
+      - --port=${MYSQL_CONTAINER_PORT:-3306}
     ports:
-      - "${MYSQL_BIND_ADDRESS:-127.0.0.1}:${MYSQL_PORT:-3306}:3306"
+      - "${MYSQL_BIND_ADDRESS:-127.0.0.1}:${MYSQL_PORT:-3306}:${MYSQL_CONTAINER_PORT:-3306}"
     volumes:
       - "${MYSQL_DATA_PATH:-mysql_data}:/var/lib/mysql"
       - type: bind
@@ -33,7 +35,14 @@ services:
       timeout: ${MYSQL_HEALTHCHECK_TIMEOUT:-5s}
       retries: ${MYSQL_HEALTHCHECK_RETRIES:-20}
       start_period: ${MYSQL_HEALTHCHECK_START_PERIOD:-20s}
+    networks:
+      - cashlenx-network
 
 volumes:
   mysql_data:
     name: ${MYSQL_DATA_VOLUME_NAME:-cashlenx-mysql-data}
+
+networks:
+  cashlenx-network:
+    name: ${DOCKER_NETWORK_NAME:-cashlenx-network}
+    external: true

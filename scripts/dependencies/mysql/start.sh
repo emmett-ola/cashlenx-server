@@ -31,6 +31,42 @@ resolve_env_file() {
   esac
 }
 
+read_env_value() {
+  local key="$1"
+  awk -F= -v wanted="$key" '
+    $0 ~ "^[[:space:]]*(export[[:space:]]+)?" wanted "[[:space:]]*=" {
+      value = substr($0, index($0, "=") + 1)
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
+      if ((substr(value, 1, 1) == "\"" && substr(value, length(value), 1) == "\"") ||
+          (substr(value, 1, 1) == "\047" && substr(value, length(value), 1) == "\047")) {
+        value = substr(value, 2, length(value) - 2)
+      }
+      result = value
+    }
+    END { print result }
+  ' "$env_file"
+}
+
+resolve_network_name() {
+  local name
+  name="$(read_env_value DOCKER_NETWORK_NAME)"
+  name="${name:-cashlenx-network}"
+  if [[ ! "$name" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]*$ ]]; then
+    echo "Invalid Docker network setting: DOCKER_NETWORK_NAME" >&2
+    return 1
+  fi
+  printf '%s\n' "$name"
+}
+
+ensure_network() {
+  local name="$1"
+  if docker network inspect "$name" >/dev/null 2>&1; then
+    return 0
+  fi
+  docker network create --driver bridge "$name" >/dev/null 2>&1 ||
+    docker network inspect "$name" >/dev/null 2>&1
+}
+
 invalid_configuration_keys() {
   awk -F= '
     function clean(value) {
@@ -98,6 +134,8 @@ docker compose version >/dev/null 2>&1 || { echo "Docker Compose is required." >
 
 env_file="$(resolve_env_file)"
 validate_start_configuration
+network_name="$(resolve_network_name)"
 
+ensure_network "$network_name"
 docker compose --env-file "$env_file" -f "$compose_file" \
   up -d --no-build --pull never --remove-orphans --wait mysql
