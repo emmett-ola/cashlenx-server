@@ -49,6 +49,11 @@ invalid_configuration_keys() {
       if ((key == "DOCKER_MONGO_DB_URI" || key == "DOCKER_MYSQL_DB_URI") && index(value, "cashlenx123") > 0) return 1
       return 0
     }
+    function valid_timezone(value) {
+      if (value == "" || value == "UTC") return 1
+      if (index(value, "Etc/GMT") == 1) return 0
+      return value ~ /^[A-Za-z][A-Za-z0-9._+-]*(\/[A-Za-z][A-Za-z0-9._+-]*)+$/
+    }
     function require_value(key) {
       if (values[key] == "" || unsafe(key, values[key])) print key
     }
@@ -63,6 +68,8 @@ invalid_configuration_keys() {
         key = boolean_keys[i]
         if (values[key] != "" && values[key] != "true" && values[key] != "false") print key
       }
+
+      if (!valid_timezone(values["TIMEZONE"])) print "TIMEZONE"
 
       require_value("JWT_SECRET")
       require_value("ADMIN_PASSWORD")

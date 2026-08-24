@@ -8,10 +8,12 @@ api_env="$(mktemp "$project_dir/.env.lifecycle-api.XXXXXX")"
 mysql_env="$(mktemp "$project_dir/.env.lifecycle-mysql.XXXXXX")"
 smtp_env="$(mktemp "$project_dir/.env.lifecycle-smtp.XXXXXX")"
 invalid_boolean_env="$(mktemp "$project_dir/.env.lifecycle-boolean.XXXXXX")"
+invalid_timezone_env="$(mktemp "$project_dir/.env.lifecycle-timezone.XXXXXX")"
 outside_env="$(mktemp)"
 
 cleanup() {
-  rm -f "$api_env" "$mysql_env" "$smtp_env" "$invalid_boolean_env" "$outside_env"
+  rm -f "$api_env" "$mysql_env" "$smtp_env" "$invalid_boolean_env" \
+    "$invalid_timezone_env" "$outside_env"
   rm -rf "$fake_dir"
 }
 trap cleanup EXIT
@@ -27,6 +29,7 @@ sed \
   -e 's/CHANGE_ME_MONGO_PASSWORD/lifecycle-mongo-password/g' \
   -e 's/CHANGE_ME_JWT_SECRET/lifecycle-jwt-secret-with-more-than-32-bytes/g' \
   -e 's/CHANGE_ME_ADMIN_PASSWORD/lifecycle-admin-password/g' \
+  -e 's/^TIMEZONE=UTC$/TIMEZONE=Asia\/Shanghai/' \
   "$project_dir/.env.example" > "$api_env"
 sed \
   -e 's/CHANGE_ME_MYSQL_ROOT_PASSWORD/lifecycle-mysql-root-password/g' \
@@ -41,6 +44,7 @@ api_env_name="${api_env#"$project_dir/"}"
 mysql_env_name="${mysql_env#"$project_dir/"}"
 smtp_env_name="${smtp_env#"$project_dir/"}"
 invalid_boolean_env_name="${invalid_boolean_env#"$project_dir/"}"
+invalid_timezone_env_name="${invalid_timezone_env#"$project_dir/"}"
 test_path="$fake_dir:$PATH"
 
 reset_log() {
@@ -66,6 +70,7 @@ assert_rejected() {
   local env_file="$1"
   local script="$2"
   local expected_key="$3"
+  local forbidden_value="${4:-}"
   local output
   if output="$(PATH="$test_path" FAKE_DOCKER_LOG="$fake_log" ENV_FILE="$env_file" bash "$project_dir/$script" 2>&1)"; then
     echo "Expected $script to reject $env_file" >&2
@@ -77,6 +82,10 @@ assert_rejected() {
   }
   if grep -F -- 'CHANGE_ME_' <<< "$output" >/dev/null; then
     echo "Rejection output exposed a placeholder value" >&2
+    return 1
+  fi
+  if [[ -n "$forbidden_value" ]] && grep -F -- "$forbidden_value" <<< "$output" >/dev/null; then
+    echo "Rejection output exposed the configured value for $expected_key" >&2
     return 1
   fi
 }
@@ -142,6 +151,19 @@ fi
 
 reset_log
 assert_rejected "$invalid_boolean_env_name" scripts/start.sh SMTP_ENABLED
+
+for invalid_timezone in UTC+8 CST Etc/GMT+8; do
+  sed "s|^TIMEZONE=Asia/Shanghai$|TIMEZONE=$invalid_timezone|" \
+    "$api_env" > "$invalid_timezone_env"
+  reset_log
+  assert_rejected "$invalid_timezone_env_name" scripts/start.sh TIMEZONE "$invalid_timezone"
+  assert_rejected "$invalid_timezone_env_name" scripts/dependencies/mongodb/start.sh TIMEZONE "$invalid_timezone"
+  assert_rejected "$invalid_timezone_env_name" scripts/dependencies/mysql/start.sh TIMEZONE "$invalid_timezone"
+  if grep -F -- ' up ' "$fake_log" >/dev/null; then
+    echo "Start reached Docker with an unsupported timezone" >&2
+    exit 1
+  fi
+done
 
 reset_log
 assert_rejected .env.lifecycle-missing scripts/dependencies/mongodb/build.sh "Missing environment file"

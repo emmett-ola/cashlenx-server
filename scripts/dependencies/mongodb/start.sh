@@ -41,10 +41,17 @@ invalid_configuration_keys() {
       }
       return value
     }
+    function valid_timezone(value) {
+      if (value == "" || value == "UTC") return 1
+      if (index(value, "Etc/GMT") == 1) return 0
+      return value ~ /^[A-Za-z][A-Za-z0-9._+-]*(\/[A-Za-z][A-Za-z0-9._+-]*)+$/
+    }
     /^[A-Za-z_][A-Za-z0-9_]*=/ {
       values[$1] = clean(substr($0, index($0, "=") + 1))
     }
     END {
+      if (!valid_timezone(values["TIMEZONE"])) print "TIMEZONE"
+
       required[1] = "MONGO_ROOT_USERNAME"
       required[2] = "MONGO_ROOT_PASSWORD"
       for (i = 1; i <= 2; i++) {

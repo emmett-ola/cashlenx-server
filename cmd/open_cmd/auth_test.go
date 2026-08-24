@@ -1,12 +1,14 @@
 package open_cmd
 
 import (
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/macar-x/cashlenx-server/auth/provider"
 	"github.com/macar-x/cashlenx-server/cmd/cli_auth"
 	"github.com/macar-x/cashlenx-server/model"
+	"github.com/macar-x/cashlenx-server/util"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -267,6 +269,25 @@ func TestStartCommandUsesConfiguredOrExplicitPort(t *testing.T) {
 
 	if len(started) != 1 || started[0] != 9090 {
 		t.Fatalf("started ports = %+v", started)
+	}
+}
+
+func TestStartCommandRejectsUnsupportedTimezone(t *testing.T) {
+	originalTimezone := util.GetConfigByKey("timezone")
+	util.SetConfigByKey("timezone", "UTC+8")
+	t.Cleanup(func() {
+		util.SetConfigByKey("timezone", originalTimezone)
+	})
+
+	err := startCmd.PreRunE(startCmd, nil)
+	if err == nil {
+		t.Fatal("PreRunE() error = nil")
+	}
+	if !strings.Contains(err.Error(), "TIMEZONE") {
+		t.Fatalf("PreRunE() error does not identify TIMEZONE: %v", err)
+	}
+	if strings.Contains(err.Error(), "UTC+8") {
+		t.Fatalf("PreRunE() error exposed configured value: %v", err)
 	}
 }
 

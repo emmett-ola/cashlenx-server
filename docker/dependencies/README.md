@@ -23,7 +23,9 @@ only that dependency and waits for its healthcheck, and `stop.sh` removes its
 container and project network without removing the image or named data volume.
 No database enable flag is used: script selection owns lifecycle, while the
 selected environment file supplies that dependency's settings. `TIMEZONE` is
-shared by the API and both database container projects.
+shared by the API and both database container projects. Dependency starts accept
+`UTC` or the region-based IANA name shape and reject fixed offsets,
+abbreviations, and `Etc/GMT` forms before creating a container.
 
 All dependency scripts use `.env` by default and accept the same repository-local
 selection interface as the API scripts:

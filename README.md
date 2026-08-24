@@ -60,7 +60,10 @@ references, so each credential has one configuration owner.
 Every assignment in `.env.example` is active. Optional capabilities use explicit
 lowercase boolean switches such as `SMTP_ENABLED=false`; database dependency
 selection remains the explicit script invocation rather than an enable flag.
-`TIMEZONE` is the single application and container timezone source.
+`TIMEZONE` is the single application and container timezone source. Use `UTC`
+or a region-based IANA name such as `Asia/Shanghai`. Every start entry point
+rejects fixed offsets, ambiguous abbreviations, and POSIX-sign `Etc/GMT` forms;
+API startup additionally rejects names absent from the Go timezone database.
 
 MongoDB bootstrap, migration, and runtime index definitions now follow the current user/type/parent/name category scope. MongoDB applied-version tracking is not implemented and remains unscheduled architecture debt; see `docker/dependencies/mongodb/README.md` and `AGENTS.md`.
 
@@ -117,7 +120,9 @@ file even when its values are incomplete.
 The server and database ports bind to `127.0.0.1` by default. `.env.example`
 explicitly sets CPU, memory, PID, graceful-stop, health-check, image, log path,
 and timezone values. `TIMEZONE` is passed to every Server and database container
-as its standard `TZ` environment variable. The server image records the source revision in
+as its standard `TZ` environment variable. Compose only passes the string
+through; lifecycle validation and the Go runtime enforce the shared timezone
+contract. The server image records the source revision in
 the OCI `org.opencontainers.image.revision` label.
 
 Dependency scripts support the same `ENV_FILE` selection. For example:

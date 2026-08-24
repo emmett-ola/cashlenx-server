@@ -421,6 +421,9 @@ Important nuance:
   determines which database container is managed.
 - `TIMEZONE` is the only operator-facing timezone key. Compose maps it to the
   standard container `TZ` variable for the API, MongoDB, and MySQL projects.
+  Use `UTC` or a region-based IANA name. Start scripts reject fixed offsets,
+  abbreviations, and `Etc/GMT` forms; the Go start path also rejects names that
+  are absent from its timezone database.
 - SMTP keys are wired from `.env`, and configured delivery has been manually verified by the project owner. Automated registration and password-reset tests must replace email delivery rather than contact a real provider.
 
 ## Database Utilities

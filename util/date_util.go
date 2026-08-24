@@ -1,8 +1,10 @@
 package util
 
 import (
-	"fmt"
+	"errors"
 	"reflect"
+	"regexp"
+	"strings"
 	"time"
 )
 
@@ -10,92 +12,57 @@ var (
 	defaultDateFormatInString  = "20060102"
 	dateFormatInStringWithDash = "2006-01-02"
 	timezone                   *time.Location
+	timezoneNamePattern        = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9._+-]*(/[A-Za-z][A-Za-z0-9._+-]*)+$`)
 )
 
 // init is called after all other package initialization
 // We don't load timezone here to avoid initialization order issues
 // Instead, we ensure timezone is loaded when first used
 
-// loadTimezone loads the timezone from configuration
-func loadTimezone() {
+var errInvalidTimezone = errors.New("must be UTC or a region-based IANA timezone name")
+
+func configuredTimezoneName() string {
 	tzName := GetConfigByKey("timezone")
 	if tzName == "" {
-		tzName = "UTC" // Default to UTC
+		return "UTC"
 	}
+	return tzName
+}
 
-	var err error
-
-	// Try to parse as UTC offset first (e.g., UTC+1, UTC-5:30, UTC+0)
+func parseTimezone(tzName string) (*time.Location, error) {
 	if tzName == "UTC" {
-		// Special case for UTC
-		timezone = time.UTC
-	} else if len(tzName) > 3 && tzName[:3] == "UTC" {
-		// Handle UTC offset format like UTC+1, UTC-5:30, UTC+0
-		offsetStr := tzName[3:]
-		var offsetSeconds int
-
-		// Parse offset string (e.g., "+1", "-5:30", "+0")
-		if len(offsetStr) > 0 {
-			// Determine sign
-			sign := 1
-			if offsetStr[0] == '-' {
-				sign = -1
-				offsetStr = offsetStr[1:]
-			} else if offsetStr[0] == '+' {
-				offsetStr = offsetStr[1:]
-			}
-
-			// Split into hours and minutes if colon exists
-			hours := 0
-			minutes := 0
-
-			colonIndex := -1
-			for i, c := range offsetStr {
-				if c == ':' {
-					colonIndex = i
-					break
-				}
-			}
-
-			if colonIndex != -1 {
-				// Has minutes component (e.g., "1:30", "5:30")
-				hoursStr := offsetStr[:colonIndex]
-				minutesStr := offsetStr[colonIndex+1:]
-
-				// Parse hours
-				if _, err := fmt.Sscanf(hoursStr, "%d", &hours); err != nil {
-					hours = 0
-				}
-
-				// Parse minutes
-				if _, err := fmt.Sscanf(minutesStr, "%d", &minutes); err != nil {
-					minutes = 0
-				}
-			} else {
-				// Only hours component (e.g., "1", "5", "0")
-				if _, err := fmt.Sscanf(offsetStr, "%d", &hours); err != nil {
-					hours = 0
-				}
-			}
-
-			// Calculate total seconds
-			offsetSeconds = sign * (hours*3600 + minutes*60)
-
-			// Create timezone from offset
-			timezone = time.FixedZone(tzName, offsetSeconds)
-			Logger.Infow("Loaded UTC offset timezone", "timezone", tzName, "offset_seconds", offsetSeconds)
-			return
-		}
+		return time.UTC, nil
 	}
 
-	// If not a UTC offset or parsing failed, try as named timezone
-	timezone, err = time.LoadLocation(tzName)
+	if !timezoneNamePattern.MatchString(tzName) || strings.HasPrefix(tzName, "Etc/GMT") {
+		return nil, errInvalidTimezone
+	}
+
+	location, err := time.LoadLocation(tzName)
 	if err != nil {
-		Logger.Errorw("Failed to load timezone, using UTC instead", "timezone", tzName, "error", err)
-		timezone = time.UTC
-	} else {
-		Logger.Infow("Loaded named timezone", "timezone", tzName)
+		return nil, errInvalidTimezone
 	}
+	return location, nil
+}
+
+// ValidateConfiguredTimezone verifies the shared application/container contract.
+func ValidateConfiguredTimezone() error {
+	_, err := parseTimezone(configuredTimezoneName())
+	return err
+}
+
+// loadTimezone loads the configured timezone and falls back to UTC for callers
+// that do not enter through the validated API start command.
+func loadTimezone() {
+	location, err := parseTimezone(configuredTimezoneName())
+	if err != nil {
+		Logger.Errorw("Invalid TIMEZONE; using UTC instead", "key", "TIMEZONE", "error", err)
+		timezone = time.UTC
+		return
+	}
+
+	timezone = location
+	Logger.Infow("Loaded timezone", "timezone", timezone.String())
 }
 
 // GetTimezone returns the configured timezone
