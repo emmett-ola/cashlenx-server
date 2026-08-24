@@ -2,9 +2,9 @@ name: CI Pipeline for CashLenX Server
 
 on:
   push:
-    branches: [ main, develop, 'dev/**' ]
+    branches: [ main, testing, develop, 'dev/**' ]
   pull_request:
-    branches: [ main, develop, 'dev/**' ]
+    branches: [ main, testing, develop, 'dev/**' ]
   release:
     types: [ published ]
 
