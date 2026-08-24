@@ -22,9 +22,7 @@ services:
     ports:
       - "${MYSQL_BIND_ADDRESS:-127.0.0.1}:${MYSQL_PORT:-3306}:3306"
     volumes:
-      - type: volume
-        source: mysql_data
-        target: /var/lib/mysql
+      - "${MYSQL_DATA_PATH:-mysql_data}:/var/lib/mysql"
       - type: bind
         source: ./init-mysql.sql
         target: /docker-entrypoint-initdb.d/init-mysql.sql
@@ -38,4 +36,4 @@ services:
 
 volumes:
   mysql_data:
-    name: cashlenx-mysql-data
+    name: ${MYSQL_DATA_VOLUME_NAME:-cashlenx-mysql-data}

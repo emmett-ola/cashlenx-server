@@ -46,11 +46,25 @@ invalid_configuration_keys() {
       if (index(value, "Etc/GMT") == 1) return 0
       return value ~ /^[A-Za-z][A-Za-z0-9._+-]*(\/[A-Za-z][A-Za-z0-9._+-]*)+$/
     }
+    function valid_volume_name(value) {
+      return value ~ /^[A-Za-z0-9][A-Za-z0-9_.-]*$/
+    }
+    function valid_data_path(value, normalized) {
+      if (value == "") return 1
+      normalized = value
+      gsub(/\\/, "/", normalized)
+      if (normalized == "/" || normalized ~ /(^|\/)\.\.(\/|$)/) return 0
+      if (substr(normalized, 1, 1) == "/" && length(normalized) > 1) return 1
+      if (length(normalized) > 3 && substr(normalized, 2, 1) == ":" && substr(normalized, 3, 1) == "/") return 1
+      return 0
+    }
     /^[A-Za-z_][A-Za-z0-9_]*=/ {
       values[$1] = clean(substr($0, index($0, "=") + 1))
     }
     END {
       if (!valid_timezone(values["TIMEZONE"])) print "TIMEZONE"
+      if (!valid_data_path(values["MONGO_DATA_PATH"])) print "MONGO_DATA_PATH"
+      if (values["MONGO_DATA_PATH"] == "" && !valid_volume_name(values["MONGO_DATA_VOLUME_NAME"])) print "MONGO_DATA_VOLUME_NAME"
 
       required[1] = "MONGO_ROOT_USERNAME"
       required[2] = "MONGO_ROOT_PASSWORD"

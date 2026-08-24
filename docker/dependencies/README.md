@@ -21,6 +21,10 @@ scripts/dependencies/mysql/stop.sh
 Dependency `build.sh` pulls the configured upstream image, `start.sh` starts
 only that dependency and waits for its healthcheck, and `stop.sh` removes its
 container and project network without removing the image or named data volume.
+Each project uses its existing named volume by default. An absolute
+`MONGO_DATA_PATH` or `MYSQL_DATA_PATH` selects a host bind mount instead, while
+the matching `*_DATA_VOLUME_NAME` changes the Docker volume identity when the
+path is empty. Stop does not remove either storage form.
 No database enable flag is used: script selection owns lifecycle, while the
 selected environment file supplies that dependency's settings. `TIMEZONE` is
 shared by the API and both database container projects. Dependency starts accept

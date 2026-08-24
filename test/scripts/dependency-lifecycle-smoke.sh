@@ -9,11 +9,13 @@ mysql_env="$(mktemp "$project_dir/.env.lifecycle-mysql.XXXXXX")"
 smtp_env="$(mktemp "$project_dir/.env.lifecycle-smtp.XXXXXX")"
 invalid_boolean_env="$(mktemp "$project_dir/.env.lifecycle-boolean.XXXXXX")"
 invalid_timezone_env="$(mktemp "$project_dir/.env.lifecycle-timezone.XXXXXX")"
+invalid_storage_env="$(mktemp "$project_dir/.env.lifecycle-storage.XXXXXX")"
 outside_env="$(mktemp)"
 
 cleanup() {
   rm -f "$api_env" "$mysql_env" "$smtp_env" "$invalid_boolean_env" \
     "$invalid_timezone_env" "$outside_env"
+  rm -f "$invalid_storage_env"
   rm -rf "$fake_dir"
 }
 trap cleanup EXIT
@@ -45,6 +47,7 @@ mysql_env_name="${mysql_env#"$project_dir/"}"
 smtp_env_name="${smtp_env#"$project_dir/"}"
 invalid_boolean_env_name="${invalid_boolean_env#"$project_dir/"}"
 invalid_timezone_env_name="${invalid_timezone_env#"$project_dir/"}"
+invalid_storage_env_name="${invalid_storage_env#"$project_dir/"}"
 test_path="$fake_dir:$PATH"
 
 reset_log() {
@@ -164,6 +167,40 @@ for invalid_timezone in UTC+8 CST Etc/GMT+8; do
     exit 1
   fi
 done
+
+for invalid_path in relative/data /; do
+  sed "s|^MONGO_DATA_PATH=$|MONGO_DATA_PATH=$invalid_path|" \
+    "$api_env" > "$invalid_storage_env"
+  reset_log
+  assert_rejected "$invalid_storage_env_name" scripts/dependencies/mongodb/start.sh MONGO_DATA_PATH "$invalid_path"
+
+  sed "s|^MYSQL_DATA_PATH=$|MYSQL_DATA_PATH=$invalid_path|" \
+    "$mysql_env" > "$invalid_storage_env"
+  reset_log
+  assert_rejected "$invalid_storage_env_name" scripts/dependencies/mysql/start.sh MYSQL_DATA_PATH "$invalid_path"
+done
+
+sed 's|^MONGO_DATA_PATH=$|MONGO_DATA_PATH=/srv/cashlenx/mongodb|' \
+  "$api_env" > "$invalid_storage_env"
+reset_log
+run_script scripts/dependencies/mongodb/start.sh "$invalid_storage_env_name"
+assert_log_contains "--wait mongodb"
+
+sed 's|^MYSQL_DATA_PATH=$|MYSQL_DATA_PATH=C:/cashlenx/mysql|' \
+  "$mysql_env" > "$invalid_storage_env"
+reset_log
+run_script scripts/dependencies/mysql/start.sh "$invalid_storage_env_name"
+assert_log_contains "--wait mysql"
+
+sed 's/^MONGO_DATA_VOLUME_NAME=.*$/MONGO_DATA_VOLUME_NAME=invalid name/' \
+  "$api_env" > "$invalid_storage_env"
+reset_log
+assert_rejected "$invalid_storage_env_name" scripts/dependencies/mongodb/start.sh MONGO_DATA_VOLUME_NAME 'invalid name'
+
+sed 's/^MYSQL_DATA_VOLUME_NAME=.*$/MYSQL_DATA_VOLUME_NAME=invalid name/' \
+  "$mysql_env" > "$invalid_storage_env"
+reset_log
+assert_rejected "$invalid_storage_env_name" scripts/dependencies/mysql/start.sh MYSQL_DATA_VOLUME_NAME 'invalid name'
 
 reset_log
 assert_rejected .env.lifecycle-missing scripts/dependencies/mongodb/build.sh "Missing environment file"

@@ -90,6 +90,13 @@ waits for health, and `stop.sh` removes its container and network while retainin
 the image and named volume. Root Server scripts do not start, stop, or remove
 dependencies, regardless of `DB_TYPE`.
 
+The named volumes remain the default. Set `MONGO_DATA_PATH` or
+`MYSQL_DATA_PATH` to an absolute host path to use a bind mount instead. Relative
+paths, filesystem roots, and parent traversal are rejected by dependency start;
+stop never removes either a bind path or a named volume. Configure
+`MONGO_DATA_VOLUME_NAME` or `MYSQL_DATA_VOLUME_NAME` when a different Docker
+named-volume identity is preferred and leave the matching data path empty.
+
 ### Docker Deployment
 
 Build the server image, start only the backend, and verify the API health

@@ -30,6 +30,12 @@ Stop its container and network while retaining `cashlenx-mongodb-data` with
 `scripts/dependencies/mongodb/stop.sh`. These scripts never start or stop the
 API container.
 
+Leave `MONGO_DATA_PATH` empty to use the named volume configured by
+`MONGO_DATA_VOLUME_NAME`. Set it to an absolute host path to bind that directory
+to `/data/db`. Changing the source does not copy existing records; the previous
+volume or directory remains untouched and must be migrated explicitly when its
+data should follow the new source.
+
 Changing `init-mongo.js` does not update an existing data directory. Recreate
 only disposable development data, or apply a reviewed migration to persistent
 data.

@@ -18,9 +18,7 @@ services:
     ports:
       - "${MONGO_BIND_ADDRESS:-127.0.0.1}:${MONGO_PORT:-27017}:27017"
     volumes:
-      - type: volume
-        source: mongodb_data
-        target: /data/db
+      - "${MONGO_DATA_PATH:-mongodb_data}:/data/db"
       - type: bind
         source: ./init-mongo.js
         target: /docker-entrypoint-initdb.d/init-mongo.js
@@ -34,4 +32,4 @@ services:
 
 volumes:
   mongodb_data:
-    name: cashlenx-mongodb-data
+    name: ${MONGO_DATA_VOLUME_NAME:-cashlenx-mongodb-data}

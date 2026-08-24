@@ -424,6 +424,11 @@ Important nuance:
   Use `UTC` or a region-based IANA name. Start scripts reject fixed offsets,
   abbreviations, and `Etc/GMT` forms; the Go start path also rejects names that
   are absent from its timezone database.
+- Database dependency storage keeps the existing named volumes by default.
+  Empty `MONGO_DATA_PATH`/`MYSQL_DATA_PATH` values select the configurable
+  `*_DATA_VOLUME_NAME`; non-empty values must be absolute host bind paths.
+  Changing a storage source never migrates or deletes existing data, and
+  dependency stop must preserve both storage forms.
 - SMTP keys are wired from `.env`, and configured delivery has been manually verified by the project owner. Automated registration and password-reset tests must replace email delivery rather than contact a real provider.
 
 ## Database Utilities

@@ -28,6 +28,12 @@ Stop its container and network while retaining `cashlenx-mysql-data` with
 `scripts/dependencies/mysql/stop.sh`. These scripts never start or stop the API
 container.
 
+Leave `MYSQL_DATA_PATH` empty to use the named volume configured by
+`MYSQL_DATA_VOLUME_NAME`. Set it to an absolute host path to bind that directory
+to `/var/lib/mysql`. Changing the source does not copy existing records; the
+previous volume or directory remains untouched and must be migrated explicitly
+when its data should follow the new source.
+
 Changing an initialization SQL file does not update an existing Docker volume.
 Use the numbered migrations for deliberate schema work, or recreate a
 disposable development volume.
