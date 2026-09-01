@@ -163,13 +163,13 @@ The default container name is `cashlenx-server`.
 ### 3. Run the API Server
 
 ```bash
-go run main.go open start -p 11063
+go run main.go open start -p 10063
 ```
 
 The local base URL is:
 
 ```text
-http://localhost:11063/api/v0
+http://127.0.0.1:10063/api/v0
 ```
 
 ### 4. Useful CLI Commands
