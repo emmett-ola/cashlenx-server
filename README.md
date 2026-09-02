@@ -127,9 +127,11 @@ network only when the network has no connected containers.
 Use another repository-local configuration consistently with
 `ENV_FILE=.env.testing scripts/build.sh`, `scripts/start.sh`, and
 `scripts/stop.sh`. Missing files and paths outside this repository are rejected.
-Builds may use placeholder values. Startup validates only the selected database
-and enabled capabilities, reports only unsafe or missing key names, and stops
-until relevant values are replaced. Disabled SMTP and unselected database
+Alternatively, `.env` may be a symbolic link to `.env.local`, `.env.testing`, or
+`.env.production`; the fully resolved target must remain a regular file inside
+this repository. Builds may use placeholder values. Startup validates only the
+selected database and enabled capabilities, reports only unsafe or missing key
+names, and stops until relevant values are replaced. Disabled SMTP and unselected database
 placeholders do not block API startup. Stop remains available with an existing
 file even when its values are incomplete.
 

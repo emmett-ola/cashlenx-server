@@ -4,4 +4,4 @@ include:
   - path: service.yml
     env_file:
       - images.env
-      - ../.env
+      - ${RUNTIME_ENV_FILE:-../.env}

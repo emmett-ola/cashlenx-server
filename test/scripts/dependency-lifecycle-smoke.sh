@@ -11,11 +11,13 @@ invalid_boolean_env="$(mktemp "$project_dir/.env.lifecycle-boolean.XXXXXX")"
 invalid_timezone_env="$(mktemp "$project_dir/.env.lifecycle-timezone.XXXXXX")"
 invalid_storage_env="$(mktemp "$project_dir/.env.lifecycle-storage.XXXXXX")"
 outside_env="$(mktemp)"
+inside_symlink="$project_dir/.env.lifecycle-link"
+outside_symlink="$project_dir/.env.lifecycle-outside-link"
 
 cleanup() {
   rm -f "$api_env" "$mysql_env" "$smtp_env" "$invalid_boolean_env" \
     "$invalid_timezone_env" "$outside_env"
-  rm -f "$invalid_storage_env"
+  rm -f "$invalid_storage_env" "$inside_symlink" "$outside_symlink"
   rm -rf "$fake_dir"
 }
 trap cleanup EXIT
@@ -55,6 +57,10 @@ smtp_env_name="${smtp_env#"$project_dir/"}"
 invalid_boolean_env_name="${invalid_boolean_env#"$project_dir/"}"
 invalid_timezone_env_name="${invalid_timezone_env#"$project_dir/"}"
 invalid_storage_env_name="${invalid_storage_env#"$project_dir/"}"
+inside_symlink_name="${inside_symlink#"$project_dir/"}"
+outside_symlink_name="${outside_symlink#"$project_dir/"}"
+ln -s "$(basename "$api_env")" "$inside_symlink"
+ln -s "$outside_env" "$outside_symlink"
 test_path="$fake_dir:$PATH"
 
 reset_log() {
@@ -128,6 +134,11 @@ assert_log_contains "network create --driver bridge cashlenx-network"
 assert_log_contains "--pull never --remove-orphans mongodb"
 assert_log_contains "exec cashlenx-mongodb sh -ec mongosh"
 assert_log_not_contains "--wait"
+
+reset_log
+run_script scripts/dependencies/mongodb/start.sh "$inside_symlink_name"
+assert_log_contains "--env-file $api_env"
+assert_log_contains "--remove-orphans mongodb"
 
 reset_log
 ENV_FILE=.env.example PATH="$test_path" FAKE_DOCKER_LOG="$fake_log" \
@@ -267,5 +278,6 @@ fi
 reset_log
 assert_rejected .env.lifecycle-missing scripts/dependencies/mongodb/build.sh "Missing environment file"
 assert_rejected "$outside_env" scripts/dependencies/mongodb/build.sh "ENV_FILE must stay inside"
+assert_rejected "$outside_symlink_name" scripts/dependencies/mongodb/build.sh "ENV_FILE must stay inside"
 
 echo "Dependency lifecycle smoke checks passed."

@@ -20,11 +20,9 @@ resolve_env_file() {
     return 1
   fi
   [[ -f "$candidate" ]] || { echo "Environment path is not a file: $requested" >&2; return 1; }
-  [[ ! -L "$candidate" ]] || { echo "Environment file symlinks are not allowed: $requested" >&2; return 1; }
 
-  local resolved_dir resolved
-  resolved_dir="$(cd "$(dirname "$candidate")" && pwd -P)"
-  resolved="$resolved_dir/$(basename "$candidate")"
+  local resolved
+  resolved="$(realpath "$candidate")"
   case "$resolved" in
     "$project_dir"/*) printf '%s\n' "$resolved" ;;
     *) echo "ENV_FILE must stay inside $project_dir: $requested" >&2; return 1 ;;
