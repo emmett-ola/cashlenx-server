@@ -21,9 +21,9 @@ scripts/dependencies/mysql/stop.sh
 ```
 
 Dependency `build.sh` pulls the configured upstream image, `start.sh` starts
-only that dependency and waits for its healthcheck, and `stop.sh` removes its
-container without removing the image or named data volume. Any start creates
-the shared network when absent; stop removes it only after the final attached
+only that dependency and waits on its in-container readiness command, and
+`stop.sh` removes its container without removing the image or named data volume.
+Any start creates the shared network when absent; stop removes it only after the final attached
 container is gone.
 Each project uses its existing named volume by default. An absolute
 `MONGO_DATA_PATH` or `MYSQL_DATA_PATH` selects a host bind mount instead, while

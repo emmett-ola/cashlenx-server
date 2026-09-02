@@ -4,6 +4,7 @@ set -euo pipefail
 project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd -P)"
 cd "$project_dir"
 compose_file="$project_dir/docker/dependencies/mysql/compose.yml"
+. "$project_dir/scripts/lib/container_readiness.sh"
 
 resolve_env_file() {
   local requested="${ENV_FILE:-.env}"
@@ -137,5 +138,9 @@ validate_start_configuration
 network_name="$(resolve_network_name)"
 
 ensure_network "$network_name"
+container_name="$(read_env_value MYSQL_CONTAINER_NAME)"
+container_name="${container_name:-cashlenx-mysql}"
 docker compose --env-file "$env_file" -f "$compose_file" \
-  up -d --no-build --pull never --remove-orphans --wait mysql
+  up -d --no-build --pull never --remove-orphans mysql
+wait_for_container_command "$container_name" sh -ec \
+  'mysqladmin ping -h 127.0.0.1 -uroot -p"$MYSQL_ROOT_PASSWORD" --silent'

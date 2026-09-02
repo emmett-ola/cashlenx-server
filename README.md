@@ -89,9 +89,9 @@ scripts/dependencies/mysql/stop.sh
 The dependencies are separate operator-managed projects and persist data in
 `cashlenx-mongodb-data` and `cashlenx-mysql-data`. Each dependency `build.sh`
 pulls its configured upstream image, `start.sh` starts only that database and
-waits for health, and `stop.sh` removes its container while retaining the image
-and named volume. Every start attaches to the explicitly configured
-`DOCKER_NETWORK_NAME`; a stop removes that network only when no CashLenX
+waits on an in-container readiness probe, and `stop.sh` removes its container
+while retaining the image and named volume. Every start attaches to the
+explicitly configured `DOCKER_NETWORK_NAME`; a stop removes that network only when no CashLenX
 container remains attached. Root Server
 scripts do not start, stop, or remove dependencies, regardless of `DB_TYPE`.
 
@@ -116,7 +116,10 @@ scripts/stop.sh
 The scripts require an existing reviewed `.env`; they never create one from
 development defaults and never manage dependency containers. `build.sh`
 compiles the server and builds its image. `start.sh` starts or updates the API
-container from that existing image and waits for the Compose healthcheck.
+container from that existing image and waits on the API health endpoint from
+inside the container. It does not require Compose `up --wait` or
+Compose-managed health status, which keeps the lifecycle compatible with
+nerdctl Compose.
 `stop.sh` removes the API container while preserving the image, bind-mounted
 logs, database projects, and database volumes. It removes the shared external
 network only when the network has no connected containers.

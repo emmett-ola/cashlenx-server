@@ -4,6 +4,7 @@ set -euo pipefail
 project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 cd "$project_dir"
 compose_file="$project_dir/docker/compose.yml"
+. "$project_dir/scripts/lib/container_readiness.sh"
 
 resolve_env_file() {
   local requested="${ENV_FILE:-.env}"
@@ -167,5 +168,9 @@ validate_start_configuration
 network_name="$(resolve_network_name)"
 
 ensure_network "$network_name"
+container_name="$(read_env_value BACKEND_CONTAINER_NAME)"
+container_name="${container_name:-cashlenx-server}"
 RUNTIME_ENV_FILE="../$env_relative" \
-  docker compose --env-file "$env_file" -f "$compose_file" up -d --no-build --remove-orphans --wait server
+  docker compose --env-file "$env_file" -f "$compose_file" up -d --no-build --remove-orphans server
+wait_for_container_command "$container_name" sh -ec \
+  'wget -q -T 3 -O /dev/null "http://127.0.0.1:${SERVER_PORT:-10063}/api/${API_VERSION:-v0}/open/health"'

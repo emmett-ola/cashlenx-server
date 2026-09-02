@@ -79,6 +79,14 @@ assert_log_contains() {
   }
 }
 
+assert_log_not_contains() {
+  local unexpected="$1"
+  if grep -F -- "$unexpected" "$fake_log" >/dev/null; then
+    echo "Unexpected fake Docker call containing: $unexpected" >&2
+    return 1
+  fi
+}
+
 assert_rejected() {
   local env_file="$1"
   local script="$2"
@@ -117,7 +125,9 @@ fi
 reset_log
 FAKE_NETWORK_EXISTS=false run_script scripts/dependencies/mongodb/start.sh
 assert_log_contains "network create --driver bridge cashlenx-network"
-assert_log_contains "--pull never --remove-orphans --wait mongodb"
+assert_log_contains "--pull never --remove-orphans mongodb"
+assert_log_contains "exec cashlenx-mongodb sh -ec mongosh"
+assert_log_not_contains "--wait"
 
 reset_log
 ENV_FILE=.env.example PATH="$test_path" FAKE_DOCKER_LOG="$fake_log" \
@@ -142,7 +152,9 @@ fi
 
 reset_log
 run_script scripts/dependencies/mysql/start.sh "$mysql_env_name"
-assert_log_contains "--pull never --remove-orphans --wait mysql"
+assert_log_contains "--pull never --remove-orphans mysql"
+assert_log_contains "exec cashlenx-mysql sh -ec mysqladmin ping"
+assert_log_not_contains "--wait"
 
 reset_log
 ENV_FILE=.env.example PATH="$test_path" FAKE_DOCKER_LOG="$fake_log" \
@@ -151,7 +163,9 @@ assert_log_contains "-f $project_dir/docker/dependencies/mysql/compose.yml down 
 
 reset_log
 run_script scripts/start.sh
-assert_log_contains "-f $project_dir/docker/compose.yml up -d --no-build --remove-orphans --wait server"
+assert_log_contains "-f $project_dir/docker/compose.yml up -d --no-build --remove-orphans server"
+assert_log_contains "exec cashlenx-server sh -ec wget"
+assert_log_not_contains "--wait"
 if grep -F -- 'dependencies/' "$fake_log" >/dev/null; then
   echo "API start unexpectedly invoked a dependency Compose project" >&2
   exit 1
@@ -164,7 +178,9 @@ assert_log_contains "network rm cashlenx-network"
 
 reset_log
 run_script scripts/start.sh "$mysql_env_name"
-assert_log_contains "-f $project_dir/docker/compose.yml up -d --no-build --remove-orphans --wait server"
+assert_log_contains "-f $project_dir/docker/compose.yml up -d --no-build --remove-orphans server"
+assert_log_contains "exec cashlenx-server sh -ec wget"
+assert_log_not_contains "--wait"
 
 reset_log
 assert_rejected "$smtp_env_name" scripts/start.sh SMTP_PASSWORD
@@ -205,13 +221,17 @@ sed 's|^MONGO_DATA_PATH=$|MONGO_DATA_PATH=/srv/cashlenx/mongodb|' \
   "$api_env" > "$invalid_storage_env"
 reset_log
 run_script scripts/dependencies/mongodb/start.sh "$invalid_storage_env_name"
-assert_log_contains "--wait mongodb"
+assert_log_contains "--remove-orphans mongodb"
+assert_log_contains "exec cashlenx-mongodb sh -ec mongosh"
+assert_log_not_contains "--wait"
 
 sed 's|^MYSQL_DATA_PATH=$|MYSQL_DATA_PATH=C:/cashlenx/mysql|' \
   "$mysql_env" > "$invalid_storage_env"
 reset_log
 run_script scripts/dependencies/mysql/start.sh "$invalid_storage_env_name"
-assert_log_contains "--wait mysql"
+assert_log_contains "--remove-orphans mysql"
+assert_log_contains "exec cashlenx-mysql sh -ec mysqladmin ping"
+assert_log_not_contains "--wait"
 
 sed 's/^MONGO_DATA_VOLUME_NAME=.*$/MONGO_DATA_VOLUME_NAME=invalid name/' \
   "$api_env" > "$invalid_storage_env"
