@@ -34,11 +34,11 @@ These are collaboration defaults provided by the project owner and should be tre
 - Default development database is MongoDB
 - Users may still choose MongoDB or MySQL when bootstrapping their environment
 - This is an under-development project, so use practical baseline validation effort rather than assuming strict release-grade test gates
-- We are currently developing on the `dev/v0.9.0` branch line
-- The branch line maps to the feature/version batch currently in progress
-- Once planned work for the current development branch is complete, it is intended to be merged/promoted to `main`, then development moves to the next branch line
+- Active development uses `develop`; `testing` and `main` are fast-forward
+  promotion branches controlled by the coordinated release gate
 - The canonical stable API is `/api/v1`; `/api/v0` is a frozen compatibility alias for previously shipped clients
-- A stable release is expected to introduce `/api/v1` alongside a stable application version such as `v1.0.0`
+- The coordinated v1 line is currently an untagged `1.0.0-rc.1` candidate;
+  stable `1.0.0` requires the complete Jira release gate
 - User-facing feature/function completion takes priority over enhancement work such as observability, performance, migration tooling, cloud hardening, and release automation
 - Enhancement work should move earlier only when it directly unblocks user-facing functionality or safe delivery
 - Unless the user explicitly says not to, make a commit after each completed request/change set
