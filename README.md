@@ -155,6 +155,8 @@ stop. Server image identity is derived directly from validated
 commands with a default 600-second limit that can be overridden through
 `CONTAINER_READY_TIMEOUT_SECONDS`. Start commands suppress frontend command
 traces so nerdctl cannot print configured credentials in informational output.
+Runtime start also uses `--pull never`; candidate deployment must preload and
+verify the exact image identity before replacing the API container.
 
 Use another repository-local configuration consistently with
 `ENV_FILE=.env.testing scripts/build.sh`, `scripts/start.sh`, and

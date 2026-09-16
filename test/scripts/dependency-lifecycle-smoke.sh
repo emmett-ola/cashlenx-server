@@ -275,7 +275,7 @@ assert_log_contains "-f $project_dir/docker/dependencies/mysql/compose.yml down 
 
 reset_log
 run_script scripts/start.sh
-assert_log_contains "-f $project_dir/docker/compose.yml up -d --no-build --remove-orphans server"
+assert_log_contains "-f $project_dir/docker/compose.yml up -d --no-build --pull never --remove-orphans server"
 assert_log_contains "exec cashlenx-server sh -ec wget"
 assert_log_not_contains "--wait"
 if grep -F -- 'dependencies/' "$fake_log" >/dev/null; then
@@ -290,7 +290,7 @@ assert_log_contains "network rm cashlenx-network"
 
 reset_log
 run_script scripts/start.sh "$mysql_env_name"
-assert_log_contains "-f $project_dir/docker/compose.yml up -d --no-build --remove-orphans server"
+assert_log_contains "-f $project_dir/docker/compose.yml up -d --no-build --pull never --remove-orphans server"
 assert_log_contains "exec cashlenx-server sh -ec wget"
 assert_log_not_contains "--wait"
 
@@ -306,7 +306,7 @@ assert_rejected "$invalid_boolean_env_name" scripts/start.sh SMTP_ENABLED
 
 reset_log
 run_script scripts/start.sh "$prod_env_name"
-assert_log_contains "-f $project_dir/docker/compose.yml up -d --no-build --remove-orphans server"
+assert_log_contains "-f $project_dir/docker/compose.yml up -d --no-build --pull never --remove-orphans server"
 
 sed 's/^METRICS_BEARER_TOKEN=.*$/METRICS_BEARER_TOKEN=short/' \
   "$prod_env" > "$invalid_storage_env"

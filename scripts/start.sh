@@ -129,6 +129,6 @@ export RUNTIME_ENV_FILE="../$env_relative"
 compose_args=(--env-file "$env_file" -f "$compose_file")
 compose_preflight "${compose_args[@]}"
 ensure_network "$network_name"
-compose_up_quiet "${compose_args[@]}" up -d --no-build --remove-orphans server
+compose_up_quiet "${compose_args[@]}" up -d --no-build --pull never --remove-orphans server
 wait_for_container_command "$container_name" sh -ec \
   'wget -q -T 3 -O /dev/null "http://127.0.0.1:${SERVER_PORT:-10063}/api/${API_VERSION:-v1}/open/health"'

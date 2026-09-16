@@ -7,6 +7,8 @@ released contracts and operational behavior separately from deployment state.
 
 ### Changed
 
+- Added exact candidate image references to package metadata and made API
+  container start fail instead of pulling a missing configured image.
 - Unified the API, MongoDB, and MySQL lifecycle entry points behind a
   repository-local Docker Compose and nerdctl 2.2 portability layer with
   pre-mutation validation, deterministic configured image identity, value-safe
