@@ -83,7 +83,9 @@ preflight_mongodb_storage() {
     storage_source="named volume $volume_name"
   fi
 
-  probe="$(container run --rm --pull never --network none --entrypoint sh \
+  # Git Bash rewrites container-internal POSIX paths for native Windows
+  # executables unless conversion is disabled for this one Docker invocation.
+  probe="$(MSYS_NO_PATHCONV=1 container run --rm --pull never --network none --entrypoint sh \
     --mount "$mount_spec" "$MONGO_IMAGE" -ec '
       version="$(mongod --version | sed -n "s/^db version v//p" | sed -n "1p")"
       filesystem="$(stat -f -c %T /data/db)"
