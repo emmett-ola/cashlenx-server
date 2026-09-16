@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	_ "net/http/pprof"
@@ -34,16 +35,24 @@ func StartServer(port int32) {
 		fmt.Printf("Snowflake ID generator initialized with worker ID: %d\n", workerID)
 	}
 
-	if util.GetConfigByKey("db.type") == "mysql" {
+	dbType := util.GetConfigByKey("db.type")
+	if dbType == "mysql" {
 		if err := dbmigrations.Run(database.GetMySqlConnection()); err != nil {
 			util.Logger.Fatalw("MySQL migration failed", "error", err)
+			return
+		}
+	} else if dbType == "mongodb" {
+		if err := dbmigrations.RunMongo(context.Background(), database.GetMongoDatabase(), manage_service.ApplyMongoMigration); err != nil {
+			util.Logger.Fatalw("MongoDB migration failed", "error", err)
 			return
 		}
 	}
 
 	user_service.InitAdminUser()
-	if err := manage_service.CreateIndexes(); err != nil {
-		util.Logger.Warnw("Database index reconciliation failed", "error", err)
+	if dbType == "mysql" {
+		if err := manage_service.CreateIndexes(); err != nil {
+			util.Logger.Warnw("Database index reconciliation failed", "error", err)
+		}
 	}
 
 	r := mux.NewRouter()

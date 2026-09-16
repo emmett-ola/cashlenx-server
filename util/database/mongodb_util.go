@@ -75,6 +75,16 @@ func GetMongoCollection(collectionName string) *mongo.Collection {
 	return mongoDatabase.Collection(collectionName)
 }
 
+// GetMongoDatabase returns the initialized application database.
+func GetMongoDatabase() *mongo.Database {
+	if mongoClient == nil || mongoDatabase == nil {
+		if err := InitMongoDbConnection(); err != nil {
+			log.Fatal("Failed to initialize MongoDB connection:", err)
+		}
+	}
+	return mongoDatabase
+}
+
 // OpenMongoDbConnection sets the current collection (for backward compatibility)
 // Deprecated: Use GetMongoCollection instead
 func OpenMongoDbConnection(collectionName string) {

@@ -21,5 +21,6 @@ Use this page to choose the authoritative document for a task.
 - Keep transient session progress out of committed documentation.
 
 Database-specific operational documentation remains next to its assets under
-`migrations/`, `docker/dependencies/mongodb/`, and
+`migrations/`, including the MongoDB and MySQL applied-version runners,
+`docker/dependencies/mongodb/`, and
 `docker/dependencies/mysql/`.

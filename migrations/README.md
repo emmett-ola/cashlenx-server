@@ -2,7 +2,48 @@
 
 This directory contains database migration scripts for CashLenX.
 
-## Validation
+## MongoDB runner
+
+MongoDB startup loads the ordered `*.js` assets, verifies each immutable
+SHA-256 checksum, and records applied state in the application database's
+`schema_migrations` collection. The JavaScript files are the durable migration
+identity; matching native Go handlers execute them without requiring `mongosh`
+inside the API image.
+
+The first startup of an installation without a ledger runs every known
+idempotent migration against the existing database and records the result. This
+is the baseline path for both fresh and existing installations. Existing user
+data is not deleted or replaced. An incompatible index or data condition leaves
+the current migration dirty and blocks startup.
+
+Adding a lower version after a higher version was applied, renaming or changing
+an applied asset, an unknown ledger version, and a dirty record all fail closed.
+Repeated startup verifies history and performs no migration work.
+
+After startup, operators can run the read-only verification command with the
+same environment configuration as the API:
+
+```bash
+cashlenx migration verify
+```
+
+The command exits non-zero for pending, dirty, unknown, reordered, renamed, or
+checksum-mismatched history. It never repairs or edits migration state.
+
+Validate fresh, existing, repeat, checksum-change, reordered, handler, and
+failed/dirty behavior against disposable MongoDB 7 with:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File test/scripts/mongodb-migrations-smoke.ps1
+```
+
+The application-level JSON backup/restore flow owns user data, not schema
+history. A deployment backup of the selected MongoDB database or volume must
+include `schema_migrations`. Recovery restores a verified database backup, or
+repairs the incompatible data/index condition under an approved migration plan;
+manual ledger edits are not a routine recovery mechanism.
+
+## MySQL validation
 
 On Windows, apply every numbered SQL migration to disposable MySQL 8 and
 verify the expected tables with:
@@ -37,12 +78,11 @@ applied migration history. Changing them does not update an existing database.
 
 ## Available Assets
 
-### MongoDB: `001_add_indexes.js`
+### MongoDB: `001`, `010`, and `016`
 
-This script reconciles legacy index names with current multi-user cash-flow and
-category query patterns. It removes obsolete `flow_type` indexes and replaces
-the broad category-name constraint with a partial unique index scoped by user,
-type, parent, and active records.
+The ordered assets reconcile legacy cash-flow/category indexes, verification
+code indexes, user-configuration uniqueness, and budget indexes. Handlers are
+idempotent so they can safely baseline an existing compatible installation.
 
 ## Migration Guidelines
 

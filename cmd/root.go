@@ -11,6 +11,7 @@ import (
 	"github.com/macar-x/cashlenx-server/cmd/budget_cmd"
 	"github.com/macar-x/cashlenx-server/cmd/cash_flow_cmd"
 	"github.com/macar-x/cashlenx-server/cmd/category_cmd"
+	"github.com/macar-x/cashlenx-server/cmd/migration_cmd"
 	"github.com/macar-x/cashlenx-server/cmd/open_cmd"
 	"github.com/macar-x/cashlenx-server/cmd/statistic_cmd"
 	"github.com/macar-x/cashlenx-server/cmd/user_cmd"
@@ -76,5 +77,6 @@ func init() {
 	rootCmd.AddCommand(cash_flow_cmd.CashCmd)
 	rootCmd.AddCommand(category_cmd.CategoryCmd)
 	rootCmd.AddCommand(budget_cmd.BudgetCmd)
+	rootCmd.AddCommand(migration_cmd.MigrationCmd)
 	rootCmd.AddCommand(statistic_cmd.StatisticCmd)
 }

@@ -1,7 +1,6 @@
 // MongoDB verification-code index update.
-// Run with: mongosh <connection_string> < 010_update_operation_confirm_codes_indexes.js
-
-use cashlenx;
+// Run with the selected application database in the connection string:
+// mongosh <connection_string> < 010_update_operation_confirm_codes_indexes.js
 
 try {
     db.operation_confirm_codes.dropIndex("code_1");

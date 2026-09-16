@@ -10,9 +10,9 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "MySQL container failed to start" }
 
     $ready = $false
-    for ($attempt = 0; $attempt -lt 90; $attempt++) {
-        docker exec $container mysql -uroot -pcashlenx123 `
-            -e 'SELECT 1' 2>$null | Out-Null
+    for ($attempt = 0; $attempt -lt 300; $attempt++) {
+        docker exec $container mysqladmin ping -h 127.0.0.1 -P 3306 `
+            -uroot -pcashlenx123 --silent 2>$null | Out-Null
         if ($LASTEXITCODE -eq 0) { $ready = $true; break }
         Start-Sleep -Seconds 1
     }

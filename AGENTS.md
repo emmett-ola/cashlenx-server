@@ -559,6 +559,7 @@ Repo scripts include:
 - `test/scripts/api-smoke.sh`
 - `test/scripts/budget-smoke.ps1`
 - `test/scripts/mysql-migrations-smoke.ps1`
+- `test/scripts/mongodb-migrations-smoke.ps1`
 
 ### CI
 
@@ -583,7 +584,8 @@ disposable infrastructure.
 
 Migration assets include:
 
-- Legacy MongoDB index script `migrations/001_add_indexes.js`; it is not safe for the current multi-user schema until its obsolete indexes are reconciled
+- Ordered MongoDB migration assets with native handlers, checksum verification,
+  durable `schema_migrations` state, and fail-closed dirty/history handling
 - MySQL schema creation and reconciliation scripts `002` through `012`
 - `config/default_categories.json` for category seeding
 - Docker dependency Compose and initialization assets under
@@ -690,6 +692,7 @@ BASE_URL=http://localhost:8080/api/v0 test/scripts/api-smoke.sh
 
 # Validate the numbered SQL sequence against disposable MySQL 8 (Windows)
 powershell -ExecutionPolicy Bypass -File test/scripts/mysql-migrations-smoke.ps1
+powershell -ExecutionPolicy Bypass -File test/scripts/mongodb-migrations-smoke.ps1
 
 # Run focused budget parity against disposable MongoDB or MySQL (Windows)
 powershell -ExecutionPolicy Bypass -File test/scripts/budget-smoke.ps1 -Database mongodb
@@ -722,7 +725,8 @@ Use this section as a lightweight backlog of mismatches between implementation, 
 - [ ] Continue entry-layer coverage work by adding explicit service seams/fakes for Cobra command handlers and controllers; guard-path tests exist, but many success/error branches still couple directly to package-level services or mapper globals
 - [ ] Review legacy DB helper behavior that still uses package-global state plus `panic`/`log.Fatal`, and gradually normalize error handling
 - [ ] Confirm whether MongoDB-only eager initialization in the Cobra root command is still the intended default lifecycle, or if DB initialization should be made more explicit and symmetric across backends
-- [ ] Decide whether MongoDB needs applied-version tracking beyond startup index reconciliation; current MongoDB migration assets do not maintain an applied-version ledger
+- [x] Add MongoDB applied-version tracking with immutable checksums, ordered
+  history validation, existing-installation baselining, and dirty-state startup blocking
 - [ ] Keep `docs/roadmap.md` synchronized with the actual working branch/version plan as collaboration decisions evolve
 - [x] Reconcile MongoDB bootstrap, migration, and runtime indexes with user/type/parent/name category uniqueness and remove obsolete `flow_type` indexes
 - [ ] Retire or rewrite `docker/dependencies/mongodb/init-mongo-demo.js`; it is a legacy single-user fixture that does not match current ownership, audit, category-type, or BSON date fields

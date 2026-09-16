@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/macar-x/cashlenx-server/migrations"
 	"github.com/macar-x/cashlenx-server/util"
 	"github.com/macar-x/cashlenx-server/util/database"
 	"go.mongodb.org/mongo-driver/bson"
@@ -55,24 +56,65 @@ func mongoBudgetIndexes() []mongo.IndexModel {
 func createMongoDBIndexes() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
+	return migrations.RunMongo(ctx, database.GetMongoDatabase(), ApplyMongoMigration)
+}
 
-	cashFlows := database.GetMongoCollection(database.CashFlowTableName)
+// ApplyMongoMigration executes the native implementation associated with an
+// immutable JavaScript migration asset.
+func ApplyMongoMigration(ctx context.Context, db *mongo.Database, migration migrations.MongoMigration) error {
+	switch migration.Version {
+	case 1:
+		return applyMongoCoreIndexes(ctx, db)
+	case 10:
+		return applyMongoVerificationIndexes(ctx, db)
+	case 16:
+		return applyMongoBudgetIndexes(ctx, db)
+	default:
+		return fmt.Errorf("no MongoDB migration handler for version %03d", migration.Version)
+	}
+}
+
+func applyMongoCoreIndexes(ctx context.Context, db *mongo.Database) error {
+	cashFlows := db.Collection(database.CashFlowTableName)
 	if _, err := cashFlows.Indexes().CreateMany(ctx, mongoCashFlowIndexes()); err != nil {
 		return fmt.Errorf("create cash-flow indexes: %w", err)
 	}
-	categories := database.GetMongoCollection(database.CategoryTableName)
+	categories := db.Collection(database.CategoryTableName)
 	if _, err := categories.Indexes().CreateMany(ctx, mongoCategoryIndexes()); err != nil {
 		return fmt.Errorf("create category indexes: %w", err)
 	}
-	budgets := database.GetMongoCollection(database.BudgetTableName)
-	if _, err := budgets.Indexes().CreateMany(ctx, mongoBudgetIndexes()); err != nil {
-		return fmt.Errorf("create budget indexes: %w", err)
+	userConfigurations := db.Collection(database.UserConfigurationTableName)
+	if _, err := userConfigurations.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys:    bson.D{{Key: "belongs_user_id", Value: 1}},
+		Options: options.Index().SetName("user_configurations_belongs_user_id_unique_index").SetUnique(true),
+	}); err != nil {
+		return fmt.Errorf("create user-configuration index: %w", err)
 	}
 	if err := dropMongoIndexes(ctx, cashFlows, "idx_flow_type", "idx_belongs_date_flow_type", "flow_type_1", "belongs_date_-1_flow_type_1"); err != nil {
 		return err
 	}
 	if err := dropMongoIndexes(ctx, categories, "idx_category_name_unique", "belongs_user_id_1_name_1", "name_1"); err != nil {
 		return err
+	}
+	return nil
+}
+
+func applyMongoVerificationIndexes(ctx context.Context, db *mongo.Database) error {
+	collection := db.Collection(database.OperationConfirmCodeTableName)
+	indexes := []mongo.IndexModel{
+		{Keys: bson.D{{Key: "code", Value: 1}}, Options: options.Index().SetName("code_1")},
+		{Keys: bson.D{{Key: "verification_token", Value: 1}}, Options: options.Index().SetName("verification_token_1").SetUnique(true).SetSparse(true)},
+		{Keys: bson.D{{Key: "operation_type", Value: 1}, {Key: "payload", Value: 1}}, Options: options.Index().SetName("operation_type_1_payload_1")},
+	}
+	if _, err := collection.Indexes().CreateMany(ctx, indexes); err != nil {
+		return fmt.Errorf("create verification-code indexes: %w", err)
+	}
+	return nil
+}
+
+func applyMongoBudgetIndexes(ctx context.Context, db *mongo.Database) error {
+	if _, err := db.Collection(database.BudgetTableName).Indexes().CreateMany(ctx, mongoBudgetIndexes()); err != nil {
+		return fmt.Errorf("create budget indexes: %w", err)
 	}
 	return nil
 }
