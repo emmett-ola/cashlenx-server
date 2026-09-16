@@ -335,7 +335,12 @@ Admin role lifecycle:
 
 ### Token-related persistence
 
-- Refresh tokens are stored through `mapper/refresh_token_mapper`
+- Refresh tokens are stored through `mapper/refresh_token_mapper`. New tokens
+  persist only a prefixed SHA-256 digest; raw tokens are returned once to the
+  caller. Lookup/revocation temporarily falls back to legacy plaintext rows so
+  a successful rotation upgrades an existing session without a compatibility
+  break. Mapper logs and session-inventory responses must never expose the raw
+  token or its digest.
 - Verification codes are stored through `mapper/operation_confirm_code_mapper`
 
 ### Verification flows

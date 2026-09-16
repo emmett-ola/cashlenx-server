@@ -1,6 +1,8 @@
 package refresh_token_mapper
 
 import (
+	"errors"
+
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/util"
 	"github.com/macar-x/cashlenx-server/util/database"
@@ -31,18 +33,17 @@ func (m RefreshTokenMongoDbMapper) GetTokenByToken(tokenStr string) model.Refres
 
 	// Define filter
 	filter := map[string]interface{}{
-		"token": tokenStr,
-		"$or": []map[string]interface{}{
-			{"revoked_at": nil},
-			{"revoked_at": map[string]interface{}{"$gt": util.GetCurrentTime()}},
-		},
+		"token":      tokenStr,
+		"revoked_at": nil,
+		"expires_at": map[string]interface{}{"$gt": util.GetCurrentTime()},
+		"is_delete":  false,
 	}
 
 	// Find the token
 	var token model.RefreshToken
 	err := collection.FindOne(nil, filter).Decode(&token)
 	if err != nil {
-		util.Logger.Debugw("Refresh token not found", "error", err, "token", tokenStr)
+		util.Logger.Debugw("Refresh token not found", "error", err)
 		return model.RefreshToken{}
 	}
 
@@ -55,7 +56,12 @@ func (m RefreshTokenMongoDbMapper) RevokeToken(tokenStr string, revokedBy string
 	collection := database.GetMongoCollection(database.RefreshTokenTableName)
 
 	// Define filter and update
-	filter := map[string]interface{}{"token": tokenStr}
+	filter := map[string]interface{}{
+		"token":      tokenStr,
+		"revoked_at": nil,
+		"expires_at": map[string]interface{}{"$gt": util.GetCurrentTime()},
+		"is_delete":  false,
+	}
 	update := map[string]interface{}{
 		"$set": map[string]interface{}{
 			"revoked_at":     util.GetCurrentTime(),
@@ -66,10 +72,13 @@ func (m RefreshTokenMongoDbMapper) RevokeToken(tokenStr string, revokedBy string
 	}
 
 	// Update the token
-	_, err := collection.UpdateOne(nil, filter, update)
+	result, err := collection.UpdateOne(nil, filter, update)
 	if err != nil {
-		util.Logger.Errorw("Failed to revoke refresh token", "error", err, "token", tokenStr)
+		util.Logger.Errorw("Failed to revoke refresh token", "error", err)
 		return err
+	}
+	if result.MatchedCount == 0 {
+		return errors.New("active refresh token not found")
 	}
 
 	return nil
@@ -104,18 +113,18 @@ func (m RefreshTokenMongoDbMapper) RevokeAllTokensByUserId(userId string) error 
 	return nil
 }
 
-	// GetTokensByUserId retrieves all refresh tokens for a user
+// GetTokensByUserId retrieves all refresh tokens for a user
 func (m RefreshTokenMongoDbMapper) GetTokensByUserId(userId string) []model.RefreshToken {
 	var tokens []model.RefreshToken
-	
+
 	// Get database connection
 	collection := database.GetMongoCollection(database.RefreshTokenTableName)
-	
+
 	// Define filter
 	filter := map[string]interface{}{
 		"user_id": userId,
 	}
-	
+
 	// Find all tokens for the user
 	cursor, err := collection.Find(nil, filter)
 	if err != nil {
@@ -123,12 +132,12 @@ func (m RefreshTokenMongoDbMapper) GetTokensByUserId(userId string) []model.Refr
 		return tokens
 	}
 	defer cursor.Close(nil)
-	
+
 	// Decode the results
 	if err := cursor.All(nil, &tokens); err != nil {
 		util.Logger.Errorw("Failed to decode refresh tokens", "error", err)
 		return tokens
 	}
-	
+
 	return tokens
 }

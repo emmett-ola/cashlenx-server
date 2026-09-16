@@ -67,6 +67,9 @@ func ConfirmPasswordReset(token string, newPassword string) error {
 	user.UpdateTime = util.GetCurrentTime()
 
 	// Save updated user
+	if err := revokeAllRefreshTokens(user.Id.Hex()); err != nil {
+		return errors.NewInternalError("failed to revoke sessions before password reset", err)
+	}
 	updatedUser := userRepo.UpdateUserByEntity(user.Id.Hex(), user)
 	if updatedUser.Id.IsZero() {
 		return errors.NewInternalError("failed to update password", nil)

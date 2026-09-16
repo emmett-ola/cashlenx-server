@@ -3,7 +3,6 @@ package user_service
 import (
 	"github.com/macar-x/cashlenx-server/errors"
 	"github.com/macar-x/cashlenx-server/model"
-	"github.com/macar-x/cashlenx-server/util"
 )
 
 // DeleteService deletes a user by ID
@@ -19,15 +18,16 @@ func DeleteService(userId string) error {
 		return errors.NewForbiddenError("admin users cannot be deleted")
 	}
 
+	// Revoke sessions before deleting the account. A revocation failure leaves
+	// the account unchanged rather than reporting deletion while sessions live.
+	if err := revokeAllRefreshTokens(userId); err != nil {
+		return errors.NewInternalError("failed to revoke sessions before account deletion", err)
+	}
+
 	// Delete the user (Soft Delete)
 	deletedUser := userRepo.DeleteUserByObjectId(userId)
 	if deletedUser.Id.IsZero() {
 		return errors.NewInternalError("failed to delete user", nil)
-	}
-
-	// Invalidate tokens
-	if err := revokeAllRefreshTokens(userId); err != nil {
-		util.Logger.Warnw("Failed to revoke tokens after account deletion", "userId", userId, "error", err)
 	}
 
 	return nil

@@ -1,6 +1,7 @@
 package cli_auth
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -257,7 +258,6 @@ func TestRequireUserRefreshesExpiredAccessTokenAndReplacesSession(t *testing.T) 
 		ExpiresAt: time.Now().Add(time.Hour),
 		UserAgent: UserAgent,
 	}
-	refreshMapper.createdToken = "new-refresh-token"
 
 	if err := Save("expired-access-token", "old-refresh-token", user); err != nil {
 		t.Fatalf("Save returned error: %v", err)
@@ -280,8 +280,8 @@ func TestRequireUserRefreshesExpiredAccessTokenAndReplacesSession(t *testing.T) 
 	if session.AccessToken == "expired-access-token" {
 		t.Fatal("access token was not replaced")
 	}
-	if session.RefreshToken != "new-refresh-token" {
-		t.Fatalf("refresh token = %q, want new-refresh-token", session.RefreshToken)
+	if session.RefreshToken == "" || session.RefreshToken == "old-refresh-token" {
+		t.Fatalf("refresh token was not rotated: %q", session.RefreshToken)
 	}
 }
 
@@ -429,14 +429,10 @@ func installRefreshTokenMapperStub(t *testing.T) *refreshTokenMapperStub {
 
 type refreshTokenMapperStub struct {
 	token        model.RefreshToken
-	createdToken string
 	revokedToken string
 }
 
 func (stub *refreshTokenMapperStub) CreateToken(token model.RefreshToken) string {
-	if stub.createdToken != "" {
-		return stub.createdToken
-	}
 	return token.Token
 }
 
@@ -453,6 +449,9 @@ func (stub *refreshTokenMapperStub) GetTokensByUserId(userId string) []model.Ref
 
 func (stub *refreshTokenMapperStub) RevokeToken(token string, revokedBy string) error {
 	stub.revokedToken = token
+	if stub.token.Token != token {
+		return errors.New("active refresh token not found")
+	}
 	return nil
 }
 

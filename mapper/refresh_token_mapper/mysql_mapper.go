@@ -62,7 +62,8 @@ func (m RefreshTokenMySqlMapper) GetTokenByToken(tokenStr string) model.RefreshT
 	// Create the SQL query
 	query := `SELECT id, user_id, token, expires_at, create_time, create_user_id, revoked_at, revoked_by,
 		device_id, device_name, ip_address, user_agent, update_time, update_user_id 
-		FROM ` + database.RefreshTokenTableName + ` WHERE token = ? AND (revoked_at IS NULL OR revoked_at > ?)`
+		FROM ` + database.RefreshTokenTableName + `
+		WHERE token = ? AND revoked_at IS NULL AND expires_at > ? AND is_delete = FALSE`
 
 	// Get database connection
 	connection := database.GetMySqlConnection()
@@ -83,10 +84,10 @@ func (m RefreshTokenMySqlMapper) GetTokenByToken(tokenStr string) model.RefreshT
 		&revokedAt, &revokedBy, &deviceId, &deviceName, &ipAddress, &userAgent, &updateTime, &updateUserIdStr)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			util.Logger.Debugw("Refresh token not found", "token", tokenStr)
+			util.Logger.Debugw("Refresh token not found")
 			return model.RefreshToken{}
 		}
-		util.Logger.Errorw("Failed to get refresh token", "error", err, "token", tokenStr)
+		util.Logger.Errorw("Failed to get refresh token", "error", err)
 		return model.RefreshToken{}
 	}
 
@@ -123,7 +124,7 @@ func (m RefreshTokenMySqlMapper) GetTokenByToken(tokenStr string) model.RefreshT
 
 	// Check if token is expired
 	if token.ExpiresAt.Before(time.Now()) {
-		util.Logger.Debugw("Refresh token expired", "token", tokenStr)
+		util.Logger.Debugw("Refresh token expired")
 		return model.RefreshToken{}
 	}
 
@@ -133,7 +134,9 @@ func (m RefreshTokenMySqlMapper) GetTokenByToken(tokenStr string) model.RefreshT
 // RevokeToken revokes a refresh token by its token string
 func (m RefreshTokenMySqlMapper) RevokeToken(tokenStr string, revokedBy string) error {
 	// Create the SQL query
-	query := `UPDATE ` + database.RefreshTokenTableName + ` SET revoked_at = ?, revoked_by = ?, update_time = ?, update_user_id = ? WHERE token = ?`
+	query := `UPDATE ` + database.RefreshTokenTableName + `
+		SET revoked_at = ?, revoked_by = ?, update_time = ?, update_user_id = ?
+		WHERE token = ? AND revoked_at IS NULL AND expires_at > ? AND is_delete = FALSE`
 
 	// Get database connection
 	connection := database.GetMySqlConnection()
@@ -142,20 +145,21 @@ func (m RefreshTokenMySqlMapper) RevokeToken(tokenStr string, revokedBy string) 
 	updateUserId := util.Convert2ObjectId(revokedBy)
 
 	// Execute the query
-	result, err := connection.Exec(query, time.Now(), revokedBy, time.Now(), updateUserId.Hex(), tokenStr)
+	now := time.Now()
+	result, err := connection.Exec(query, now, revokedBy, now, updateUserId.Hex(), tokenStr, now)
 	if err != nil {
-		util.Logger.Errorw("Failed to revoke refresh token", "error", err, "token", tokenStr)
+		util.Logger.Errorw("Failed to revoke refresh token", "error", err)
 		return err
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		util.Logger.Errorw("Failed to check rows affected", "error", err, "token", tokenStr)
+		util.Logger.Errorw("Failed to check rows affected", "error", err)
 		return err
 	}
 
 	if rowsAffected == 0 {
-		util.Logger.Debugw("Refresh token not found for revocation", "token", tokenStr)
+		util.Logger.Debugw("Active refresh token not found for revocation")
 		return sql.ErrNoRows
 	}
 

@@ -142,7 +142,7 @@ paths:
 
   /auth/tokens:
     get:
-      summary: List current user's refresh tokens
+      summary: List current user's session metadata with refresh credentials redacted
       operationId: getTokens
       tags: [Authentication]
       responses:

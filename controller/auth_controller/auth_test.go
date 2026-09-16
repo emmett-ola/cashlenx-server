@@ -7,6 +7,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -144,6 +145,9 @@ func TestGetTokensReturnsUserTokens(t *testing.T) {
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d; body=%s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+	if strings.Contains(rec.Body.String(), "refresh-token") {
+		t.Fatalf("session inventory exposed refresh credential: %s", rec.Body.String())
 	}
 }
 

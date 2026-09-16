@@ -1,6 +1,7 @@
 package user_service
 
 import (
+	std_errors "errors"
 	"testing"
 
 	"github.com/macar-x/cashlenx-server/model"
@@ -135,6 +136,11 @@ func TestConfirmPasswordResetConsumesTokenAndUpdatesPassword(t *testing.T) {
 	}
 
 	var consumedOperation verification_service.OperationType
+	var revokedUserID string
+	revokeAllRefreshTokens = func(userId string) error {
+		revokedUserID = userId
+		return nil
+	}
 	consumeVerifiedToken = func(token string, operation verification_service.OperationType) (model.OperationConfirmCode, error) {
 		if token != "reset-token" {
 			t.Fatalf("token = %q, want reset-token", token)
@@ -151,6 +157,34 @@ func TestConfirmPasswordResetConsumesTokenAndUpdatesPassword(t *testing.T) {
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(repo.users[userID.Hex()].PasswordHash), []byte("NewPass123!")); err != nil {
 		t.Fatalf("new password hash does not match: %v", err)
+	}
+	if revokedUserID != userID.Hex() {
+		t.Fatalf("revokedUserID = %q, want %q", revokedUserID, userID.Hex())
+	}
+}
+
+func TestConfirmPasswordResetFailsClosedWhenSessionRevocationFails(t *testing.T) {
+	repo := installUserServiceTestDeps(t)
+	userID := primitive.NewObjectID()
+	oldHash, err := bcrypt.GenerateFromPassword([]byte("OldPass123!"), bcrypt.DefaultCost)
+	if err != nil {
+		t.Fatalf("failed to hash old password: %v", err)
+	}
+	repo.users[userID.Hex()] = model.UserEntity{
+		Id:           userID,
+		EmailAddress: "alice@example.test",
+		PasswordHash: string(oldHash),
+	}
+	consumeVerifiedToken = func(string, verification_service.OperationType) (model.OperationConfirmCode, error) {
+		return model.OperationConfirmCode{Payload: "alice@example.test"}, nil
+	}
+	revokeAllRefreshTokens = func(string) error { return std_errors.New("database unavailable") }
+
+	if err := ConfirmPasswordReset("reset-token", "NewPass123!"); err == nil {
+		t.Fatal("expected reset to fail when session revocation fails")
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(repo.users[userID.Hex()].PasswordHash), []byte("OldPass123!")); err != nil {
+		t.Fatalf("password changed despite failed session revocation: %v", err)
 	}
 }
 
@@ -365,6 +399,24 @@ func TestChangePasswordServiceRejectsWrongOldPassword(t *testing.T) {
 	}
 }
 
+func TestChangePasswordServiceFailsClosedWhenSessionRevocationFails(t *testing.T) {
+	repo := installUserServiceTestDeps(t)
+	revokeAllRefreshTokens = func(string) error { return std_errors.New("database unavailable") }
+	userID := primitive.NewObjectID()
+	oldHash, err := bcrypt.GenerateFromPassword([]byte("OldPass123!"), bcrypt.DefaultCost)
+	if err != nil {
+		t.Fatalf("failed to hash old password: %v", err)
+	}
+	repo.users[userID.Hex()] = model.UserEntity{Id: userID, PasswordHash: string(oldHash)}
+
+	if err := ChangePasswordService(userID.Hex(), "OldPass123!", "NewPass123!"); err == nil {
+		t.Fatal("expected password change to fail when session revocation fails")
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(repo.users[userID.Hex()].PasswordHash), []byte("OldPass123!")); err != nil {
+		t.Fatalf("password changed despite failed session revocation: %v", err)
+	}
+}
+
 func TestDeleteServiceRejectsAdminAndRevokesUserTokens(t *testing.T) {
 	t.Run("admin deletion rejected", func(t *testing.T) {
 		repo := installUserServiceTestDeps(t)
@@ -399,6 +451,20 @@ func TestDeleteServiceRejectsAdminAndRevokesUserTokens(t *testing.T) {
 		}
 		if revokedUserID != userID.Hex() {
 			t.Fatalf("revokedUserID = %q, want %q", revokedUserID, userID.Hex())
+		}
+	})
+
+	t.Run("revocation failure leaves user active", func(t *testing.T) {
+		repo := installUserServiceTestDeps(t)
+		revokeAllRefreshTokens = func(string) error { return std_errors.New("database unavailable") }
+		userID := primitive.NewObjectID()
+		repo.users[userID.Hex()] = model.UserEntity{Id: userID, Role: model.UserRoleUser}
+
+		if err := DeleteService(userID.Hex()); err == nil {
+			t.Fatal("expected deletion to fail when session revocation fails")
+		}
+		if repo.deletedIDs[userID.Hex()] {
+			t.Fatal("user was deleted despite failed session revocation")
 		}
 	})
 }

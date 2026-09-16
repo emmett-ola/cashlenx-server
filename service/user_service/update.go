@@ -71,7 +71,7 @@ func UpdateService(plainId string, requestBody model.UserDTO) (model.UserEntity,
 
 		// Revoke all refresh tokens when password changes
 		if err := revokeAllRefreshTokens(plainId); err != nil {
-			util.Logger.Warnw("Failed to revoke refresh tokens after password change", "userId", plainId, "error", err)
+			return model.UserEntity{}, errors.NewInternalError("failed to revoke sessions before password change", err)
 		}
 	}
 
@@ -113,7 +113,7 @@ func SetPasswordService(plainId string, password string) (model.UserEntity, erro
 
 	// Revoke all refresh tokens when password changes
 	if err := revokeAllRefreshTokens(plainId); err != nil {
-		util.Logger.Warnw("Failed to revoke refresh tokens after password change", "userId", plainId, "error", err)
+		return model.UserEntity{}, errors.NewInternalError("failed to revoke sessions before password change", err)
 	}
 
 	// Update user in database
@@ -216,14 +216,15 @@ func ChangePasswordService(plainId string, oldPassword, newPassword string) erro
 	user.UpdateTime = util.GetCurrentTime()
 	user.UpdateUserId = user.Id
 
+	// Revoke sessions before persisting the new password. If revocation fails,
+	// the password remains unchanged instead of leaving valid sessions behind.
+	if err := revokeAllRefreshTokens(plainId); err != nil {
+		return errors.NewInternalError("failed to revoke sessions before password change", err)
+	}
+
 	updatedUser := userRepo.UpdateUserByEntity(plainId, user)
 	if updatedUser.Id.IsZero() {
 		return errors.NewInternalError("failed to update password", nil)
-	}
-
-	// Revoke all refresh tokens for security
-	if err := revokeAllRefreshTokens(plainId); err != nil {
-		util.Logger.Warnw("Failed to revoke tokens after password change", "userId", plainId, "error", err)
 	}
 
 	return nil

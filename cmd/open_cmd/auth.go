@@ -56,8 +56,6 @@ var loginCmd = &cobra.Command{
 
 		fmt.Printf("User: %s (%s)\n", user.Username, user.Id.Hex())
 		fmt.Printf("Role: %s\n", user.Role)
-		fmt.Printf("Access Token: %s\n", accessToken)
-		fmt.Printf("Refresh Token: %s\n", refreshToken)
 		fmt.Println("CLI session saved")
 		return nil
 	},

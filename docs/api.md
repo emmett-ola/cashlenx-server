@@ -55,9 +55,13 @@ Authorization: Bearer <access_token>
 Route groups:
 
 - `/open/*` is public by convention. `/open/auth/logout` is idempotent: it returns OK without credentials, revokes one session when a valid `refresh_token` is provided, and revokes all sessions when a valid bearer access token is provided without `refresh_token`.
-- `/auth/tokens` is authenticated token-management API.
+- `/auth/tokens` is authenticated session-inventory API. It returns session metadata with the reusable refresh credential and its stored digest redacted.
 - `/admin/*` requires authenticated admin role.
 - `/user/*`, `/cash/*`, `/category/*`, `/budget/*`, and `/statistic/*` are authenticated user-scoped APIs.
+
+Refresh credentials rotate once. New credentials are stored only as SHA-256 digests; existing plaintext rows remain readable only long enough for a successful refresh to rotate them into digest storage. Expired, revoked, deleted, device-mismatched, or replayed refresh credentials are rejected. Password change, password reset, and account deletion revoke refresh sessions before persisting the security-sensitive account mutation and fail closed if revocation cannot complete.
+
+Access tokens are stateless JWTs and remain usable until their configured short expiry unless the account is deleted or deactivated. Operators should keep the access-token lifetime bounded; refresh-session revocation is the durable logout and credential-change control.
 
 ## Implemented Route Surface
 
