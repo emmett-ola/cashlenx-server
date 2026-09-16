@@ -4,6 +4,25 @@ CashLenX Server is a Go backend for personal finance tracking. It provides a Cob
 
 The project is still in active `v0.x` development. The current API path is `/api/v0`; stable `/api/v1` compatibility is planned for a later stable release.
 
+## CashLenX Project
+
+CashLenX is developed as a set of independently buildable repositories with
+explicit ownership boundaries:
+
+| Repository | Responsibility |
+| --- | --- |
+| [cashlenx-app](https://github.com/emmett-ola/cashlenx-app) | Cross-platform Flutter client and user experience. |
+| [cashlenx-server](https://github.com/emmett-ola/cashlenx-server) | Go REST API, Cobra CLI, authentication, finance services, and MongoDB/MySQL persistence. |
+| [cashlenx-design](https://github.com/emmett-ola/cashlenx-design) | Figma-exported React/Vite visual and interaction reference. |
+| [cashlenx-website](https://github.com/emmett-ola/cashlenx-website) | Public product and developer-information website. |
+| [cashlenx-spec](https://github.com/emmett-ola/cashlenx-spec) | Product and system facts, delivery workflow, decisions, and retained evidence. |
+
+This repository owns the backend, command-line interface, public API contract,
+and persistence behavior. Cross-repository contracts are coordinated through
+OpenAPI and the CashLenX Spec workflow. Runtime repositories remain
+independently buildable and do not depend on the spec or design reference at
+build time or runtime.
+
 ## Features
 
 - Local registration/login with JWT access tokens and persisted refresh tokens
@@ -267,4 +286,6 @@ generation for Codecov. DeepSource handles code analysis.
 
 ## License
 
-See `LICENSE` for details.
+This project is licensed under the [MIT License](LICENSE). Commercial use,
+modification, and redistribution are permitted when the copyright and license
+notices are retained.
