@@ -30,14 +30,19 @@ func init() {
 		return
 	}
 
-	_, currentFile, _, ok := runtime.Caller(0)
 	specPath := "docs/openapi.yaml"
-	if ok {
-		baseDir := filepath.Dir(currentFile)
-		specPath = filepath.Clean(filepath.Join(baseDir, "..", "docs", "openapi.yaml"))
-	}
-
 	data, err := os.ReadFile(specPath)
+	if err != nil {
+		_, currentFile, _, ok := runtime.Caller(0)
+		if ok {
+			candidate := filepath.Clean(filepath.Join(filepath.Dir(currentFile), "..", "docs", "openapi.yaml"))
+			if candidateData, candidateErr := os.ReadFile(candidate); candidateErr == nil {
+				specPath = candidate
+				data = candidateData
+				err = nil
+			}
+		}
+	}
 	if err != nil {
 		util.Logger.Errorw("Failed to load OpenAPI spec", "error", err, "path", specPath)
 		util.SetConfigByKey("api.schema.validation", "false")
