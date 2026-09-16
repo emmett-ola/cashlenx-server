@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -45,6 +46,13 @@ func TestV0CompatibilityPathValidatesAgainstV1Schema(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	if err := validateRequest(req); err != nil {
 		t.Fatalf("v0 compatibility request did not validate against v1 schema: %v", err)
+	}
+	body, err := io.ReadAll(req.Body)
+	if err != nil {
+		t.Fatalf("read original request body: %v", err)
+	}
+	if got := string(body); got != `{"username":"alice","password":"secret123"}` {
+		t.Fatalf("original request body = %q after validation", got)
 	}
 }
 

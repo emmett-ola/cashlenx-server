@@ -1,8 +1,10 @@
 package middleware
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -261,6 +263,21 @@ func validateRequest(r *http.Request) error {
 	// Create a copy of the request with modified URL to match OpenAPI server URL
 	// This ensures validation works regardless of the actual hostname/port
 	rCopy := r.Clone(context.Background())
+	if r.Body != nil {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			return err
+		}
+		if err := r.Body.Close(); err != nil {
+			return err
+		}
+		r.Body = io.NopCloser(bytes.NewReader(body))
+		rCopy.Body = io.NopCloser(bytes.NewReader(body))
+		rCopy.ContentLength = int64(len(body))
+		rCopy.GetBody = func() (io.ReadCloser, error) {
+			return io.NopCloser(bytes.NewReader(body)), nil
+		}
+	}
 
 	// Use the first server URL from the spec or default to http://localhost:8080
 	var serverURL string
