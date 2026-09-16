@@ -452,6 +452,11 @@ Important nuance:
   context is allowlisted, and `scripts/build.sh` verifies required runtime
   assets, source version/revision metadata, and prohibited file absence.
 - SMTP keys are wired from `.env`, and configured delivery has been manually verified by the project owner. Automated registration and password-reset tests must replace email delivery rather than contact a real provider.
+- `scripts/data-protection/backup.sh` owns encrypted MongoDB/MySQL database-level
+  backups and daily/weekly/monthly retention. `restore-drill.sh` restores only
+  into an unnetworked disposable container and verifies migration state. These
+  operator keys are read directly from the selected environment file; they are
+  not application runtime configuration and must not be registered in Go.
 
 ## Database Utilities
 
@@ -556,8 +561,11 @@ Repo scripts include:
   independent MongoDB project
 - `scripts/dependencies/mysql/build.sh`, `start.sh`, and `stop.sh` for the
   independent MySQL project
+- `scripts/data-protection/backup.sh` and `restore-drill.sh` for encrypted
+  database-level protection and disposable recovery evidence
 - `test/scripts/api-smoke.sh`
 - `test/scripts/budget-smoke.ps1`
+- `test/scripts/data-protection-smoke.ps1`
 - `test/scripts/mysql-migrations-smoke.ps1`
 - `test/scripts/mongodb-migrations-smoke.ps1`
 
@@ -697,6 +705,9 @@ powershell -ExecutionPolicy Bypass -File test/scripts/mongodb-migrations-smoke.p
 # Run focused budget parity against disposable MongoDB or MySQL (Windows)
 powershell -ExecutionPolicy Bypass -File test/scripts/budget-smoke.ps1 -Database mongodb
 powershell -ExecutionPolicy Bypass -File test/scripts/budget-smoke.ps1 -Database mysql
+
+# Validate encrypted backup, corrupt-input rejection, retention, and disposable restore
+powershell -ExecutionPolicy Bypass -File test/scripts/data-protection-smoke.ps1 -Database all
 ```
 
 ## Guidelines For Future Changes

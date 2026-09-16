@@ -38,3 +38,6 @@ docs/html/
 # Database Data
 mongodb/data/
 mysql/data/
+
+# Operator Backup Output
+backups/
