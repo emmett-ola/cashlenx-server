@@ -17,10 +17,10 @@ jobs:
         go-version: [ '1.23.0' ]
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     - name: Set up Go ${{ matrix.go-version }}
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v7
       with:
         go-version: ${{ matrix.go-version }}
 
@@ -34,7 +34,7 @@ jobs:
       run: go test -v -race -covermode=atomic -coverprofile=coverage.out ./...
 
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v7
       with:
         files: ./coverage.out
         flags: github-actions
@@ -47,51 +47,53 @@ jobs:
     needs: build-test
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      uses: docker/setup-buildx-action@v4
 
     - name: Log in to Docker Hub (if secrets available)
-      uses: docker/login-action@v3
-      if: env.DOCKER_HUB_USERNAME != ''
+      uses: docker/login-action@v4
+      if: env.DOCKER_HUB_USERNAME != '' && env.DOCKER_HUB_ACCESS_TOKEN != ''
       with:
         username: ${{ secrets.DOCKER_HUB_USERNAME }}
         password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
       env:
         DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+        DOCKER_HUB_ACCESS_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
     - name: Prepare Docker tags
       id: prep-tags
+      env:
+        EVENT_NAME: ${{ github.event_name }}
+        DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+        DOCKER_HUB_ACCESS_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
       run: |
-        # Use safe tag format (SHA for all cases, release tag only for releases)
-        SHA_TAG="cashlenx-server:${GITHUB_SHA::7}"
-        TAGS="$SHA_TAG"
-        
-        # Add release tags if this is a release event
-        if [ "${{ github.event_name }}" == "release" ]; then
-          RELEASE_TAG="cashlenx-server:${GITHUB_REF_NAME#refs/tags/}"
-          TAGS="$TAGS\n$RELEASE_TAG\ncashlenx-server:latest"
-        fi
-        
-        # Add Docker Hub username prefix if secrets are available and we're pushing
-        if [ "${{ github.event_name }}" == "release" ] && [ -n "${{ secrets.DOCKER_HUB_USERNAME }}" ]; then
-          DOCKER_HUB_USERNAME="${{ secrets.DOCKER_HUB_USERNAME }}"
-          FINAL_TAGS=""
-          while IFS= read -r tag; do
-            FINAL_TAGS="$FINAL_TAGS\n$DOCKER_HUB_USERNAME/$tag"
-          done <<< "$TAGS"
-          echo "tags=$FINAL_TAGS" >> $GITHUB_OUTPUT
+        short_sha="${GITHUB_SHA::7}"
+        if [ "$EVENT_NAME" = "release" ] \
+          && [ -n "$DOCKER_HUB_USERNAME" ] \
+          && [ -n "$DOCKER_HUB_ACCESS_TOKEN" ]; then
+          {
+            echo 'tags<<EOF'
+            echo "$DOCKER_HUB_USERNAME/cashlenx-server:$short_sha"
+            echo "$DOCKER_HUB_USERNAME/cashlenx-server:$GITHUB_REF_NAME"
+            echo "$DOCKER_HUB_USERNAME/cashlenx-server:latest"
+            echo 'EOF'
+            echo 'push=true'
+          } >> "$GITHUB_OUTPUT"
         else
-          echo "tags=$TAGS" >> $GITHUB_OUTPUT
+          {
+            echo "tags=cashlenx-server:$short_sha"
+            echo 'push=false'
+          } >> "$GITHUB_OUTPUT"
         fi
 
     - name: Build and push Docker image
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v7
       with:
         context: .
         file: ./docker/Dockerfile
-        push: ${{ github.event_name == 'release' }}
+        push: ${{ steps.prep-tags.outputs.push }}
         tags: ${{ steps.prep-tags.outputs.tags }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
@@ -102,7 +104,7 @@ jobs:
     needs: build-test
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     - name: Generate HTML docs from OpenAPI spec
       run: |
@@ -155,7 +157,7 @@ jobs:
         echo "HTML documentation generated successfully in ./docs/html/"
 
     - name: Upload docs artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: api-docs
         path: ./docs/html

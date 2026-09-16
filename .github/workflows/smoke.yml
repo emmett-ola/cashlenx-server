@@ -22,10 +22,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version: '1.23.0'
           cache: true
@@ -36,7 +36,7 @@ jobs:
       - name: Run managed MongoDB API smoke test
         env:
           ADMIN_USERNAME: admin
-          ADMIN_PASSWORD: admin
+          ADMIN_PASSWORD: SmokeAdminPass123!
           API_VERSION: v0
           SMOKE_SERVER_PORT: 18080
         run: test/scripts/api-smoke.sh --managed
