@@ -20,10 +20,11 @@ func TestCreateServiceCreatesUserAndInitializesCategories(t *testing.T) {
 	}
 
 	userID, err := CreateService(model.UserDTO{
-		Username: "alice",
-		Password: "StrongPass123!",
-		Nickname: "Alice",
-		Gender:   model.GenderFemale,
+		Username:     "alice",
+		Password:     "StrongPass123!",
+		Nickname:     "Alice",
+		Gender:       model.GenderFemale,
+		EmailAddress: " Alice@Example.Test ",
 	}, nil)
 	if err != nil {
 		t.Fatalf("CreateService returned error: %v", err)
@@ -47,6 +48,9 @@ func TestCreateServiceCreatesUserAndInitializesCategories(t *testing.T) {
 	}
 	if initializedUserID != userID {
 		t.Fatalf("initializedUserID = %q, want %q", initializedUserID, userID)
+	}
+	if created.EmailAddress != "alice@example.test" {
+		t.Fatalf("EmailAddress = %q, want normalized email", created.EmailAddress)
 	}
 }
 

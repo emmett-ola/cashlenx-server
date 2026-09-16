@@ -2,6 +2,7 @@ package user_service
 
 import (
 	std_errors "errors"
+	"strings"
 	"time"
 
 	"github.com/macar-x/cashlenx-server/errors"
@@ -43,7 +44,15 @@ func UpdateService(plainId string, requestBody model.UserDTO) (model.UserEntity,
 		existingUser.AvatarUrl = requestBody.AvatarUrl
 	}
 	if requestBody.EmailAddress != "" {
-		existingUser.EmailAddress = requestBody.EmailAddress
+		emailAddress := strings.ToLower(strings.TrimSpace(requestBody.EmailAddress))
+		if err := validation.ValidateEmail(emailAddress); err != nil {
+			return model.UserEntity{}, err
+		}
+		checkUser := userRepo.GetUserByEmail(emailAddress)
+		if !checkUser.Id.IsZero() && checkUser.Id.Hex() != plainId {
+			return model.UserEntity{}, errors.NewFieldAlreadyExistsError("email_address", "email address is already taken")
+		}
+		existingUser.EmailAddress = emailAddress
 	}
 	if requestBody.IsEmailVerified {
 		existingUser.IsEmailVerified = true

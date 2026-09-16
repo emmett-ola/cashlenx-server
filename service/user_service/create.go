@@ -2,6 +2,7 @@ package user_service
 
 import (
 	std_errors "errors"
+	"strings"
 
 	"github.com/macar-x/cashlenx-server/errors"
 	"github.com/macar-x/cashlenx-server/model"
@@ -24,6 +25,16 @@ func CreateService(requestBody model.UserDTO, creatorId *string) (string, error)
 	existingUser := userRepo.GetUserByUsernameIncludeDeleted(requestBody.Username)
 	if !existingUser.Id.IsZero() {
 		return "", errors.NewFieldAlreadyExistsError("username", "username is already taken")
+	}
+	if requestBody.EmailAddress != "" {
+		requestBody.EmailAddress = strings.ToLower(strings.TrimSpace(requestBody.EmailAddress))
+		if err := validation.ValidateEmail(requestBody.EmailAddress); err != nil {
+			return "", err
+		}
+		existingEmailUser := userRepo.GetUserByEmail(requestBody.EmailAddress)
+		if !existingEmailUser.Id.IsZero() {
+			return "", errors.NewFieldAlreadyExistsError("email_address", "email address is already taken")
+		}
 	}
 
 	// Hash the password
