@@ -8,10 +8,10 @@ This document is a human-readable companion to `docs/openapi.yaml`. The OpenAPI 
 ## Base URL
 
 ```text
-http://localhost:8080/api/v0
+http://localhost:8080/api/v1
 ```
 
-The API path version defaults to `/api/v0` and is configurable through `API_VERSION`.
+The canonical API path defaults to `/api/v1` and is configurable through `API_VERSION`. While `v1` is canonical, `/api/v0` remains a frozen compatibility alias for previously shipped clients. New features and contract additions target only `/api/v1`; the alias receives compatible behavior and security fixes but no new surface. Its removal requires a separately announced compatibility decision.
 
 Operational endpoints are mounted outside the versioned API:
 
@@ -45,6 +45,8 @@ Most JSON endpoints respond through the shared response wrapper from `util.Compo
 File download endpoints may return binary content instead of the JSON wrapper.
 
 ## Authentication
+
+The historical login request field named `username` accepts either a username or a normalized email address. Keeping the field name avoids breaking existing request bodies. Authentication failures use the same error for unknown usernames, unknown emails, and invalid passwords.
 
 Most non-open routes require:
 
@@ -167,7 +169,7 @@ Statistic, dashboard, chart, and import/export:
 Register:
 
 ```bash
-curl -X POST http://localhost:8080/api/v0/open/auth/register \
+curl -X POST http://localhost:8080/api/v1/open/auth/register \
   -H "Content-Type: application/json" \
   -d '{"username":"testuser","password":"test123","email":"test@example.com","verification_token":"<token>"}'
 ```
@@ -175,7 +177,7 @@ curl -X POST http://localhost:8080/api/v0/open/auth/register \
 Login:
 
 ```bash
-curl -X POST http://localhost:8080/api/v0/open/auth/login \
+curl -X POST http://localhost:8080/api/v1/open/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username":"testuser","password":"test123"}'
 ```
@@ -183,7 +185,7 @@ curl -X POST http://localhost:8080/api/v0/open/auth/login \
 Refresh token:
 
 ```bash
-curl -X POST http://localhost:8080/api/v0/open/auth/login \
+curl -X POST http://localhost:8080/api/v1/open/auth/login \
   -H "Content-Type: application/json" \
   -d '{"refresh_token":"<refresh_token>"}'
 ```
@@ -191,7 +193,7 @@ curl -X POST http://localhost:8080/api/v0/open/auth/login \
 Create expense:
 
 ```bash
-curl -X POST http://localhost:8080/api/v0/cash/expense \
+curl -X POST http://localhost:8080/api/v1/cash/expense \
   -H "Authorization: Bearer <access_token>" \
   -H "Content-Type: application/json" \
   -d '{"belongs_date":"20260101","category_name":"Food","amount":45.5,"description":"Lunch"}'
@@ -201,7 +203,7 @@ Get dashboard:
 
 ```bash
 curl -H "Authorization: Bearer <access_token>" \
-  http://localhost:8080/api/v0/statistic/dashboard/monthly/202601
+  http://localhost:8080/api/v1/statistic/dashboard/monthly/202601
 ```
 
 ## Notes For Maintainers

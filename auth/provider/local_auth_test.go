@@ -43,10 +43,10 @@ func TestGenerateTokenUsesConfiguredExpirationMinutes(t *testing.T) {
 	}
 }
 
-func TestMiddlewareTreatsOpenLogoutAsPublic(t *testing.T) {
+func TestMiddlewareTreatsStableAndCompatibilityOpenRoutesAsPublic(t *testing.T) {
 	originalAPIVersion := util.GetConfigByKey("api.version")
 	defer util.SetConfigByKey("api.version", originalAPIVersion)
-	util.SetConfigByKey("api.version", "v0")
+	util.SetConfigByKey("api.version", "v1")
 
 	called := false
 	handler := NewLocalAuthService().Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -54,15 +54,18 @@ func TestMiddlewareTreatsOpenLogoutAsPublic(t *testing.T) {
 		w.WriteHeader(http.StatusNoContent)
 	}))
 
-	req := httptest.NewRequest(http.MethodPost, "/api/v0/open/auth/logout", nil)
-	rec := httptest.NewRecorder()
+	for _, path := range []string{"/api/v1/open/auth/logout", "/api/v0/open/auth/logout"} {
+		called = false
+		req := httptest.NewRequest(http.MethodPost, path, nil)
+		rec := httptest.NewRecorder()
 
-	handler.ServeHTTP(rec, req)
+		handler.ServeHTTP(rec, req)
 
-	if !called {
-		t.Fatal("expected open logout request to reach next handler without auth")
-	}
-	if rec.Code != http.StatusNoContent {
-		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNoContent)
+		if !called {
+			t.Fatalf("expected %s to reach next handler without auth", path)
+		}
+		if rec.Code != http.StatusNoContent {
+			t.Fatalf("%s status = %d, want %d", path, rec.Code, http.StatusNoContent)
+		}
 	}
 }

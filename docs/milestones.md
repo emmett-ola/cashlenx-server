@@ -85,6 +85,7 @@ future work is tracked in [`roadmap.md`](roadmap.md).
 ## Durable Historical Decisions
 
 - API paths remain under `/api/v0` throughout active `v0.x` development.
+- The stable contract is canonical at `/api/v1`; `/api/v0` remains a frozen previous-client alias during the v1 transition and receives no new API surface.
 - MongoDB is the default development database; touched persistence behavior must preserve MySQL parity.
 - SMTP delivery is manually verified, while automated email-flow tests replace provider delivery.
 - CORS remains the outermost API middleware for browser preflight compatibility.

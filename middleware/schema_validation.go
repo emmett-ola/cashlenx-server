@@ -87,15 +87,9 @@ func SchemaValidation(next http.Handler) http.Handler {
 	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Skip health and version endpoints
-		// Get API prefix from config to skip health/version check correctly
-		apiVersion := util.GetConfigByKey("api.version")
-		if apiVersion == "" {
-			apiVersion = "v0"
-		}
-		apiPrefix := "/api/" + apiVersion
-
-		if strings.HasPrefix(r.URL.Path, apiPrefix+"/open/health") || strings.HasPrefix(r.URL.Path, apiPrefix+"/open/version") {
+		// Operational endpoints are intentionally schema-independent for every
+		// supported API version.
+		if util.IsHealthOrVersionPath(r.URL.Path) {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -276,13 +270,6 @@ func validateRequest(r *http.Request) error {
 		serverURL = "http://localhost:8080"
 	}
 
-	// Adjust server URL with API version if needed
-	// This is a simplified approach. Ideally, we should parse the OpenAPI server URL and replace variables.
-	// But since we control the code and spec, we can assume the spec might have /api/v0 or we need to strip it for validation
-	// Actually, kin-openapi should handle path matching against the spec.
-	// If we changed routes in server.go to include /v0/, we MUST change openapi.yaml to include /v0/ as well.
-	// Then standard validation should work.
-
 	// Parse the server URL
 	server, err := r.URL.Parse(serverURL)
 	if err != nil {
@@ -292,6 +279,7 @@ func validateRequest(r *http.Request) error {
 	// Keep the original path, query, fragment, etc.
 	rCopy.URL.Scheme = server.Scheme
 	rCopy.URL.Host = server.Host
+	rCopy.URL.Path = util.CanonicalAPIPath(r.URL.Path)
 
 	// Find matching route using the modified URL
 	route, pathParams, err := routesRouter.FindRoute(rCopy)
@@ -315,7 +303,7 @@ func validateRequest(r *http.Request) error {
 
 	// Validate request using the original request but matched route
 	requestValidationInput := &openapi3filter.RequestValidationInput{
-		Request:    r,
+		Request:    rCopy,
 		PathParams: pathParams,
 		Route:      route,
 		Options:    options,

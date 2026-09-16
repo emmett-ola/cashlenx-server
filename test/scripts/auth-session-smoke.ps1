@@ -15,7 +15,7 @@ $network = "cashlenx-auth-smoke-$runId"
 $databaseContainer = "cashlenx-auth-db-$runId"
 $serverContainer = "cashlenx-auth-api-$runId"
 $databaseName = "cashlenx_auth_smoke_$($runId -replace '-', '_')"
-$baseUrl = "http://127.0.0.1:$ServerPort/api/v0"
+$baseUrl = "http://127.0.0.1:$ServerPort/api/v1"
 $adminPassword = "AuthSmokeAdmin456!"
 $newPassword = "AuthSmoke456!"
 
@@ -120,7 +120,7 @@ try {
         "run", "-d", "--name", $serverContainer, "--network", $network,
         "-p", "127.0.0.1:${ServerPort}:10063",
         "-e", "ENV=test", "-e", "SERVER_HOST=0.0.0.0", "-e", "SERVER_PORT=10063",
-        "-e", "API_VERSION=v0", "-e", "SCHEMA_VALIDATION=false",
+        "-e", "API_VERSION=v1", "-e", "SCHEMA_VALIDATION=false",
         "-e", "JWT_SECRET=auth-smoke-secret", "-e", "ADMIN_USERNAME=admin",
         "-e", "ADMIN_PASSWORD=$adminPassword", "-e", "DB_TYPE=$Database", "-e", "DB_NAME=$databaseName"
     ) + $databaseEnvironment + @($ServerImage, "-p", "10063")

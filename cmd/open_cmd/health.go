@@ -21,7 +21,7 @@ var healthCmd = &cobra.Command{
 
 		apiVersion := util.GetConfigByKey("api.version")
 		if apiVersion == "" {
-			apiVersion = "v0"
+			apiVersion = util.DefaultAPIVersion
 		}
 		url := fmt.Sprintf("http://localhost:8080/api/%s/open/health", apiVersion)
 

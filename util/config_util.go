@@ -155,7 +155,7 @@ func initDefaultValues() {
 	// API Version
 	apiVersion := os.Getenv("API_VERSION")
 	if apiVersion == "" {
-		apiVersion = "v0"
+		apiVersion = DefaultAPIVersion
 	}
 	configurationMap["api.version"] = apiVersion
 

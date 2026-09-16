@@ -90,6 +90,24 @@ func TestRouteRegistrationMatchesExpectedEndpoints(t *testing.T) {
 	}
 }
 
+func TestStableRouteRegistrationIncludesV0CompatibilityAlias(t *testing.T) {
+	originalVersion := util.GetConfigByKey("api.version")
+	t.Cleanup(func() { util.SetConfigByKey("api.version", originalVersion) })
+	util.SetConfigByKey("api.version", "v1")
+
+	r := mux.NewRouter()
+	for _, version := range util.SupportedAPIVersions() {
+		registerAPIRoutes(r, util.APIPrefix(version))
+	}
+
+	for _, path := range []string{"/api/v1/open/health", "/api/v0/open/health", "/api/v1/user/profile", "/api/v0/user/profile"} {
+		req := httptest.NewRequest(http.MethodGet, path, nil)
+		if !r.Match(req, &mux.RouteMatch{}) {
+			t.Fatalf("GET %s did not match registered routes", path)
+		}
+	}
+}
+
 func TestOperationalEndpoints(t *testing.T) {
 	originalEnv := util.GetConfigByKey("env")
 	t.Cleanup(func() { util.SetConfigByKey("env", originalEnv) })

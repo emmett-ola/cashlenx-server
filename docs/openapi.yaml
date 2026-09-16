@@ -8,8 +8,8 @@ info:
     email: support@cashlenx.com
 
 servers:
-  - url: http://localhost:8080/api/v0
-    description: Local development server
+  - url: http://localhost:8080/api/v1
+    description: Canonical stable API; /api/v0 remains a frozen compatibility alias during the v1 transition
 
 tags:
   - name: System
@@ -43,7 +43,7 @@ paths:
   /open/auth/login:
     post:
       summary: User login or token refresh
-      description: Provide username/password for login, or refresh_token for token refresh.
+      description: Provide a username or email in the username field with a password for login, or provide refresh_token for token refresh. The historical field name is retained for wire compatibility.
       operationId: login
       tags: [Authentication]
       requestBody:
@@ -1226,6 +1226,7 @@ components:
       properties:
         username:
           type: string
+          description: Username or email address. The field name is retained for compatibility.
         password:
           type: string
         refresh_token:

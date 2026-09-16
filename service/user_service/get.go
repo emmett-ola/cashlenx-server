@@ -2,6 +2,7 @@ package user_service
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/util"
@@ -38,6 +39,17 @@ func GetUserByObjectId(userId string) model.UserEntity {
 // GetUserByUsername retrieves a user by their username
 func GetUserByUsername(username string) model.UserEntity {
 	return userRepo.GetUserByUsername(username)
+}
+
+// GetUserByLoginIdentifier retrieves a user by username or normalized email.
+// The login request retains its historical "username" field for wire
+// compatibility while accepting either identifier.
+func GetUserByLoginIdentifier(identifier string) model.UserEntity {
+	identifier = strings.TrimSpace(identifier)
+	if strings.Contains(identifier, "@") {
+		return userRepo.GetUserByEmail(strings.ToLower(identifier))
+	}
+	return userRepo.GetUserByUsername(identifier)
 }
 
 // GetAllUsers retrieves all users with pagination

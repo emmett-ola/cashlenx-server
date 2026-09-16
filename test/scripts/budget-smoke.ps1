@@ -28,7 +28,7 @@ function Invoke-Api {
     if ($Token) { $headers.Authorization = "Bearer $Token" }
     $parameters = @{
         Method = $Method
-        Uri = "http://127.0.0.1:$ServerPort/api/v0$Path"
+        Uri = "http://127.0.0.1:$ServerPort/api/v1$Path"
         Headers = $headers
     }
     if ($null -ne $Body) {
@@ -91,7 +91,7 @@ try {
 
     $env:ENV = "test"
     $env:SERVER_HOST = "127.0.0.1"
-    $env:API_VERSION = "v0"
+    $env:API_VERSION = "v1"
     $env:SCHEMA_VALIDATION = "true"
     $env:JWT_SECRET = "budget-smoke-secret"
     $env:ADMIN_USERNAME = "admin"

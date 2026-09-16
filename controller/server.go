@@ -57,23 +57,9 @@ func StartServer(port int32) {
 
 	r := mux.NewRouter()
 
-	apiVersion := util.GetConfigByKey("api.version")
-	if apiVersion == "" {
-		apiVersion = "v0"
+	for _, apiVersion := range util.SupportedAPIVersions() {
+		registerAPIRoutes(r, util.APIPrefix(apiVersion))
 	}
-	apiPrefix := "/api/" + apiVersion
-
-	registerOpenRoutes(r, apiPrefix)
-
-	adminRouter := r.PathPrefix(apiPrefix + "/admin").Subrouter()
-	adminRouter.Use(middleware.Admin)
-	registerAdminRoutes(adminRouter)
-
-	registerUserRoutes(r, apiPrefix)
-	registerCashRoute(r, apiPrefix)
-	registerCategoryRoute(r, apiPrefix)
-	registerBudgetRoute(r, apiPrefix)
-	registerStatisticRoute(r, apiPrefix)
 
 	handler := buildHTTPHandler(r)
 
@@ -88,6 +74,20 @@ func StartServer(port int32) {
 	if err := http.ListenAndServe(addr, handler); err != nil {
 		util.Logger.Fatalw("API server stopped", "error", err)
 	}
+}
+
+func registerAPIRoutes(r *mux.Router, apiPrefix string) {
+	registerOpenRoutes(r, apiPrefix)
+
+	adminRouter := r.PathPrefix(apiPrefix + "/admin").Subrouter()
+	adminRouter.Use(middleware.Admin)
+	registerAdminRoutes(adminRouter)
+
+	registerUserRoutes(r, apiPrefix)
+	registerCashRoute(r, apiPrefix)
+	registerCategoryRoute(r, apiPrefix)
+	registerBudgetRoute(r, apiPrefix)
+	registerStatisticRoute(r, apiPrefix)
 }
 
 func registerBudgetRoute(r *mux.Router, prefix string) {
@@ -241,16 +241,16 @@ func healthCheck(w http.ResponseWriter, r *http.Request) {
 }
 
 func versionInfo(w http.ResponseWriter, r *http.Request) {
-	apiVersion := util.GetConfigByKey("api.version")
-	if apiVersion == "" {
-		apiVersion = "v0"
-	}
-	apiPrefix := "/api/" + apiVersion
+	apiVersion := util.APIVersionFromPath(r.URL.Path)
+	apiPrefix := util.APIPrefix(apiVersion)
 
 	response := map[string]interface{}{
-		"version":     model.Version,
-		"name":        "CashLenX API",
-		"description": "Personal finance management API",
+		"version":                model.Version,
+		"api_version":            apiVersion,
+		"canonical_api_version":  util.GetAPIVersion(),
+		"supported_api_versions": util.SupportedAPIVersions(),
+		"name":                   "CashLenX API",
+		"description":            "Personal finance management API",
 		"endpoints": map[string][]string{
 			"open": {
 				"GET " + apiPrefix + "/open/health",

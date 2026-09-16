@@ -10,7 +10,7 @@ MONGO_ROOT_USERNAME="${SMOKE_MONGO_ROOT_USERNAME:-cashlenx}"
 MONGO_ROOT_PASSWORD="${SMOKE_MONGO_ROOT_PASSWORD:-cashlenx123}"
 SMOKE_DB_NAME="${SMOKE_DB_NAME:-cashlenx_smoke_${RUN_ID//-/_}}"
 SERVER_PORT="${SMOKE_SERVER_PORT:-18080}"
-API_VERSION="${API_VERSION:-v0}"
+API_VERSION="${API_VERSION:-v1}"
 BASE_URL="${BASE_URL:-}"
 ADMIN_USERNAME="${ADMIN_USERNAME:-admin}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-SmokeAdminPass123!}"
@@ -351,6 +351,14 @@ ACCESS_TOKEN="$(json_get "data.access_token")"
 REFRESH_TOKEN="$(json_get "data.refresh_token")"
 if [[ -z "$ACCESS_TOKEN" || -z "$REFRESH_TOKEN" ]]; then
   echo "login response did not include access_token and refresh_token" >&2
+  cat "$RESP_FILE" >&2
+  exit 1
+fi
+
+api POST "/open/auth/login" 200 "{\"username\":\"${USERNAME}@example.test\",\"password\":\"${PASSWORD}\",\"device_id\":\"smoke-email\",\"device_name\":\"Smoke Script\"}"
+EMAIL_ACCESS_TOKEN="$(json_get "data.access_token")"
+if [[ -z "$EMAIL_ACCESS_TOKEN" ]]; then
+  echo "email login response did not include access_token" >&2
   cat "$RESP_FILE" >&2
   exit 1
 fi

@@ -7,7 +7,7 @@ This file tracks active and future work. Completed milestone history lives in
 ## Current Status
 
 - Active branch line: `dev/v0.9.0`
-- Active API path: `/api/v0`
+- Canonical API path: `/api/v1` (`/api/v0` is a frozen compatibility alias)
 - Current implementation version: `0.9.0`
 - `v0.9.0` implementation and local verification: complete
 - Remaining release action: publish/promote the completed development branch when authorized
@@ -105,12 +105,12 @@ CASHLENX_BENCHMARKS=1 DB_TYPE=mysql DB_NAME=cashlenx MYSQL_DB_URI='<mysql-uri-wi
 - [ ] GitHub Actions release pipeline with tagged binaries and images
 - [ ] Module caching and reproducible builds
 - [ ] Start `CHANGELOG.md` and synchronize displayed versions with release tags
-- [ ] Decide and publish the stable `/api/v1` compatibility policy
+- [x] Decide and publish the stable `/api/v1` compatibility policy
 
 ## Planning Policy
 
 - User-facing functionality takes priority over infrastructure enhancements during `v0.x` development.
-- Keep API routes under `/api/v0` until the first stable API release.
+- Develop new contract surface under `/api/v1`; keep `/api/v0` as the frozen previous-client alias until a separately announced compatibility decision removes it.
 - Keep `model/version.go`, OpenAPI `info.version`, this roadmap, and release notes synchronized.
 - Treat code as authoritative when documentation drifts, then correct the documentation deliberately.
 - Track repository-wide architectural debt in `AGENTS.md`; keep this roadmap focused on milestone work.

@@ -50,6 +50,23 @@ func TestCreateServiceCreatesUserAndInitializesCategories(t *testing.T) {
 	}
 }
 
+func TestGetUserByLoginIdentifierSupportsUsernameAndNormalizedEmail(t *testing.T) {
+	repo := installUserServiceTestDeps(t)
+	userID := primitive.NewObjectID()
+	repo.users[userID.Hex()] = model.UserEntity{
+		Id:           userID,
+		Username:     "alice",
+		EmailAddress: "alice@example.test",
+	}
+
+	if got := GetUserByLoginIdentifier(" alice "); got.Id != userID {
+		t.Fatalf("username lookup returned user %s, want %s", got.Id.Hex(), userID.Hex())
+	}
+	if got := GetUserByLoginIdentifier(" Alice@Example.Test "); got.Id != userID {
+		t.Fatalf("email lookup returned user %s, want %s", got.Id.Hex(), userID.Hex())
+	}
+}
+
 func TestRegisterPublicUserConsumesSignupTokenAndCreatesVerifiedUser(t *testing.T) {
 	repo := installUserServiceTestDeps(t)
 	setRegistrationEnabled(t, "true")

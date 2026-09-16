@@ -37,7 +37,7 @@ These are collaboration defaults provided by the project owner and should be tre
 - We are currently developing on the `dev/v0.9.0` branch line
 - The branch line maps to the feature/version batch currently in progress
 - Once planned work for the current development branch is complete, it is intended to be merged/promoted to `main`, then development moves to the next branch line
-- API versioning stays under `/api/v0` during active development
+- The canonical stable API is `/api/v1`; `/api/v0` is a frozen compatibility alias for previously shipped clients
 - A stable release is expected to introduce `/api/v1` alongside a stable application version such as `v1.0.0`
 - User-facing feature/function completion takes priority over enhancement work such as observability, performance, migration tooling, cloud hardening, and release automation
 - Enhancement work should move earlier only when it directly unblocks user-facing functionality or safe delivery
@@ -172,7 +172,7 @@ Important: the server start command is currently `go run main.go open start -p 8
 
 ## HTTP Routing
 
-`controller/server.go` builds routes under `apiPrefix := "/api/" + apiVersion`, defaulting to `/api/v0`.
+`controller/server.go` registers the configured canonical API version, defaulting to `/api/v1`. When the canonical version is `v1`, it also registers `/api/v0` as a frozen compatibility alias.
 
 ### Public routes
 
@@ -696,7 +696,7 @@ go build -o cashlenx main.go
 go test ./...
 
 # Run API smoke flow against a running local server
-BASE_URL=http://localhost:8080/api/v0 test/scripts/api-smoke.sh
+BASE_URL=http://localhost:8080/api/v1 test/scripts/api-smoke.sh
 
 # Validate the numbered SQL sequence against disposable MySQL 8 (Windows)
 powershell -ExecutionPolicy Bypass -File test/scripts/mysql-migrations-smoke.ps1

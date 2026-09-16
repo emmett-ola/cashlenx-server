@@ -3,12 +3,16 @@ package middleware
 import (
 	"context"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/macar-x/cashlenx-server/util"
 )
 
 func TestOpenAPISpecLoadsAndValidates(t *testing.T) {
@@ -29,6 +33,18 @@ func TestOpenAPISpecLoadsAndValidates(t *testing.T) {
 	}
 	if err := spec.Validate(context.Background()); err != nil {
 		t.Fatalf("invalid OpenAPI spec: %v", err)
+	}
+}
+
+func TestV0CompatibilityPathValidatesAgainstV1Schema(t *testing.T) {
+	original := util.GetConfigByKey("api.version")
+	t.Cleanup(func() { util.SetConfigByKey("api.version", original) })
+	util.SetConfigByKey("api.version", "v1")
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v0/open/auth/login", strings.NewReader(`{"username":"alice","password":"secret123"}`))
+	req.Header.Set("Content-Type", "application/json")
+	if err := validateRequest(req); err != nil {
+		t.Fatalf("v0 compatibility request did not validate against v1 schema: %v", err)
 	}
 }
 

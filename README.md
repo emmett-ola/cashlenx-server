@@ -2,7 +2,7 @@
 
 CashLenX Server is a Go backend for personal finance tracking. It provides a Cobra CLI and a Gorilla Mux REST API for authentication, user accounts, cash flows, categories, monthly budgets, statistics, import/export, and admin database management.
 
-The project is still in active `v0.x` development. The current API path is `/api/v0`; stable `/api/v1` compatibility is planned for a later stable release.
+The product remains pre-release while the accepted stable API contract is implemented under canonical `/api/v1`. The frozen `/api/v0` alias protects previously shipped clients during the transition.
 
 ## CashLenX Project
 
@@ -193,7 +193,7 @@ go run main.go open start -p 10063
 The local base URL is:
 
 ```text
-http://127.0.0.1:10063/api/v0
+http://127.0.0.1:10063/api/v1
 ```
 
 ### 4. Useful CLI Commands
@@ -207,20 +207,22 @@ go run main.go admin database restore -i backup.json
 
 ## REST API Highlights
 
-- `GET /api/v0/open/health`
-- `GET /api/v0/open/version`
-- `POST /api/v0/open/auth/register`
-- `POST /api/v0/open/auth/login`
-- `POST /api/v0/open/auth/logout`
-- `GET /api/v0/auth/tokens`
-- `GET /api/v0/user/profile`
-- `POST /api/v0/cash/expense`
-- `POST /api/v0/cash/income`
-- `GET /api/v0/cash`
-- `GET /api/v0/category/tree`
-- `GET /api/v0/budget?period=YYYY-MM`
-- `GET /api/v0/statistic/dashboard/{period}/{date}`
-- `GET /api/v0/statistic/chart/income-expense/{period}/{date}`
+- `GET /api/v1/open/health`
+- `GET /api/v1/open/version`
+- `POST /api/v1/open/auth/register`
+- `POST /api/v1/open/auth/login`
+- `POST /api/v1/open/auth/logout`
+- `GET /api/v1/auth/tokens`
+- `GET /api/v1/user/profile`
+- `POST /api/v1/cash/expense`
+- `POST /api/v1/cash/income`
+- `GET /api/v1/cash`
+- `GET /api/v1/category/tree`
+- `GET /api/v1/budget?period=YYYY-MM`
+- `GET /api/v1/statistic/dashboard/{period}/{date}`
+
+`/api/v0` remains a frozen compatibility alias for previously shipped clients. New integrations must use `/api/v1`. Login keeps the `username` JSON field and accepts either a username or email address.
+- `GET /api/v1/statistic/chart/income-expense/{period}/{date}`
 
 See `docs/openapi.yaml` for the current API contract and `docs/api.md` for additional API notes.
 
@@ -229,7 +231,7 @@ See `docs/openapi.yaml` for the current API contract and `docs/api.md` for addit
 - `GET /metrics` exposes Prometheus request counters, duration histograms, and Go process/runtime metrics.
 - `/debug/pprof/*` exposes Go profiling handlers only when `ENV=dev`.
 
-These endpoints are intentionally outside `/api/v0` and the OpenAPI/JWT middleware. Restrict `/metrics` to trusted monitoring networks at the reverse proxy or firewall in deployed environments.
+These endpoints are intentionally outside the versioned API and the OpenAPI/JWT middleware. Restrict `/metrics` to trusted monitoring networks at the reverse proxy or firewall in deployed environments.
 
 ## Documentation
 
