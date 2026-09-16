@@ -246,3 +246,93 @@ save_image() {
     container image save --output "$output_file" "$image_ref"
   fi
 }
+
+validate_container_name() {
+  [[ "$1" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]*$ ]] || {
+    lifecycle_error "Invalid container name."
+    return 1
+  }
+}
+
+duration_to_seconds() {
+  local value="$1" remainder total=0 amount unit
+  if [[ "$value" =~ ^[1-9][0-9]*$ ]]; then printf '%s\n' "$value"; return 0; fi
+  remainder="$value"
+  while [[ -n "$remainder" ]]; do
+    [[ "$remainder" =~ ^([0-9]+)(h|m|s)(.*)$ ]] || {
+      lifecycle_error "Stop grace period must be a positive integer in seconds or a duration such as 15s or 1m30s."
+      return 1
+    }
+    amount="${BASH_REMATCH[1]}"; unit="${BASH_REMATCH[2]}"; remainder="${BASH_REMATCH[3]}"
+    case "$unit" in
+      h) total=$((total + 10#$amount * 3600)) ;;
+      m) total=$((total + 10#$amount * 60)) ;;
+      s) total=$((total + 10#$amount)) ;;
+    esac
+  done
+  ((total > 0)) || { lifecycle_error "Stop grace period must be greater than zero."; return 1; }
+  printf '%s\n' "$total"
+}
+
+report_runtime_capabilities() {
+  printf 'frontend=%s\nfrontend_version=%s\n' "$CONTAINER_FRONTEND_KIND" "$CONTAINER_FRONTEND_VERSION"
+  printf 'portable_health=exec-probe\ngraceful_stop=engine-timeout-with-exit-code-observation\n'
+  if [[ "$CONTAINER_FRONTEND_KIND" == "nerdctl" ]]; then
+    printf 'compose_health_visibility=not-relied-on\nresource_reservations=not-guaranteed-by-compose-frontend\n'
+  else
+    printf 'compose_health_visibility=available-but-not-relied-on\nresource_reservations=engine-dependent\n'
+  fi
+}
+
+diagnose_container() {
+  local container_name="$1" image_ref="$2" network_name="$3"
+  shift 3
+  validate_container_name "$container_name"
+  local requested_image_id effective_image_id effective_image_ref state
+  printf 'diagnostic=%s\n' "${LIFECYCLE_DIAGNOSTIC_MODE:-status}"
+  report_runtime_capabilities
+  printf 'container=%s\nrequested_image=%s\nnetwork=%s\n' "$container_name" "$image_ref" "$network_name"
+  if ! requested_image_id="$(container image inspect "$image_ref" --format '{{.Id}}' 2>/dev/null)"; then
+    printf 'image=missing\n'; return 1
+  fi
+  printf 'requested_image_id=%s\n' "$requested_image_id"
+  if ! container network inspect "$network_name" >/dev/null 2>&1; then printf 'network_state=missing\n'; return 1; fi
+  printf 'network_state=available\n'
+  if ! state="$(container inspect --format '{{.State.Status}}' "$container_name" 2>/dev/null)"; then
+    printf 'container_state=missing\n'; return 1
+  fi
+  printf 'container_state=%s\n' "$state"
+  effective_image_id="$(container inspect --format '{{.Image}}' "$container_name" 2>/dev/null || true)"
+  effective_image_ref="$(container inspect --format '{{.Config.Image}}' "$container_name" 2>/dev/null || true)"
+  printf 'effective_image=%s\neffective_image_id=%s\n' "${effective_image_ref:-unknown}" "${effective_image_id:-unknown}"
+  if [[ "$effective_image_id" != "$requested_image_id" ]]; then printf 'image_identity=mismatch\n'; return 1; fi
+  printf 'image_identity=verified\n'
+  if [[ "$state" != "running" ]]; then printf 'health=unavailable\n'; return 1; fi
+  if container exec "$container_name" "$@" >/dev/null 2>&1; then printf 'health=healthy\n'; return 0; fi
+  printf 'health=unhealthy\n'; return 1
+}
+
+show_container_logs() {
+  local container_name="$1" lines="${2:-100}"
+  validate_container_name "$container_name"
+  [[ "$lines" =~ ^[1-9][0-9]{0,4}$ ]] || { lifecycle_error "Log line count must be an integer from 1 to 99999."; return 1; }
+  container inspect "$container_name" >/dev/null 2>&1 || { lifecycle_error "Container is missing: $container_name"; return 1; }
+  container logs --tail "$lines" "$container_name"
+}
+
+stop_container_bounded() {
+  local container_name="$1" timeout_seconds state exit_code
+  validate_container_name "$container_name"
+  timeout_seconds="$(duration_to_seconds "$2")"
+  state="$(container inspect --format '{{.State.Status}}' "$container_name" 2>/dev/null || true)"
+  case "$state" in
+    "" | created | exited | dead | removing) printf 'stop_result=already-stopped\n'; return 0 ;;
+  esac
+  printf 'stop_timeout_seconds=%s\n' "$timeout_seconds"
+  if ! container stop --time "$timeout_seconds" "$container_name" >/dev/null; then printf 'stop_result=failed\n'; return 1; fi
+  state="$(container inspect --format '{{.State.Status}}' "$container_name" 2>/dev/null || true)"
+  exit_code="$(container inspect --format '{{.State.ExitCode}}' "$container_name" 2>/dev/null || true)"
+  if [[ "$state" == "running" ]]; then printf 'stop_result=failed-running\n'; return 1; fi
+  if [[ "$exit_code" == "137" ]]; then printf 'stop_result=forced\n'; return 1; fi
+  printf 'stop_result=graceful\n'
+}

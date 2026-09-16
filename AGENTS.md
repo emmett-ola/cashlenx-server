@@ -451,6 +451,11 @@ Important nuance:
   suppresses start traces that may contain environment values, and owns common
   network/readiness diagnostics. Do not reintroduce
   `compose config --images`, `up --wait`, or a sibling-repository dependency.
+- Every API/database lifecycle group exposes `status.sh`, `doctor.sh`, and
+  `logs.sh`. Automation must use status for decisions, capture doctor output for
+  incidents, keep logs bounded, and treat nonzero status/doctor as degraded.
+  Stop must enforce the configured bound, report exit-code-137 termination as
+  forced failure, and remain idempotent.
 - The Server `docker/Dockerfile` intentionally avoids `apk add`. Go embeds IANA timezone
   data through `time/tzdata`, and the API Compose healthcheck uses the Alpine
   base image's BusyBox `wget`; preserve this package-repository-independent
@@ -562,11 +567,14 @@ The docs are useful, but code should win when they disagree.
 
 Repo scripts include:
 
-- `scripts/build.sh`, `scripts/start.sh`, and `scripts/stop.sh` for the API
+- `scripts/build.sh`, `scripts/start.sh`, `scripts/status.sh`,
+  `scripts/doctor.sh`, `scripts/logs.sh`, and `scripts/stop.sh` for the API
   container lifecycle
-- `scripts/dependencies/mongodb/build.sh`, `start.sh`, and `stop.sh` for the
+- `scripts/dependencies/mongodb/build.sh`, `start.sh`, `status.sh`, `doctor.sh`,
+  `logs.sh`, and `stop.sh` for the
   independent MongoDB project
-- `scripts/dependencies/mysql/build.sh`, `start.sh`, and `stop.sh` for the
+- `scripts/dependencies/mysql/build.sh`, `start.sh`, `status.sh`, `doctor.sh`,
+  `logs.sh`, and `stop.sh` for the
   independent MySQL project
 - `scripts/data-protection/backup.sh` and `restore-drill.sh` for encrypted
   database-level protection and disposable recovery evidence

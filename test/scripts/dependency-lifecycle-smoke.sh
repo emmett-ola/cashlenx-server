@@ -4,6 +4,7 @@ set -euo pipefail
 project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 fake_dir="$(mktemp -d)"
 fake_log="$fake_dir/docker.log"
+fake_stop_marker="$fake_dir/stopped"
 api_env="$(mktemp "$project_dir/.env.lifecycle-api.XXXXXX")"
 mysql_env="$(mktemp "$project_dir/.env.lifecycle-mysql.XXXXXX")"
 smtp_env="$(mktemp "$project_dir/.env.lifecycle-smtp.XXXXXX")"
@@ -71,12 +72,34 @@ if [[ "${1:-}" == "network" && "${2:-}" == "inspect" ]]; then
   [[ "${FAKE_NETWORK_EXISTS:-true}" == "true" ]] || exit 1
 fi
 if [[ "${1:-}" == "image" && "${2:-}" == "inspect" ]]; then
+  [[ "${FAKE_IMAGE_EXISTS:-true}" == "true" ]] || exit 1
   if [[ "$*" == *"org.opencontainers.image.version"* ]]; then
     printf '%s\n' "${FAKE_IMAGE_VERSION:-0.0.0}"
   elif [[ "$*" == *"org.opencontainers.image.revision"* ]]; then
     printf '%s\n' "${FAKE_IMAGE_REVISION:-unknown}"
+  else
+    printf '%s\n' 'sha256:fake'
   fi
+  exit 0
 fi
+if [[ "${1:-}" == "inspect" ]]; then
+  [[ "${FAKE_CONTAINER_EXISTS:-true}" == "true" ]] || exit 1
+  case "$*" in
+    *State.Status*) if [[ -e "$FAKE_STOP_MARKER" ]]; then printf '%s\n' exited; else printf '%s\n' "${FAKE_CONTAINER_STATUS:-running}"; fi ;;
+    *State.ExitCode*) printf '%s\n' "${FAKE_EXIT_CODE:-0}" ;;
+    *Config.Image*)
+      case "$*" in
+        *cashlenx-mongodb*) printf '%s\n' 'mongo:7.0' ;;
+        *cashlenx-mysql*) printf '%s\n' 'mysql:8.0' ;;
+        *) printf '%s\n' 'cashlenx-server:latest' ;;
+      esac ;;
+    *'{{.Image}}'*) printf '%s\n' 'sha256:fake' ;;
+  esac
+  exit 0
+fi
+if [[ "${1:-}" == "exec" ]]; then [[ "${FAKE_HEALTHY:-true}" == "true" ]]; exit; fi
+if [[ "${1:-}" == "stop" ]]; then : > "$FAKE_STOP_MARKER"; exit 0; fi
+if [[ "${1:-}" == "logs" ]]; then printf '%s\n' 'fake server log'; exit 0; fi
 if [[ "${1:-}" == "run" && "$*" == *"--entrypoint /app/cashlenx-server"* ]]; then
   printf 'CashLenX v%s\nGit Commit: %s\n' "${FAKE_IMAGE_VERSION:-0.0.0}" "${FAKE_IMAGE_REVISION:-unknown}"
 fi
@@ -121,6 +144,7 @@ fake_image_revision="$(git -C "$project_dir" rev-parse HEAD)"
 
 reset_log() {
   : > "$fake_log"
+  rm -f "$fake_stop_marker"
 }
 
 run_script() {
@@ -133,6 +157,12 @@ run_script() {
     FAKE_CONFIG_SUPPORTED="${FAKE_CONFIG_SUPPORTED:-true}" \
     FAKE_NETWORK_EXISTS="${FAKE_NETWORK_EXISTS:-true}" \
     FAKE_NETWORK_CONNECTIONS="${FAKE_NETWORK_CONNECTIONS:-1}" \
+    FAKE_CONTAINER_EXISTS="${FAKE_CONTAINER_EXISTS:-true}" \
+    FAKE_CONTAINER_STATUS="${FAKE_CONTAINER_STATUS:-running}" \
+    FAKE_EXIT_CODE="${FAKE_EXIT_CODE:-0}" \
+    FAKE_HEALTHY="${FAKE_HEALTHY:-true}" \
+    FAKE_IMAGE_EXISTS="${FAKE_IMAGE_EXISTS:-true}" \
+    FAKE_STOP_MARKER="$fake_stop_marker" \
     FAKE_IMAGE_VERSION="$fake_image_version" \
     FAKE_IMAGE_REVISION="$fake_image_revision" \
     ENV_FILE="$selected_env" \
@@ -207,6 +237,13 @@ assert_log_not_contains "--wait"
 
 reset_log
 FAKE_FRONTEND_KIND=nerdctl run_script scripts/dependencies/mongodb/start.sh
+status_output="$(FAKE_FRONTEND_KIND=nerdctl run_script scripts/dependencies/mongodb/status.sh)"
+grep -F 'frontend=nerdctl' <<< "$status_output" >/dev/null
+grep -F 'health=healthy' <<< "$status_output" >/dev/null
+doctor_output="$(FAKE_FRONTEND_KIND=nerdctl run_script scripts/dependencies/mongodb/doctor.sh)"
+grep -F 'diagnostic=doctor' <<< "$doctor_output" >/dev/null
+FAKE_FRONTEND_KIND=nerdctl run_script scripts/dependencies/mongodb/logs.sh
+assert_log_contains "logs --tail 100 cashlenx-mongodb"
 assert_log_contains "--version"
 assert_log_contains "--pull never --remove-orphans mongodb"
 assert_log_not_contains "config --images"
@@ -242,7 +279,7 @@ if [[ -L "$inside_symlink" ]]; then
 fi
 
 reset_log
-ENV_FILE=.env.example PATH="$test_path" FAKE_DOCKER_LOG="$fake_log" \
+ENV_FILE=.env.example PATH="$test_path" FAKE_DOCKER_LOG="$fake_log" FAKE_STOP_MARKER="$fake_stop_marker" \
   FAKE_NETWORK_EXISTS=true FAKE_NETWORK_CONNECTIONS=1 \
   bash "$project_dir/scripts/dependencies/mongodb/stop.sh"
 assert_log_contains "-f $project_dir/docker/dependencies/mongodb/compose.yml down --remove-orphans"
@@ -267,9 +304,15 @@ run_script scripts/dependencies/mysql/start.sh "$mysql_env_name"
 assert_log_contains "--pull never --remove-orphans mysql"
 assert_log_contains "exec cashlenx-mysql sh -ec mysqladmin ping"
 assert_log_not_contains "--wait"
+status_output="$(run_script scripts/dependencies/mysql/status.sh "$mysql_env_name")"
+grep -F 'health=healthy' <<< "$status_output" >/dev/null
+doctor_output="$(run_script scripts/dependencies/mysql/doctor.sh "$mysql_env_name")"
+grep -F 'diagnostic=doctor' <<< "$doctor_output" >/dev/null
+run_script scripts/dependencies/mysql/logs.sh "$mysql_env_name"
+assert_log_contains "logs --tail 100 cashlenx-mysql"
 
 reset_log
-ENV_FILE=.env.example PATH="$test_path" FAKE_DOCKER_LOG="$fake_log" \
+ENV_FILE=.env.example PATH="$test_path" FAKE_DOCKER_LOG="$fake_log" FAKE_STOP_MARKER="$fake_stop_marker" \
   bash "$project_dir/scripts/dependencies/mysql/stop.sh"
 assert_log_contains "-f $project_dir/docker/dependencies/mysql/compose.yml down --remove-orphans"
 
@@ -278,6 +321,13 @@ run_script scripts/start.sh
 assert_log_contains "-f $project_dir/docker/compose.yml up -d --no-build --pull never --remove-orphans server"
 assert_log_contains "exec cashlenx-server sh -ec wget"
 assert_log_not_contains "--wait"
+status_output="$(run_script scripts/status.sh)"
+grep -F 'dependency_state=running' <<< "$status_output" >/dev/null
+grep -F 'health=healthy' <<< "$status_output" >/dev/null
+doctor_output="$(run_script scripts/doctor.sh)"
+grep -F 'diagnostic=doctor' <<< "$doctor_output" >/dev/null
+run_script scripts/logs.sh
+assert_log_contains "logs --tail 100 cashlenx-server"
 if grep -F -- 'dependencies/' "$fake_log" >/dev/null; then
   echo "API start unexpectedly invoked a dependency Compose project" >&2
   exit 1
@@ -287,6 +337,49 @@ reset_log
 FAKE_NETWORK_EXISTS=true FAKE_NETWORK_CONNECTIONS=0 run_script scripts/stop.sh
 assert_log_contains "-f $project_dir/docker/compose.yml down --remove-orphans"
 assert_log_contains "network rm cashlenx-network"
+assert_log_contains "stop --time 30 cashlenx-server"
+
+reset_log
+if output="$(FAKE_HEALTHY=false run_script scripts/status.sh 2>&1)"; then
+  echo "Expected degraded API health to fail status" >&2
+  exit 1
+fi
+grep -F 'health=unhealthy' <<< "$output" >/dev/null
+
+reset_log
+if output="$(FAKE_EXIT_CODE=137 run_script scripts/stop.sh 2>&1)"; then
+  echo "Expected forced API stop to fail the graceful-stop check" >&2
+  exit 1
+fi
+grep -F 'stop_result=forced' <<< "$output" >/dev/null
+assert_log_contains "down --remove-orphans"
+
+reset_log
+if output="$(FAKE_IMAGE_EXISTS=false run_script scripts/status.sh 2>&1)"; then
+  echo "Expected missing API image to fail status" >&2
+  exit 1
+fi
+grep -F 'image=missing' <<< "$output" >/dev/null
+
+reset_log
+if output="$(FAKE_NETWORK_EXISTS=false run_script scripts/status.sh 2>&1)"; then
+  echo "Expected missing API network to fail status" >&2
+  exit 1
+fi
+grep -F 'network_state=missing' <<< "$output" >/dev/null
+
+reset_log
+if output="$(FAKE_CONTAINER_EXISTS=false run_script scripts/status.sh 2>&1)"; then
+  echo "Expected missing API dependency to fail status" >&2
+  exit 1
+fi
+grep -F 'dependency_state=missing' <<< "$output" >/dev/null
+
+reset_log
+FAKE_NETWORK_EXISTS=true FAKE_NETWORK_CONNECTIONS=0 run_script scripts/stop.sh
+output="$(FAKE_NETWORK_EXISTS=true FAKE_NETWORK_CONNECTIONS=0 run_script scripts/stop.sh)"
+grep -F 'stop_result=already-stopped' <<< "$output" >/dev/null
+assert_log_contains "down --remove-orphans"
 
 reset_log
 run_script scripts/start.sh "$mysql_env_name"

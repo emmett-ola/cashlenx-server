@@ -13,6 +13,9 @@ released contracts and operational behavior separately from deployment state.
   repository-local Docker Compose and nerdctl 2.2 portability layer with
   pre-mutation validation, deterministic configured image identity, value-safe
   start output, and cold-database readiness handling.
+- Added API, MongoDB, and MySQL status/doctor/log entry points, selected-database
+  state reporting, effective image verification, and bounded observable stop
+  outcomes including forced and repeated stops.
 
 ## [1.0.0-rc.1] - 2026-09-16
 

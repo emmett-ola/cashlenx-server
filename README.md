@@ -129,6 +129,9 @@ endpoint. Start the selected dependency separately first.
 ```bash
 scripts/build.sh
 scripts/start.sh
+scripts/status.sh
+scripts/doctor.sh
+scripts/logs.sh 100
 scripts/stop.sh
 ```
 
@@ -142,6 +145,15 @@ nerdctl Compose.
 `stop.sh` removes the API container while preserving the image, bind-mounted
 logs, database projects, and database volumes. It removes the shared external
 network only when the network has no connected containers.
+
+The API, MongoDB, and MySQL lifecycle groups each provide `status.sh`,
+`doctor.sh`, and `logs.sh [lines]`. Status is a one-shot monitoring probe that
+reports non-secret frontend capabilities, image identity, network/container
+state, and live in-container health; API status also reports the selected
+database container state. Doctor emits the same facts with an incident-friendly
+diagnostic marker. Logs accepts 1 to 99999 lines (100 by default). Stop converts
+the configured grace period to a bounded engine timeout, reports `graceful`,
+`already-stopped`, or a failing `forced`/`failed` result, and is safe to repeat.
 
 All five Server-owned entry-point groups support Docker Compose v2 and nerdctl
 2.2 or newer. `CONTAINER_FRONTEND` accepts `auto`, `docker`, or `nerdctl`; auto
