@@ -443,6 +443,9 @@ Important nuance:
   data through `time/tzdata`, and the API Compose healthcheck uses the Alpine
   base image's BusyBox `wget`; preserve this package-repository-independent
   image build unless a new runtime requirement proves necessary.
+- Base-image digest pins are owned by `docker/images.env`. The root build
+  context is allowlisted, and `scripts/build.sh` verifies required runtime
+  assets, source version/revision metadata, and prohibited file absence.
 - SMTP keys are wired from `.env`, and configured delivery has been manually verified by the project owner. Automated registration and password-reset tests must replace email delivery rather than contact a real provider.
 
 ## Database Utilities
@@ -698,7 +701,7 @@ Use this section as a lightweight backlog of mismatches between implementation, 
 - [x] Treat `/open/auth/logout` as a public idempotent compatibility path; it only revokes sessions when a valid token is supplied
 - [x] Treat `/auth/tokens` as authenticated token-management API; keep OpenAPI/docs explicit about its auth expectation
 - [x] Treat configured SMTP delivery as manually verified; keep registration and password-reset procedure tests deterministic and provider-free
-- [ ] Decide on the future provider strategy for email delivery, likely a third-party provider such as Mailgun, and document the intended integration approach
+- [x] Keep the stable email contract vendor-neutral through SMTP; provider-specific integrations remain deferred and real credentials remain deployment-owned
 - [x] Replace statistic CLI import/export default-admin fallback with an explicit user/auth model before treating those commands as production-ready multi-user workflows
 - [ ] Expand isolated integration coverage for mapper and database-backed service paths; normal CI already runs all Go package tests, while live database checks remain separate smoke workflows
 - [ ] Continue entry-layer coverage work by adding explicit service seams/fakes for Cobra command handlers and controllers; guard-path tests exist, but many success/error branches still couple directly to package-level services or mapper globals

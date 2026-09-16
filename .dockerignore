@@ -1,21 +1,37 @@
-# Version control
-.git
-.gitignore
-
-# Database data directories (local bind mounts)
-mongodb/data
-mysql/data
-
-# Logs
-logs/
-
-# Docker configuration
-docker-compose.yml
-compose.yml
-.env
-.dockerignore
-
-# Build artifacts
-cashlenx-server
-*.exe
-*.test
+# The image build is allowlisted. Add a path only when the Go build or runtime
+# image needs it.
+*
+!.dockerignore
+!go.mod
+!go.sum
+!main.go
+!auth/
+!auth/**
+!cache/
+!cache/**
+!cmd/
+!cmd/**
+!config/
+!config/default_categories.json
+!controller/
+!controller/**
+!errors/
+!errors/**
+!mapper/
+!mapper/**
+!middleware/
+!middleware/**
+!migrations/
+!migrations/**
+!model/
+!model/**
+!service/
+!service/**
+!util/
+!util/**
+!validation/
+!validation/**
+!docs/
+!docs/openapi.yaml
+!docker/
+!docker/Dockerfile
