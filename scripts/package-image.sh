@@ -27,7 +27,7 @@ image_name="cashlenx-server-candidate"
 image_tag="${expected_version}-${short_revision}"
 image_ref="${image_name}:${image_tag}"
 
-ENV_FILE="${ENV_FILE:-.env.example}" SERVER_IMAGE_NAME="$image_name" SERVER_IMAGE_TAG="$image_tag" \
+BUILDX_NO_DEFAULT_ATTESTATIONS=1 ENV_FILE="${ENV_FILE:-.env.example}" SERVER_IMAGE_NAME="$image_name" SERVER_IMAGE_TAG="$image_tag" \
   PRODUCT_VERSION="$expected_version" GIT_COMMIT="$revision" "$project_dir/scripts/build.sh"
 
 image_id="$(docker image inspect "$image_ref" --format '{{.Id}}')"
