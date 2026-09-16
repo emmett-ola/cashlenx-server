@@ -468,8 +468,10 @@ Important nuance:
   data through `time/tzdata`, and the API Compose healthcheck uses the Alpine
   base image's BusyBox `wget`; preserve this package-repository-independent
   image build unless a new runtime requirement proves necessary.
-- Base-image digest pins are owned by `docker/images.env`. The root build
-  context is allowlisted, and `scripts/build.sh` verifies required runtime
+- Base-image digest pins are owned by `docker/images.env`. The Go test image is
+  separate from the minimal Alpine builder so local release validation can run
+  the CGO-backed race detector without changing the deployable image. The root
+  build context is allowlisted, and `scripts/build.sh` verifies required runtime
   assets, source version/revision metadata, and prohibited file absence.
 - The same file owns the exact Go version. CI and the Docker builder must remain
   aligned to it, use a read-only module graph, and route image validation only
