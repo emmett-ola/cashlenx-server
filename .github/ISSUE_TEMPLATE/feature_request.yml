@@ -1,0 +1,39 @@
+name: Feature request
+description: Propose a user or maintainer outcome for CashLenX Server
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or opportunity
+      description: Describe the user or maintainer need, not only a preferred implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: What observable result would make this complete?
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Suggested scope
+      description: Identify affected API, CLI, persistence, app, website, design, or specification areas.
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Compatibility, data, and security considerations
+      description: Note existing clients, MongoDB/MySQL parity, migrations, permissions, or privacy impact.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission checks
+      options:
+        - label: I searched for an existing request covering this outcome.
+          required: true
+        - label: I have not included credentials, personal data, or private operational details.
+          required: true

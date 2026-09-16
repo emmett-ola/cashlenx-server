@@ -244,6 +244,10 @@ These endpoints are intentionally outside `/api/v0` and the OpenAPI/JWT middlewa
 - `docker/dependencies/README.md` - dependency lifecycle and ownership boundary
 - `docker/dependencies/mongodb/README.md` - MongoDB bootstrap status and index lifecycle
 - `docker/dependencies/mysql/README.md` - MySQL bootstrap and migration validation notes
+- `CONTRIBUTING.md` - public contribution workflow and pull-request evidence
+- `SECURITY.md` - private vulnerability-reporting and response policy
+- [Shared Governance](https://github.com/emmett-ola/cashlenx-spec/blob/main/GOVERNANCE.md)
+- [Shared Delivery Workflow](https://github.com/emmett-ola/cashlenx-spec/blob/main/WORKFLOW.md)
 
 ## Build and Test
 
