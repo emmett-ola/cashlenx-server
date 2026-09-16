@@ -6,7 +6,12 @@ wait_for_container_command() {
   local container_name="$1"
   shift
 
-  local timeout_seconds=180
+  local timeout_seconds="${CONTAINER_READINESS_TIMEOUT_SECONDS:-180}"
+  if [[ ! "$timeout_seconds" =~ ^[0-9]+$ ]] ||
+     ((timeout_seconds < 1 || timeout_seconds > 900)); then
+    echo "CONTAINER_READINESS_TIMEOUT_SECONDS must be an integer from 1 to 900." >&2
+    return 1
+  fi
   local deadline=$((SECONDS + timeout_seconds))
   local status
 
