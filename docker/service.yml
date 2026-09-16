@@ -7,9 +7,9 @@ services:
       args:
         GO_BUILD_IMAGE: ${GO_BUILD_IMAGE:?GO_BUILD_IMAGE is required from docker/images.env}
         RUNTIME_IMAGE: ${RUNTIME_IMAGE:?RUNTIME_IMAGE is required from docker/images.env}
-        GIT_COMMIT: ${GIT_COMMIT:?GIT_COMMIT is required}
-        PRODUCT_VERSION: ${PRODUCT_VERSION:?PRODUCT_VERSION is required}
-        BUILD_TIME: ${BUILD_TIME:?BUILD_TIME is required}
+        GIT_COMMIT: ${GIT_COMMIT:-0000000000000000000000000000000000000000}
+        PRODUCT_VERSION: ${PRODUCT_VERSION:-0.0.0}
+        BUILD_TIME: ${BUILD_TIME:-1970-01-01T00:00:00Z}
     container_name: ${BACKEND_CONTAINER_NAME:-cashlenx-server}
     restart: unless-stopped
     cpus: ${SERVER_CPU_LIMIT:-2.0}
