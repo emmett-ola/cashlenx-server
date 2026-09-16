@@ -10,6 +10,7 @@ smtp_env="$(mktemp "$project_dir/.env.lifecycle-smtp.XXXXXX")"
 invalid_boolean_env="$(mktemp "$project_dir/.env.lifecycle-boolean.XXXXXX")"
 invalid_timezone_env="$(mktemp "$project_dir/.env.lifecycle-timezone.XXXXXX")"
 invalid_storage_env="$(mktemp "$project_dir/.env.lifecycle-storage.XXXXXX")"
+prod_env="$(mktemp "$project_dir/.env.lifecycle-prod.XXXXXX")"
 outside_env="$(mktemp)"
 inside_symlink="$project_dir/.env.lifecycle-link"
 outside_symlink="$project_dir/.env.lifecycle-outside-link"
@@ -18,6 +19,7 @@ cleanup() {
   rm -f "$api_env" "$mysql_env" "$smtp_env" "$invalid_boolean_env" \
     "$invalid_timezone_env" "$outside_env"
   rm -f "$invalid_storage_env" "$inside_symlink" "$outside_symlink"
+  rm -f "$prod_env"
   rm -rf "$fake_dir"
 }
 trap cleanup EXIT
@@ -32,6 +34,19 @@ if [[ "${1:-}" == "network" && "${2:-}" == "inspect" ]]; then
     exit 0
   fi
   [[ "${FAKE_NETWORK_EXISTS:-true}" == "true" ]] || exit 1
+fi
+if [[ "${1:-}" == "compose" && "$*" == *" config --images"* ]]; then
+  printf '%s\n' 'cashlenx-server:latest'
+fi
+if [[ "${1:-}" == "image" && "${2:-}" == "inspect" ]]; then
+  if [[ "$*" == *"org.opencontainers.image.version"* ]]; then
+    printf '%s\n' "${FAKE_IMAGE_VERSION:-0.0.0}"
+  elif [[ "$*" == *"org.opencontainers.image.revision"* ]]; then
+    printf '%s\n' "${FAKE_IMAGE_REVISION:-unknown}"
+  fi
+fi
+if [[ "${1:-}" == "run" && "$*" == *"--entrypoint /app/cashlenx-server"* ]]; then
+  printf 'CashLenX v%s\nGit Commit: %s\n' "${FAKE_IMAGE_VERSION:-0.0.0}" "${FAKE_IMAGE_REVISION:-unknown}"
 fi
 EOF
 chmod +x "$fake_dir/docker"
@@ -49,6 +64,11 @@ sed \
   "$api_env" > "$mysql_env"
 sed 's/^SMTP_ENABLED=false$/SMTP_ENABLED=true/' "$api_env" > "$smtp_env"
 sed 's/^SMTP_ENABLED=false$/SMTP_ENABLED=ture/' "$api_env" > "$invalid_boolean_env"
+sed \
+  -e 's/^ENV=dev$/ENV=prod/' \
+  -e 's|^CORS_ORIGINS=.*$|CORS_ORIGINS=https://app.cashlenx.com|' \
+  -e 's/^METRICS_BEARER_TOKEN=$/METRICS_BEARER_TOKEN=lifecycle-metrics-token-with-32-bytes/' \
+  "$api_env" > "$prod_env"
 printf 'ENV=dev\n' > "$outside_env"
 
 api_env_name="${api_env#"$project_dir/"}"
@@ -57,11 +77,15 @@ smtp_env_name="${smtp_env#"$project_dir/"}"
 invalid_boolean_env_name="${invalid_boolean_env#"$project_dir/"}"
 invalid_timezone_env_name="${invalid_timezone_env#"$project_dir/"}"
 invalid_storage_env_name="${invalid_storage_env#"$project_dir/"}"
+prod_env_name="${prod_env#"$project_dir/"}"
 inside_symlink_name="${inside_symlink#"$project_dir/"}"
 outside_symlink_name="${outside_symlink#"$project_dir/"}"
 ln -s "$(basename "$api_env")" "$inside_symlink"
 ln -s "$outside_env" "$outside_symlink"
+resolved_api_env="$(realpath "$inside_symlink")"
 test_path="$fake_dir:$PATH"
+fake_image_version="$(sed -n 's/^const Version = "\([^"]*\)"/\1/p' "$project_dir/model/version.go" | head -n 1)"
+fake_image_revision="$(git -C "$project_dir" rev-parse HEAD)"
 
 reset_log() {
   : > "$fake_log"
@@ -73,6 +97,8 @@ run_script() {
   PATH="$test_path" FAKE_DOCKER_LOG="$fake_log" \
     FAKE_NETWORK_EXISTS="${FAKE_NETWORK_EXISTS:-true}" \
     FAKE_NETWORK_CONNECTIONS="${FAKE_NETWORK_CONNECTIONS:-1}" \
+    FAKE_IMAGE_VERSION="$fake_image_version" \
+    FAKE_IMAGE_REVISION="$fake_image_revision" \
     ENV_FILE="$selected_env" \
     bash "$project_dir/$script"
 }
@@ -136,9 +162,11 @@ assert_log_contains "exec cashlenx-mongodb sh -ec mongosh"
 assert_log_not_contains "--wait"
 
 reset_log
-run_script scripts/dependencies/mongodb/start.sh "$inside_symlink_name"
-assert_log_contains "--env-file $api_env"
-assert_log_contains "--remove-orphans mongodb"
+if [[ -L "$inside_symlink" ]]; then
+  run_script scripts/dependencies/mongodb/start.sh "$inside_symlink_name"
+  assert_log_contains "--env-file $resolved_api_env"
+  assert_log_contains "--remove-orphans mongodb"
+fi
 
 reset_log
 ENV_FILE=.env.example PATH="$test_path" FAKE_DOCKER_LOG="$fake_log" \
@@ -202,6 +230,20 @@ fi
 
 reset_log
 assert_rejected "$invalid_boolean_env_name" scripts/start.sh SMTP_ENABLED
+
+reset_log
+run_script scripts/start.sh "$prod_env_name"
+assert_log_contains "-f $project_dir/docker/compose.yml up -d --no-build --remove-orphans server"
+
+sed 's/^METRICS_BEARER_TOKEN=.*$/METRICS_BEARER_TOKEN=short/' \
+  "$prod_env" > "$invalid_storage_env"
+reset_log
+assert_rejected "$invalid_storage_env_name" scripts/start.sh METRICS_BEARER_TOKEN short
+
+sed 's|^CORS_ORIGINS=.*$|CORS_ORIGINS=http://localhost:*|' \
+  "$prod_env" > "$invalid_storage_env"
+reset_log
+assert_rejected "$invalid_storage_env_name" scripts/start.sh CORS_ORIGINS 'http://localhost:*'
 
 for invalid_timezone in UTC+8 CST Etc/GMT+8; do
   sed "s|^TIMEZONE=Asia/Shanghai$|TIMEZONE=$invalid_timezone|" \
@@ -278,6 +320,8 @@ fi
 reset_log
 assert_rejected .env.lifecycle-missing scripts/dependencies/mongodb/build.sh "Missing environment file"
 assert_rejected "$outside_env" scripts/dependencies/mongodb/build.sh "ENV_FILE must stay inside"
-assert_rejected "$outside_symlink_name" scripts/dependencies/mongodb/build.sh "ENV_FILE must stay inside"
+if [[ -L "$outside_symlink" ]]; then
+  assert_rejected "$outside_symlink_name" scripts/dependencies/mongodb/build.sh "ENV_FILE must stay inside"
+fi
 
 echo "Dependency lifecycle smoke checks passed."

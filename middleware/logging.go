@@ -50,11 +50,15 @@ func Logging(next http.Handler) http.Handler {
 		util.Logger.Infow(
 			"HTTP Request",
 			"method", r.Method,
-			"path", r.RequestURI,
+			"path", requestLogPath(r),
 			"status", wrapped.statusCode,
 			"duration", duration,
 			"remote_addr", r.RemoteAddr,
 			"request_id", requestID,
 		)
 	})
+}
+
+func requestLogPath(r *http.Request) string {
+	return r.URL.EscapedPath()
 }

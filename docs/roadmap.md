@@ -97,7 +97,7 @@ CASHLENX_BENCHMARKS=1 DB_TYPE=mysql DB_NAME=cashlenx MYSQL_DB_URI='<mysql-uri-wi
 
 - [ ] Docker Compose profiles for single-tenant and multi-tenant deployments
 - [ ] Helm chart draft for cloud deployments, if needed
-- [ ] Secure defaults for production CORS, rate limits, secrets, and operational endpoints
+- [x] Secure defaults for production CORS, rate limits, secrets, and operational endpoints
 - [ ] Revisit Redis or another shared cache only if multi-instance deployment is adopted
 
 ### v1.0.0 - Stable Release Readiness

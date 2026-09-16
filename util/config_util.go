@@ -116,8 +116,35 @@ func initDefaultValues() {
 	corsOrigins := os.Getenv("CORS_ORIGINS")
 	configurationMap["cors.origins"] = corsOrigins
 
+	// Operational metrics are enabled by default only outside production.
+	metricsEnabled := os.Getenv("METRICS_ENABLED")
+	if metricsEnabled == "" {
+		metricsEnabled = "true"
+		if env == "prod" {
+			metricsEnabled = "false"
+		}
+	}
+	configurationMap["metrics.enabled"] = metricsEnabled
+	configurationMap["metrics.bearer_token"] = os.Getenv("METRICS_BEARER_TOKEN")
+
+	// Per-peer API rate limiting protects a single server process. An ingress
+	// may impose additional internet-facing policy without weakening this guard.
+	rateLimitRequests := os.Getenv("API_RATE_LIMIT_REQUESTS_PER_MINUTE")
+	if rateLimitRequests == "" {
+		rateLimitRequests = "600"
+	}
+	configurationMap["api.rate_limit.requests_per_minute"] = rateLimitRequests
+	rateLimitBurst := os.Getenv("API_RATE_LIMIT_BURST")
+	if rateLimitBurst == "" {
+		rateLimitBurst = "60"
+	}
+	configurationMap["api.rate_limit.burst"] = rateLimitBurst
+
 	// Log level
 	logLevel := os.Getenv("LOG_LEVEL")
+	if logLevel == "" {
+		logLevel = "info"
+	}
 	configurationMap["logger.level"] = logLevel
 
 	// Server configuration

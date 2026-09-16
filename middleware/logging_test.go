@@ -45,3 +45,10 @@ func TestLoggingPreservesIncomingRequestID(t *testing.T) {
 		t.Fatalf("%s response header = %q, want %q", util.RequestIDHeader, got, requestID)
 	}
 }
+
+func TestRequestLogPathExcludesQueryValues(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/api/v0/open/verification/verify?code=sensitive", nil)
+	if got := requestLogPath(req); got != "/api/v0/open/verification/verify" {
+		t.Fatalf("requestLogPath() = %q", got)
+	}
+}

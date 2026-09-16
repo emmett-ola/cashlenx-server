@@ -17,6 +17,9 @@ var startCmd = &cobra.Command{
 		if err := util.ValidateConfiguredTimezone(); err != nil {
 			return fmt.Errorf("TIMEZONE %w", err)
 		}
+		if err := util.ValidateRuntimeConfiguration(); err != nil {
+			return err
+		}
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {

@@ -1,7 +1,7 @@
 # CashLenX API Notes
 
 **Version**: 0.11.0
-**Last Updated**: 2026-06-30
+**Last Updated**: 2026-09-16
 
 This document is a human-readable companion to `docs/openapi.yaml`. The OpenAPI file is the detailed API contract and is used by schema validation when enabled.
 
@@ -15,10 +15,17 @@ The API path version defaults to `/api/v0` and is configurable through `API_VERS
 
 Operational endpoints are mounted outside the versioned API:
 
-- `GET /metrics` exposes Prometheus API request counters and duration histograms plus Go runtime/process metrics.
+- `GET /metrics` exposes Prometheus API request counters and duration histograms plus Go runtime/process metrics only when `METRICS_ENABLED=true`.
 - `/debug/pprof/*` is available only when `ENV=dev`.
 
-Operational endpoints intentionally bypass JWT and OpenAPI validation. Production deployments should restrict `/metrics` to trusted monitoring networks; pprof is not registered outside development.
+Operational endpoints intentionally bypass JWT and OpenAPI validation. Metrics default to disabled in production when the setting is omitted. When production metrics are enabled, `METRICS_BEARER_TOKEN` must contain at least 32 non-placeholder characters and callers must send it as `Authorization: Bearer <token>`. Network or reverse-proxy restrictions remain recommended defense in depth. Pprof is not registered outside development.
+
+## Production Request Boundary
+
+- Production startup rejects placeholder or weak JWT and bootstrap-administrator credentials, non-HTTPS or wildcard CORS origins, invalid rate-limit values, and an enabled metrics endpoint without a strong bearer token. Validation errors name configuration keys but never echo secret values.
+- Production CORS accepts only configured exact HTTPS origins. A request carrying a disallowed `Origin` receives `403 Forbidden`; successful preflight requests receive `204 No Content`.
+- The in-process token bucket is configured with `API_RATE_LIMIT_REQUESTS_PER_MINUTE` and `API_RATE_LIMIT_BURST`. It is keyed by the direct TCP peer. Behind a reverse proxy it therefore acts as an aggregate safety circuit; the trusted ingress should enforce any per-client public policy and may be stricter, but must not weaken the server guard.
+- Structured request logs record the escaped URL path and omit query strings so credentials or personal data supplied in a query are not copied into access logs.
 
 ## Response Shape
 

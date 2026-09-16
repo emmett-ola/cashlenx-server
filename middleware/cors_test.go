@@ -5,6 +5,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/macar-x/cashlenx-server/util"
 )
 
 func TestCORSPrefightAllowsDevLoopbackOrigin(t *testing.T) {
@@ -18,8 +20,8 @@ func TestCORSPrefightAllowsDevLoopbackOrigin(t *testing.T) {
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNoContent)
 	}
 
 	if got := rec.Header().Get("Access-Control-Allow-Origin"); got != "http://localhost:55500" {
@@ -43,8 +45,8 @@ func TestCORSPreflightAllowsLoginRequestHeaders(t *testing.T) {
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNoContent)
 	}
 
 	allowHeaders := rec.Header().Get("Access-Control-Allow-Headers")
@@ -179,5 +181,31 @@ func TestShouldAllowOrigin(t *testing.T) {
 				t.Fatalf("shouldAllowOrigin(%q, %q, %q) = %v, want %v", tt.origin, tt.allowedOrigins, tt.env, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestCORSRejectsDisallowedProductionOrigin(t *testing.T) {
+	originalEnv := util.GetConfigByKey("env")
+	originalOrigins := util.GetConfigByKey("cors.origins")
+	t.Cleanup(func() {
+		util.SetConfigByKey("env", originalEnv)
+		util.SetConfigByKey("cors.origins", originalOrigins)
+	})
+	util.SetConfigByKey("env", "prod")
+	util.SetConfigByKey("cors.origins", "https://app.cashlenx.com")
+
+	handler := CORS(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		t.Fatal("disallowed origin must not reach the application")
+	}))
+	req := httptest.NewRequest(http.MethodOptions, "/api/v0/open/auth/login", nil)
+	req.Header.Set("Origin", "https://attacker.example")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusForbidden)
+	}
+	if got := rec.Header().Get("Access-Control-Allow-Origin"); got != "" {
+		t.Fatalf("Access-Control-Allow-Origin = %q, want empty", got)
 	}
 }

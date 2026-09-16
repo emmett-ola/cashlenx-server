@@ -22,8 +22,12 @@ func CORS(next http.Handler) http.Handler {
 
 		origin := r.Header.Get("Origin")
 
-		// Check if origin is allowed
-		if origin != "" && shouldAllowOrigin(origin, allowedOrigins, util.GetConfigByKey("env")) {
+		if origin != "" {
+			w.Header().Add("Vary", "Origin")
+			if !shouldAllowOrigin(origin, allowedOrigins, util.GetConfigByKey("env")) {
+				http.Error(w, "origin is not allowed", http.StatusForbidden)
+				return
+			}
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 		}
 
@@ -36,7 +40,9 @@ func CORS(next http.Handler) http.Handler {
 
 		// Handle preflight requests
 		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
+			w.Header().Add("Vary", "Access-Control-Request-Method")
+			w.Header().Add("Vary", "Access-Control-Request-Headers")
+			w.WriteHeader(http.StatusNoContent)
 			return
 		}
 

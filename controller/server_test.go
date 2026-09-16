@@ -119,6 +119,45 @@ func TestOperationalEndpoints(t *testing.T) {
 	}
 }
 
+func TestOperationalMetricsCanBeDisabledAndProtected(t *testing.T) {
+	originalEnv := util.GetConfigByKey("env")
+	originalEnabled := util.GetConfigByKey("metrics.enabled")
+	originalToken := util.GetConfigByKey("metrics.bearer_token")
+	t.Cleanup(func() {
+		util.SetConfigByKey("env", originalEnv)
+		util.SetConfigByKey("metrics.enabled", originalEnabled)
+		util.SetConfigByKey("metrics.bearer_token", originalToken)
+	})
+
+	api := mux.NewRouter()
+	api.HandleFunc("/api/v0/open/health", healthCheck).Methods(http.MethodGet)
+	util.SetConfigByKey("env", "prod")
+	util.SetConfigByKey("metrics.enabled", "false")
+	util.SetConfigByKey("metrics.bearer_token", "")
+	disabled := httptest.NewRecorder()
+	buildHTTPHandler(api).ServeHTTP(disabled, httptest.NewRequest(http.MethodGet, "/metrics", nil))
+	if disabled.Code == http.StatusOK {
+		t.Fatal("disabled metrics endpoint returned success")
+	}
+
+	util.SetConfigByKey("metrics.enabled", "true")
+	util.SetConfigByKey("metrics.bearer_token", "metrics-token")
+	handler := buildHTTPHandler(api)
+	unauthorized := httptest.NewRecorder()
+	handler.ServeHTTP(unauthorized, httptest.NewRequest(http.MethodGet, "/metrics", nil))
+	if unauthorized.Code != http.StatusUnauthorized {
+		t.Fatalf("unprotected metrics status = %d", unauthorized.Code)
+	}
+
+	request := httptest.NewRequest(http.MethodGet, "/metrics", nil)
+	request.Header.Set("Authorization", "Bearer metrics-token")
+	authorized := httptest.NewRecorder()
+	handler.ServeHTTP(authorized, request)
+	if authorized.Code != http.StatusOK || !strings.Contains(authorized.Body.String(), "cashlenx_http_requests_in_flight") {
+		t.Fatalf("protected metrics status=%d body=%s", authorized.Code, authorized.Body.String())
+	}
+}
+
 func decodeResponseData[T any](t *testing.T, rec *httptest.ResponseRecorder) T {
 	t.Helper()
 	var body struct {

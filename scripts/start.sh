@@ -92,6 +92,9 @@ invalid_configuration_keys() {
     function require_value(key) {
       if (values[key] == "" || unsafe(key, values[key])) print key
     }
+    function positive_integer(key) {
+      return values[key] ~ /^[1-9][0-9]*$/
+    }
     /^[A-Za-z_][A-Za-z0-9_]*=/ {
       values[$1] = clean(substr($0, index($0, "=") + 1))
     }
@@ -99,7 +102,8 @@ invalid_configuration_keys() {
       boolean_keys[1] = "SCHEMA_VALIDATION"
       boolean_keys[2] = "AUTH_REGISTRATION_ENABLED"
       boolean_keys[3] = "SMTP_ENABLED"
-      for (i = 1; i <= 3; i++) {
+      boolean_keys[4] = "METRICS_ENABLED"
+      for (i = 1; i <= 4; i++) {
         key = boolean_keys[i]
         if (values[key] != "" && values[key] != "true" && values[key] != "false") print key
       }
@@ -108,6 +112,22 @@ invalid_configuration_keys() {
 
       require_value("JWT_SECRET")
       require_value("ADMIN_PASSWORD")
+
+      if (values["ENV"] != "dev" && values["ENV"] != "test" && values["ENV"] != "prod") print "ENV"
+      if (values["LOG_LEVEL"] !~ /^(debug|info|warn|error|dpanic|panic|fatal)$/) print "LOG_LEVEL"
+      if (!positive_integer("JWT_EXPIRATION_MINUTES")) print "JWT_EXPIRATION_MINUTES"
+      if (!positive_integer("REFRESH_TOKEN_EXPIRATION_DAYS")) print "REFRESH_TOKEN_EXPIRATION_DAYS"
+      if (!positive_integer("VERIFICATION_CODE_EXPIRE_MINUTES")) print "VERIFICATION_CODE_EXPIRE_MINUTES"
+      if (!positive_integer("VERIFICATION_CODE_SEND_INTERVAL_SECONDS")) print "VERIFICATION_CODE_SEND_INTERVAL_SECONDS"
+      if (!positive_integer("API_RATE_LIMIT_REQUESTS_PER_MINUTE")) print "API_RATE_LIMIT_REQUESTS_PER_MINUTE"
+      if (!positive_integer("API_RATE_LIMIT_BURST")) print "API_RATE_LIMIT_BURST"
+
+      if (values["ENV"] == "prod") {
+        if (length(values["JWT_SECRET"]) < 32) print "JWT_SECRET"
+        if (length(values["ADMIN_PASSWORD"]) < 12) print "ADMIN_PASSWORD"
+        if (values["CORS_ORIGINS"] == "" || index(values["CORS_ORIGINS"], "*") > 0 || index(values["CORS_ORIGINS"], "http://") > 0) print "CORS_ORIGINS"
+        if (values["METRICS_ENABLED"] == "true" && (length(values["METRICS_BEARER_TOKEN"]) < 32 || unsafe("METRICS_BEARER_TOKEN", values["METRICS_BEARER_TOKEN"]))) print "METRICS_BEARER_TOKEN"
+      }
 
       db_type = values["DB_TYPE"] == "" ? "mongodb" : values["DB_TYPE"]
       if (db_type == "mongodb") {
@@ -140,6 +160,7 @@ invalid_configuration_keys() {
         require_value("SMTP_USERNAME")
         require_value("SMTP_PASSWORD")
         require_value("SMTP_FROM_ADDRESS")
+        if (!positive_integer("SMTP_PORT")) print "SMTP_PORT"
       }
     }
   ' "$env_file"

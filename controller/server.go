@@ -90,20 +90,32 @@ func registerBudgetRoute(r *mux.Router, prefix string) {
 }
 
 func buildHTTPHandler(r *mux.Router) http.Handler {
+	applicationHandler := middleware.RateLimit(
+		middleware.Auth(
+			middleware.SchemaValidation(r),
+		),
+		util.GetConfigInt("api.rate_limit.requests_per_minute", 600),
+		util.GetConfigInt("api.rate_limit.burst", 60),
+	)
+
 	// CORS stays outermost for API traffic so browser preflight requests are
 	// answered before auth or OpenAPI validation can reject them.
 	apiHandler := middleware.CORS(
 		middleware.Logging(
-			middleware.Metrics(r,
-				middleware.Auth(
-					middleware.SchemaValidation(r),
-				),
-			),
+			middleware.Metrics(r, applicationHandler),
 		),
 	)
 
 	root := mux.NewRouter()
-	root.Handle("/metrics", middleware.MetricsHandler()).Methods(http.MethodGet)
+	if util.GetConfigByKey("metrics.enabled") == "true" {
+		root.Handle(
+			"/metrics",
+			middleware.BearerToken(
+				middleware.MetricsHandler(),
+				util.GetConfigByKey("metrics.bearer_token"),
+			),
+		).Methods(http.MethodGet)
+	}
 	if util.GetConfigByKey("env") == "dev" {
 		root.PathPrefix("/debug/pprof/").Handler(http.DefaultServeMux)
 	}

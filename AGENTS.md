@@ -471,8 +471,12 @@ Current wrapping in `controller/server.go` is:
 ```go
 handler := middleware.CORS(
     middleware.Logging(
-        middleware.Auth(
-            middleware.SchemaValidation(r),
+        middleware.Metrics(
+            middleware.RateLimit(
+                middleware.Auth(
+                    middleware.SchemaValidation(r),
+                ),
+            ),
         ),
     ),
 )
@@ -484,19 +488,25 @@ Middleware files:
 - `middleware/cors.go`
 - `middleware/logging.go`
 - `middleware/metrics.go`
+- `middleware/operations_auth.go`
+- `middleware/rate_limit.go`
 - `middleware/schema_validation.go`
 
 CORS must stay outermost so browser `OPTIONS` preflight requests are answered before auth or OpenAPI schema validation can reject them. This is required for Flutter web and other browser clients.
 
-`middleware.Logging` adds or preserves `X-Request-ID`, stores it in request context, echoes it in the response header, and includes it in structured request logs. `util.ComposeErrorResponse` logs API errors centrally with request ID, status, method/path, caller location, and user ID when present; 4xx responses log at warn level and 5xx responses log at error level.
+`middleware.Logging` adds or preserves `X-Request-ID`, stores it in request context, echoes it in the response header, and includes it in structured request logs. Access logs use only the escaped path and omit query strings. `util.ComposeErrorResponse` logs API errors centrally with request ID, status, method/path, caller location, and user ID when present; 4xx responses log at warn level and 5xx responses log at error level.
 
 Auth middleware skips all `/api/{version}/open/*` routes. `/open/auth/logout` handles optional token validation in its controller so the `/open` prefix remains consistently public.
 
-`GET /metrics` is an unversioned operational endpoint outside JWT and OpenAPI middleware. It exposes bounded route-template counters/histograms plus Go process/runtime metrics. `/debug/pprof/*` is registered through the standard library only when `env == dev`; production deployments must restrict metrics access at the network or reverse-proxy layer.
+`GET /metrics` is an unversioned operational endpoint outside JWT and OpenAPI middleware. Registration is controlled by `METRICS_ENABLED`; production defaults it off and requires a strong `METRICS_BEARER_TOKEN` when enabled. The bearer guard uses constant-time comparison. It exposes bounded route-template counters/histograms plus Go process/runtime metrics. `/debug/pprof/*` is registered through the standard library only when `env == dev`; network or reverse-proxy restrictions remain defense in depth.
+
+`middleware.RateLimit` is a configurable in-process token bucket keyed by direct TCP peer. Behind a reverse proxy it is an aggregate circuit breaker, so ingress owns any stricter public per-client policy. Keep rate limiting inside metrics and outside authentication/schema validation so rejected traffic is still bounded and observed.
 
 OpenAPI schema validation loads `docs/openapi.yaml` at package init when enabled. Keep route paths in that spec aligned with `controller/server.go`; validation is bypassed automatically if the spec cannot be loaded or parsed.
 
-In `dev` and `test`, loopback browser origins such as `http://localhost:55500` are allowed even when an older exact-port `CORS_ORIGINS` value exists. In production, configure explicit origins through `CORS_ORIGINS`.
+In `dev` and `test`, loopback browser origins such as `http://localhost:55500` are allowed even when an older exact-port `CORS_ORIGINS` value exists. Production accepts exact HTTPS origins only and rejects requests carrying a disallowed origin with `403 Forbidden`.
+
+Server startup runs `util.ValidateRuntimeConfiguration` before database initialization. Production rejects weak or placeholder authentication/bootstrap secrets, unsafe CORS origins, invalid rate limits, and an exposed metrics endpoint without a strong bearer token. Validation names keys only and must never include configured secret values. Disabled optional capabilities and the unselected database must not require irrelevant secrets.
 
 There is no `middleware.AdminAuth()` helper in the current code; admin routing uses `middleware.Admin`.
 
