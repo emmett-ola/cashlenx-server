@@ -8,7 +8,7 @@ compose_file="$project_dir/docker/compose.yml"
 
 env_file="$(resolve_env_file)"
 container_runtime_init "$(read_config_value CONTAINER_FRONTEND auto)"
-load_env_defaults "$project_dir/docker/images.env" GO_BUILD_IMAGE RUNTIME_IMAGE
+load_env_defaults "$project_dir/docker/images.env" GO_BUILD_IMAGE GO_VERSION RUNTIME_IMAGE
 git_commit="${GIT_COMMIT:-$(git rev-parse HEAD)}"
 [[ "$git_commit" =~ ^[0-9a-fA-F]{40}$ ]] || { echo "GIT_COMMIT must be a full 40-character Git revision." >&2; exit 1; }
 product_version="${PRODUCT_VERSION:-$(sed -n 's/^const Version = "\([^"]*\)"/\1/p' model/version.go | sed -n '1p' | tr -d '\r')}"

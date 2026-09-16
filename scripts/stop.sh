@@ -8,7 +8,7 @@ compose_file="$project_dir/docker/compose.yml"
 
 env_file="$(resolve_env_file)"
 container_runtime_init "$(read_config_value CONTAINER_FRONTEND auto)"
-load_env_defaults "$project_dir/docker/images.env" GO_BUILD_IMAGE RUNTIME_IMAGE
+load_env_defaults "$project_dir/docker/images.env" GO_BUILD_IMAGE GO_VERSION RUNTIME_IMAGE
 network_name="$(resolve_network_name)"
 container_name="$(read_config_value BACKEND_CONTAINER_NAME cashlenx-server)"
 stop_grace_period="$(read_config_value SERVER_STOP_GRACE_PERIOD 30s)"

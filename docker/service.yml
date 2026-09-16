@@ -6,6 +6,7 @@ services:
       dockerfile: docker/Dockerfile
       args:
         GO_BUILD_IMAGE: ${GO_BUILD_IMAGE:?GO_BUILD_IMAGE is required from docker/images.env}
+        GO_VERSION: ${GO_VERSION:?GO_VERSION is required from docker/images.env}
         RUNTIME_IMAGE: ${RUNTIME_IMAGE:?RUNTIME_IMAGE is required from docker/images.env}
         GIT_COMMIT: ${GIT_COMMIT:-0000000000000000000000000000000000000000}
         PRODUCT_VERSION: ${PRODUCT_VERSION:-0.0.0}

@@ -16,6 +16,8 @@ released contracts and operational behavior separately from deployment state.
 - Added API, MongoDB, and MySQL status/doctor/log entry points, selected-database
   state reporting, effective image verification, and bounded observable stop
   outcomes including forced and repeated stops.
+- Aligned CI and the digest-pinned builder on Go 1.23.12, enforced a read-only
+  verified module graph, and retained the canonical image validation path.
 
 ## [1.0.0-rc.1] - 2026-09-16
 

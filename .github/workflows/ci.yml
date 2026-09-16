@@ -25,17 +25,22 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v7
         with:
-          go-version: '1.23.0'
+          go-version: '1.23.12'
           cache: true
 
       - name: Download locked modules
-        run: go mod download
+        run: go mod download && go mod verify
+        env:
+          GOFLAGS: -mod=readonly
+
+      - name: Verify exact Go toolchain
+        run: test "$(go env GOVERSION)" = 'go1.23.12'
 
       - name: Build
-        run: go build -v ./...
+        run: go build -mod=readonly -v ./...
 
       - name: Test with race and coverage
-        run: go test -v -race -covermode=atomic -coverprofile=coverage.out ./...
+        run: go test -mod=readonly -v -race -covermode=atomic -coverprofile=coverage.out ./...
 
       - name: Upload coverage
         uses: codecov/codecov-action@v7

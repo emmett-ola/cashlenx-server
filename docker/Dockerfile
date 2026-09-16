@@ -2,11 +2,15 @@ ARG GO_BUILD_IMAGE=golang:1.23-alpine@sha256:383395b794dffa5b53012a212365d40c8e3
 ARG RUNTIME_IMAGE=alpine:3.18@sha256:de0eb0b3f2a47ba1eb89389859a9bd88b28e82f5826b6969ad604979713c2d4f
 
 FROM ${GO_BUILD_IMAGE} AS builder
+
+ARG GO_VERSION
+ENV GOFLAGS=-mod=readonly
+RUN test "$(go env GOVERSION)" = "go${GO_VERSION}"
 WORKDIR /app
 
 # Copy go mod files and download dependencies
 COPY go.mod go.sum ./
-RUN go mod download
+RUN go mod download && go mod verify
 
 # Copy source code and build
 COPY . .

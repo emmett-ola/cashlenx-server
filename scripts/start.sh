@@ -122,7 +122,7 @@ env_file="$(resolve_env_file)"
 env_relative="${env_file#"$project_dir"/}"
 validate_start_configuration
 container_runtime_init "$(read_config_value CONTAINER_FRONTEND auto)"
-load_env_defaults "$project_dir/docker/images.env" GO_BUILD_IMAGE RUNTIME_IMAGE
+load_env_defaults "$project_dir/docker/images.env" GO_BUILD_IMAGE GO_VERSION RUNTIME_IMAGE
 network_name="$(resolve_network_name)"
 container_name="$(read_config_value BACKEND_CONTAINER_NAME cashlenx-server)"
 export RUNTIME_ENV_FILE="../$env_relative"

@@ -463,6 +463,9 @@ Important nuance:
 - Base-image digest pins are owned by `docker/images.env`. The root build
   context is allowlisted, and `scripts/build.sh` verifies required runtime
   assets, source version/revision metadata, and prohibited file absence.
+- The same file owns the exact Go version. CI and the Docker builder must remain
+  aligned to it, use a read-only module graph, and route image validation only
+  through `scripts/build.sh`.
 - SMTP keys are wired from `.env`, and configured delivery has been manually verified by the project owner. Automated registration and password-reset tests must replace email delivery rather than contact a real provider.
 - `scripts/data-protection/backup.sh` owns encrypted MongoDB/MySQL database-level
   backups and daily/weekly/monthly retention. `restore-drill.sh` restores only

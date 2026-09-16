@@ -4,6 +4,8 @@
 pinned by digest so clean and warm builds use the same inputs. Update one pin in
 an isolated change, build and verify the candidate image, and roll back by
 reverting that change.
+The same file pins Go 1.23.12. The Dockerfile verifies the compiler identity and
+uses a read-only module graph before building; CI uses the identical toolchain.
 
 The root build context is allowlisted by `.dockerignore`. Environment files,
 credentials, Git state, logs, test output, database data, and unrelated files

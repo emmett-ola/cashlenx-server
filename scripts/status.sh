@@ -5,7 +5,7 @@ cd "$project_dir"
 . "$project_dir/scripts/lib/container_lifecycle.sh"
 env_file="$(resolve_env_file)"
 container_runtime_init "$(read_config_value CONTAINER_FRONTEND auto)"
-load_env_defaults "$project_dir/docker/images.env" GO_BUILD_IMAGE RUNTIME_IMAGE
+load_env_defaults "$project_dir/docker/images.env" GO_BUILD_IMAGE GO_VERSION RUNTIME_IMAGE
 env_relative="${env_file#"$project_dir"/}"
 export RUNTIME_ENV_FILE="../$env_relative"
 compose_args=(--env-file "$env_file" -f "$project_dir/docker/compose.yml")
