@@ -110,7 +110,18 @@ need_cmd() {
 }
 
 need_cmd curl
-need_cmd python3
+
+JSON_RUNTIME=""
+if command -v python3 >/dev/null 2>&1 && python3 -c 'import json' >/dev/null 2>&1; then
+  JSON_RUNTIME="python3"
+elif command -v python >/dev/null 2>&1 && python -c 'import json' >/dev/null 2>&1; then
+  JSON_RUNTIME="python"
+elif command -v node >/dev/null 2>&1 && node -e 'JSON.parse("{}")' >/dev/null 2>&1; then
+  JSON_RUNTIME="node"
+else
+  echo "missing required JSON runtime: install Python 3 or Node.js" >&2
+  exit 1
+fi
 
 if [[ "$MANAGE_MONGODB" == "true" ]]; then
   need_cmd docker
@@ -192,7 +203,31 @@ start_server() {
 
 json_get() {
   local path="$1"
-  python3 - "$RESP_FILE" "$path" <<'PY'
+  if [[ "$JSON_RUNTIME" == "node" ]]; then
+    node - "$RESP_FILE" "$path" <<'JS'
+const fs = require("fs");
+const data = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
+let current = data;
+for (const part of process.argv[3].split(".")) {
+  if (current !== null && typeof current === "object" && !Array.isArray(current) && Object.hasOwn(current, part)) {
+    current = current[part];
+  } else {
+    process.stdout.write("\n");
+    process.exit(0);
+  }
+}
+if (current === null || current === undefined) {
+  process.stdout.write("\n");
+} else if (typeof current === "object") {
+  process.stdout.write(`${JSON.stringify(current)}\n`);
+} else {
+  process.stdout.write(`${current}\n`);
+}
+JS
+    return
+  fi
+
+  "$JSON_RUNTIME" - "$RESP_FILE" "$path" <<'PY'
 import json
 import sys
 
@@ -217,7 +252,18 @@ PY
 }
 
 assert_json_ok() {
-  python3 - "$RESP_FILE" <<'PY'
+  if [[ "$JSON_RUNTIME" == "node" ]]; then
+    node - "$RESP_FILE" <<'JS'
+const fs = require("fs");
+const data = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
+if (!Object.hasOwn(data, "code")) {
+  throw new Error("response missing code field");
+}
+JS
+    return
+  fi
+
+  "$JSON_RUNTIME" - "$RESP_FILE" <<'PY'
 import json
 import sys
 
