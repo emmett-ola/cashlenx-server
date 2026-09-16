@@ -143,6 +143,19 @@ nerdctl Compose.
 logs, database projects, and database volumes. It removes the shared external
 network only when the network has no connected containers.
 
+All five Server-owned entry-point groups support Docker Compose v2 and nerdctl
+2.2 or newer. `CONTAINER_FRONTEND` accepts `auto`, `docker`, or `nerdctl`; auto
+mode detects the implementation reported by the selected command, including a
+command named `docker` that wraps nerdctl. Set `CONTAINER_CLI` in the invoking
+shell for a nonstandard executable path. Runtime availability and Compose
+configuration are validated before build, pull, network creation, start, or
+stop. Server image identity is derived directly from validated
+`SERVER_IMAGE_NAME` and `SERVER_IMAGE_TAG` values, not from
+`compose config --images`. Readiness uses portable engine inspection and exec
+commands with a default 600-second limit that can be overridden through
+`CONTAINER_READY_TIMEOUT_SECONDS`. Start commands suppress frontend command
+traces so nerdctl cannot print configured credentials in informational output.
+
 Use another repository-local configuration consistently with
 `ENV_FILE=.env.testing scripts/build.sh`, `scripts/start.sh`, and
 `scripts/stop.sh`. Missing files and paths outside this repository are rejected.
@@ -181,6 +194,10 @@ ENV_FILE=.env.testing scripts/dependencies/mongodb/build.sh
 ENV_FILE=.env.testing scripts/dependencies/mongodb/start.sh
 ENV_FILE=.env.testing scripts/dependencies/mongodb/stop.sh
 ```
+
+`test/scripts/dependency-lifecycle-smoke.sh` validates Docker and nerdctl 2.2
+command shapes, a `docker` wrapper around nerdctl, environment-file symlinks,
+and fail-before-mutation behavior without changing real containers.
 
 The default container name is `cashlenx-server`.
 

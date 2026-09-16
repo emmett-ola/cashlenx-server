@@ -4,67 +4,7 @@ set -euo pipefail
 project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 cd "$project_dir"
 compose_file="$project_dir/docker/compose.yml"
-. "$project_dir/scripts/lib/container_readiness.sh"
-
-resolve_env_file() {
-  local requested="${ENV_FILE:-.env}"
-  local candidate
-  if [[ "$requested" == /* ]]; then
-    candidate="$requested"
-  else
-    candidate="$project_dir/$requested"
-  fi
-
-  if [[ ! -e "$candidate" ]]; then
-    echo "Missing environment file: $requested" >&2
-    echo "Create it with: cp .env.example \"$requested\"" >&2
-    return 1
-  fi
-  [[ -f "$candidate" ]] || { echo "Environment path is not a file: $requested" >&2; return 1; }
-
-  local resolved
-  resolved="$(realpath "$candidate")"
-  case "$resolved" in
-    "$project_dir"/*) printf '%s\n' "$resolved" ;;
-    *) echo "ENV_FILE must stay inside $project_dir: $requested" >&2; return 1 ;;
-  esac
-}
-
-read_env_value() {
-  local key="$1"
-  awk -F= -v wanted="$key" '
-    $0 ~ "^[[:space:]]*(export[[:space:]]+)?" wanted "[[:space:]]*=" {
-      value = substr($0, index($0, "=") + 1)
-      gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
-      if ((substr(value, 1, 1) == "\"" && substr(value, length(value), 1) == "\"") ||
-          (substr(value, 1, 1) == "\047" && substr(value, length(value), 1) == "\047")) {
-        value = substr(value, 2, length(value) - 2)
-      }
-      result = value
-    }
-    END { print result }
-  ' "$env_file"
-}
-
-resolve_network_name() {
-  local name
-  name="$(read_env_value DOCKER_NETWORK_NAME)"
-  name="${name:-cashlenx-network}"
-  if [[ ! "$name" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]*$ ]]; then
-    echo "Invalid Docker network setting: DOCKER_NETWORK_NAME" >&2
-    return 1
-  fi
-  printf '%s\n' "$name"
-}
-
-ensure_network() {
-  local name="$1"
-  if docker network inspect "$name" >/dev/null 2>&1; then
-    return 0
-  fi
-  docker network create --driver bridge "$name" >/dev/null 2>&1 ||
-    docker network inspect "$name" >/dev/null 2>&1
-}
+. "$project_dir/scripts/lib/container_lifecycle.sh"
 
 invalid_configuration_keys() {
   awk -F= '
@@ -178,18 +118,17 @@ validate_start_configuration() {
   fi
 }
 
-command -v docker >/dev/null 2>&1 || { echo "Docker is required." >&2; exit 1; }
-docker compose version >/dev/null 2>&1 || { echo "Docker Compose is required." >&2; exit 1; }
-
 env_file="$(resolve_env_file)"
 env_relative="${env_file#"$project_dir"/}"
 validate_start_configuration
+container_runtime_init "$(read_config_value CONTAINER_FRONTEND auto)"
+load_env_defaults "$project_dir/docker/images.env" GO_BUILD_IMAGE RUNTIME_IMAGE
 network_name="$(resolve_network_name)"
-
+container_name="$(read_config_value BACKEND_CONTAINER_NAME cashlenx-server)"
+export RUNTIME_ENV_FILE="../$env_relative"
+compose_args=(--env-file "$env_file" -f "$compose_file")
+compose_preflight "${compose_args[@]}"
 ensure_network "$network_name"
-container_name="$(read_env_value BACKEND_CONTAINER_NAME)"
-container_name="${container_name:-cashlenx-server}"
-RUNTIME_ENV_FILE="../$env_relative" \
-  docker compose --env-file "$project_dir/docker/images.env" --env-file "$env_file" -f "$compose_file" up -d --no-build --remove-orphans server
+compose_up_quiet "${compose_args[@]}" up -d --no-build --remove-orphans server
 wait_for_container_command "$container_name" sh -ec \
   'wget -q -T 3 -O /dev/null "http://127.0.0.1:${SERVER_PORT:-10063}/api/${API_VERSION:-v1}/open/health"'

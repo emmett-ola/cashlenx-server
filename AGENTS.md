@@ -444,6 +444,13 @@ Important nuance:
   use explicit project and container name keys and one shared absolute
   `DOCKER_NETWORK_NAME`; start creates the network idempotently, while stop
   removes it only when no containers remain connected.
+- `scripts/lib/container_lifecycle.sh` is the repository-local portability
+  boundary shared by the API, MongoDB, and MySQL entry points. It detects Docker
+  Compose or nerdctl 2.2 from reported behavior (including a `docker` wrapper),
+  validates Compose before mutation, derives image identity from configuration,
+  suppresses start traces that may contain environment values, and owns common
+  network/readiness diagnostics. Do not reintroduce
+  `compose config --images`, `up --wait`, or a sibling-repository dependency.
 - The Server `docker/Dockerfile` intentionally avoids `apk add`. Go embeds IANA timezone
   data through `time/tzdata`, and the API Compose healthcheck uses the Alpine
   base image's BusyBox `wget`; preserve this package-repository-independent

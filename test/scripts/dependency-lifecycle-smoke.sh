@@ -28,15 +28,47 @@ cat > "$fake_dir/docker" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
 printf '%s\n' "$*" >> "$FAKE_DOCKER_LOG"
+if [[ "${1:-}" == "--version" ]]; then
+  if [[ "${FAKE_FRONTEND_KIND:-docker}" == "docker" ]]; then
+    printf '%s\n' 'Docker version 29.0.0, build fake'
+  elif [[ "${FAKE_FRONTEND_KIND:-docker}" == "old-nerdctl" ]]; then
+    printf '%s\n' 'nerdctl version 2.1.0'
+  else
+    printf '%s\n' 'nerdctl version 2.2.0'
+  fi
+  exit 0
+fi
+if [[ "${1:-}" == "compose" && "${2:-}" == "version" ]]; then
+  if [[ "${FAKE_FRONTEND_KIND:-docker}" == "docker" ]]; then
+    printf '%s\n' 'Docker Compose version v2.29.0'
+  elif [[ "${FAKE_FRONTEND_KIND:-docker}" == "old-nerdctl" ]]; then
+    printf '%s\n' 'nerdctl compose version 2.1.0'
+  else
+    printf '%s\n' 'nerdctl compose version 2.2.0'
+  fi
+  if [[ "${FAKE_VERBOSE_VERSION:-false}" == "true" ]]; then
+    for ((line = 0; line < 4096; line++)); do
+      printf '%s\n' 'nerdctl compose version 2.2.0'
+    done
+  fi
+  exit 0
+fi
+if [[ "${1:-}" == "info" ]]; then
+  exit 0
+fi
+if [[ "${1:-}" == "compose" && "$*" == *" config --quiet"* ]]; then
+  [[ "${FAKE_CONFIG_SUPPORTED:-true}" == "true" ]]
+  exit
+fi
+if [[ "${1:-}" == "compose" && "$*" == *" up "* && -n "${FAKE_SECRET_OUTPUT:-}" ]]; then
+  printf '%s\n' "$FAKE_SECRET_OUTPUT" >&2
+fi
 if [[ "${1:-}" == "network" && "${2:-}" == "inspect" ]]; then
   if [[ "$*" == *"--format"* ]]; then
     printf '%s\n' "${FAKE_NETWORK_CONNECTIONS:-1}"
     exit 0
   fi
   [[ "${FAKE_NETWORK_EXISTS:-true}" == "true" ]] || exit 1
-fi
-if [[ "${1:-}" == "compose" && "$*" == *" config --images"* ]]; then
-  printf '%s\n' 'cashlenx-server:latest'
 fi
 if [[ "${1:-}" == "image" && "${2:-}" == "inspect" ]]; then
   if [[ "$*" == *"org.opencontainers.image.version"* ]]; then
@@ -95,6 +127,10 @@ run_script() {
   local script="$1"
   local selected_env="${2:-$api_env_name}"
   PATH="$test_path" FAKE_DOCKER_LOG="$fake_log" \
+    FAKE_FRONTEND_KIND="${FAKE_FRONTEND_KIND:-docker}" \
+    FAKE_VERBOSE_VERSION="${FAKE_VERBOSE_VERSION:-false}" \
+    FAKE_SECRET_OUTPUT="${FAKE_SECRET_OUTPUT:-}" \
+    FAKE_CONFIG_SUPPORTED="${FAKE_CONFIG_SUPPORTED:-true}" \
     FAKE_NETWORK_EXISTS="${FAKE_NETWORK_EXISTS:-true}" \
     FAKE_NETWORK_CONNECTIONS="${FAKE_NETWORK_CONNECTIONS:-1}" \
     FAKE_IMAGE_VERSION="$fake_image_version" \
@@ -146,6 +182,7 @@ assert_rejected() {
 reset_log
 run_script scripts/dependencies/mongodb/build.sh
 assert_log_contains "-f $project_dir/docker/dependencies/mongodb/compose.yml pull mongodb"
+assert_log_not_contains "config --images"
 
 reset_log
 assert_rejected .env.example scripts/dependencies/mongodb/start.sh MONGO_ROOT_PASSWORD
@@ -158,8 +195,44 @@ reset_log
 FAKE_NETWORK_EXISTS=false run_script scripts/dependencies/mongodb/start.sh
 assert_log_contains "network create --driver bridge cashlenx-network"
 assert_log_contains "--pull never --remove-orphans mongodb"
+
+reset_log
+output="$(FAKE_SECRET_OUTPUT=lifecycle-sensitive-value run_script scripts/dependencies/mongodb/start.sh 2>&1)"
+if grep -F -- 'lifecycle-sensitive-value' <<< "$output" >/dev/null; then
+  echo "Dependency start output exposed a configured value" >&2
+  exit 1
+fi
 assert_log_contains "exec cashlenx-mongodb sh -ec mongosh"
 assert_log_not_contains "--wait"
+
+reset_log
+FAKE_FRONTEND_KIND=nerdctl run_script scripts/dependencies/mongodb/start.sh
+assert_log_contains "--version"
+assert_log_contains "--pull never --remove-orphans mongodb"
+assert_log_not_contains "config --images"
+assert_log_not_contains "--wait"
+
+reset_log
+FAKE_FRONTEND_KIND=nerdctl FAKE_VERBOSE_VERSION=true run_script scripts/dependencies/mongodb/start.sh
+assert_log_contains "--pull never --remove-orphans mongodb"
+
+reset_log
+if output="$(FAKE_FRONTEND_KIND=old-nerdctl run_script scripts/dependencies/mongodb/start.sh 2>&1)"; then
+  echo "Expected nerdctl 2.1 to be rejected" >&2
+  exit 1
+fi
+grep -F -- 'Install nerdctl 2.2 or newer' <<< "$output" >/dev/null
+assert_log_not_contains "network create"
+assert_log_not_contains " up "
+
+reset_log
+if output="$(FAKE_CONFIG_SUPPORTED=false run_script scripts/dependencies/mongodb/start.sh 2>&1)"; then
+  echo "Expected unsupported Compose configuration to be rejected" >&2
+  exit 1
+fi
+grep -F -- 'cannot validate this Compose configuration' <<< "$output" >/dev/null
+assert_log_not_contains "network create"
+assert_log_not_contains " up "
 
 reset_log
 if [[ -L "$inside_symlink" ]]; then
@@ -173,10 +246,10 @@ ENV_FILE=.env.example PATH="$test_path" FAKE_DOCKER_LOG="$fake_log" \
   FAKE_NETWORK_EXISTS=true FAKE_NETWORK_CONNECTIONS=1 \
   bash "$project_dir/scripts/dependencies/mongodb/stop.sh"
 assert_log_contains "-f $project_dir/docker/dependencies/mongodb/compose.yml down --remove-orphans"
-if grep -F -- 'network rm' "$fake_log" >/dev/null; then
-  echo "MongoDB stop removed a shared network with attached containers" >&2
-  exit 1
-fi
+# Both supported engines reject removal while containers remain attached. The
+# lifecycle may safely attempt cleanup without relying on engine-specific
+# network-inspect JSON fields.
+assert_log_contains "network rm cashlenx-network"
 
 reset_log
 run_script scripts/dependencies/mysql/build.sh

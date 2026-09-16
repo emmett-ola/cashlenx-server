@@ -3,6 +3,15 @@
 All notable changes to CashLenX Server are recorded here. Entries describe
 released contracts and operational behavior separately from deployment state.
 
+## [Unreleased]
+
+### Changed
+
+- Unified the API, MongoDB, and MySQL lifecycle entry points behind a
+  repository-local Docker Compose and nerdctl 2.2 portability layer with
+  pre-mutation validation, deterministic configured image identity, value-safe
+  start output, and cold-database readiness handling.
+
 ## [1.0.0-rc.1] - 2026-09-16
 
 ### Added

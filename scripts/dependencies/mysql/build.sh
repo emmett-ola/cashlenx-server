@@ -4,38 +4,10 @@ set -euo pipefail
 project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd -P)"
 cd "$project_dir"
 compose_file="$project_dir/docker/dependencies/mysql/compose.yml"
-
-resolve_env_file() {
-  local requested="${ENV_FILE:-.env}"
-  local candidate
-  if [[ "$requested" == /* ]]; then
-    candidate="$requested"
-  else
-    candidate="$project_dir/$requested"
-  fi
-
-  if [[ ! -e "$candidate" ]]; then
-    echo "Missing environment file: $requested" >&2
-    echo "Create it with: cp .env.example \"$requested\"" >&2
-    return 1
-  fi
-  [[ -f "$candidate" ]] || { echo "Environment path is not a file: $requested" >&2; return 1; }
-
-  local resolved
-  resolved="$(realpath "$candidate")"
-  case "$resolved" in
-    "$project_dir"/*) printf '%s\n' "$resolved" ;;
-    *) echo "ENV_FILE must stay inside $project_dir: $requested" >&2; return 1 ;;
-  esac
-}
-
-command -v docker >/dev/null 2>&1 || { echo "Docker is required." >&2; exit 1; }
-docker compose version >/dev/null 2>&1 || { echo "Docker Compose is required." >&2; exit 1; }
+. "$project_dir/scripts/lib/container_lifecycle.sh"
 
 env_file="$(resolve_env_file)"
-
-# MySQL is an upstream image, so the dependency build step prepares it by
-# pulling the configured image without requiring deployment credentials.
-MYSQL_ROOT_PASSWORD=dependency-build MYSQL_USER=dependency-build \
-MYSQL_PASSWORD=dependency-build \
-  docker compose --env-file "$env_file" -f "$compose_file" pull mysql
+container_runtime_init "$(read_config_value CONTAINER_FRONTEND auto)"
+compose_args=(--env-file "$env_file" -f "$compose_file")
+compose_preflight "${compose_args[@]}"
+compose "${compose_args[@]}" pull mysql

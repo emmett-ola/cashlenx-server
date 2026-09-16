@@ -13,3 +13,9 @@ Run `scripts/build.sh` to derive the source version and full revision, create a
 deterministic commit timestamp, build from `go.sum`, and verify the executable,
 OpenAPI contract, default-category data, OCI labels, embedded version output,
 and prohibited file absence.
+
+The repository-local lifecycle helper supports Docker Compose v2 and nerdctl
+2.2+, validates the selected frontend before mutation, and derives the Server
+image reference from `SERVER_IMAGE_NAME` plus `SERVER_IMAGE_TAG` without
+`config --images`. The same helper serves the independent MongoDB and MySQL
+projects.
