@@ -18,6 +18,9 @@ released contracts and operational behavior separately from deployment state.
   outcomes including forced and repeated stops.
 - Aligned CI and the digest-pinned builder on Go 1.23.12, enforced a read-only
   verified module graph, and retained the canonical image validation path.
+- Pinned MongoDB 7.0.43 and MySQL 8.0.46 by immutable digest, added exact image
+  verification, rejected unsafe MongoDB shared filesystems before
+  initialization, and made MongoDB readiness wait for the final daemon.
 
 ## [1.0.0-rc.1] - 2026-09-16
 

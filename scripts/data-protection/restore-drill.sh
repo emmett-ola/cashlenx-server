@@ -140,8 +140,11 @@ wait_for_command() {
 
 case "$database_type" in
   mongodb)
-    image="$(read_env_value MONGO_IMAGE)"
-    image="${image:-mongo:7.0}"
+    image="$(awk -F= '$1 == "MONGO_IMAGE" { print $2 }' docker/dependencies/images.env)"
+    [[ "$image" =~ ^mongo:[A-Za-z0-9_.-]+@sha256:[0-9a-f]{64}$ ]] || {
+      echo "MONGO_IMAGE must be digest-pinned in docker/dependencies/images.env." >&2
+      exit 1
+    }
     docker image inspect "$image" >/dev/null 2>&1 || {
       echo "Restore-drill image is not available locally: $image" >&2
       exit 1
@@ -175,8 +178,11 @@ case "$database_type" in
       "127.0.0.1:27017/$database_name" | tail -n 1 | tr -d '\r')"
     ;;
   mysql)
-    image="$(read_env_value MYSQL_IMAGE)"
-    image="${image:-mysql:8.0}"
+    image="$(awk -F= '$1 == "MYSQL_IMAGE" { print $2 }' docker/dependencies/images.env)"
+    [[ "$image" =~ ^mysql:[A-Za-z0-9_.-]+@sha256:[0-9a-f]{64}$ ]] || {
+      echo "MYSQL_IMAGE must be digest-pinned in docker/dependencies/images.env." >&2
+      exit 1
+    }
     docker image inspect "$image" >/dev/null 2>&1 || {
       echo "Restore-drill image is not available locally: $image" >&2
       exit 1

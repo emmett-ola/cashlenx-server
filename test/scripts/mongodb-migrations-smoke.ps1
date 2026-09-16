@@ -1,7 +1,10 @@
-param([string]$MongoImage = "mongo:7.0")
+param([string]$MongoImage = "")
 
 $ErrorActionPreference = "Stop"
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
+. (Join-Path $PSScriptRoot "dependency-image-pins.ps1")
+if (-not $MongoImage) { $MongoImage = $PinnedMongoImage }
+Assert-DependencyImageReference -Image $MongoImage -Repository mongo
 $container = "cashlenx-mongodb-migrations-$(Get-Date -Format yyyyMMddHHmmss)-$PID"
 
 try {

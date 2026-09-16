@@ -2,12 +2,17 @@ param(
     [ValidateSet("mongodb", "mysql")]
     [string]$Database = "mongodb",
     [int]$ServerPort = 18082,
-    [string]$MongoImage = "mongo:7.0",
-    [string]$MySqlImage = "mysql:8.0"
+    [string]$MongoImage = "",
+    [string]$MySqlImage = ""
 )
 
 $ErrorActionPreference = "Stop"
 $serverRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
+. (Join-Path $PSScriptRoot "dependency-image-pins.ps1")
+if (-not $MongoImage) { $MongoImage = $PinnedMongoImage }
+if (-not $MySqlImage) { $MySqlImage = $PinnedMySqlImage }
+Assert-DependencyImageReference -Image $MongoImage -Repository mongo
+Assert-DependencyImageReference -Image $MySqlImage -Repository mysql
 $runId = "$(Get-Date -Format yyyyMMddHHmmss)-$PID"
 $container = "cashlenx-budget-smoke-$Database-$runId"
 $dbName = if ($Database -eq "mongodb") { "cashlenx_budget_smoke_$($runId -replace '-', '_')" } else { "cashlenx" }

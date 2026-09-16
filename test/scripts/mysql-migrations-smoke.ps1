@@ -1,7 +1,10 @@
-param([string]$MySqlImage = "mysql:8.0")
+param([string]$MySqlImage = "")
 
 $ErrorActionPreference = "Continue"
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
+. (Join-Path $PSScriptRoot "dependency-image-pins.ps1")
+if (-not $MySqlImage) { $MySqlImage = $PinnedMySqlImage }
+Assert-DependencyImageReference -Image $MySqlImage -Repository mysql
 $container = "cashlenx-mysql-migrations-$(Get-Date -Format yyyyMMddHHmmss)-$PID"
 
 try {

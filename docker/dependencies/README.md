@@ -35,6 +35,14 @@ shared by the API and both database container projects. Dependency starts accept
 `UTC` or the region-based IANA name shape and reject fixed offsets,
 abbreviations, and `Etc/GMT` forms before creating a container.
 
+`images.env` is the single tracked owner of the readable database tags, exact
+patch versions, and immutable registry digests. Lifecycle scripts export those
+pins ahead of the selected environment file, so an owner-managed file cannot
+silently replace them with a mutable tag. Update a tag, digest, and matching
+patch version together; then run both dependency builds, the lifecycle contract
+suite, and `test/scripts/database-storage-smoke.sh`. Reverting that isolated
+change restores the previous image identities.
+
 All dependency scripts use `.env` by default and accept the same repository-local
 selection interface as the API scripts:
 
@@ -46,4 +54,6 @@ ENV_FILE=.env.testing scripts/dependencies/mongodb/stop.sh
 
 Compose remains available directly for diagnostics through
 `mongodb/compose.yml` and `mysql/compose.yml`, but the scripts are the supported
-lifecycle entry points.
+lifecycle entry points. A direct diagnostic invocation must pass the selected
+owner file first and `docker/dependencies/images.env` last so the tracked pin
+has precedence; it must not be used as an alternate start workflow.

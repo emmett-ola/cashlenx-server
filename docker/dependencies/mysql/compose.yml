@@ -2,7 +2,7 @@ name: ${MYSQL_PROJECT_NAME:-cashlenx-mysql}
 
 services:
   mysql:
-    image: ${MYSQL_IMAGE:-mysql:8.0}
+    image: ${MYSQL_IMAGE:?MYSQL_IMAGE is required from docker/dependencies/images.env}
     container_name: ${MYSQL_CONTAINER_NAME:-cashlenx-mysql}
     restart: unless-stopped
     cpus: ${MYSQL_CPU_LIMIT:-1.0}

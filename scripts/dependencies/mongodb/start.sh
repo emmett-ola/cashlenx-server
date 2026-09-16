@@ -5,6 +5,7 @@ project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd -P)"
 cd "$project_dir"
 compose_file="$project_dir/docker/dependencies/mongodb/compose.yml"
 . "$project_dir/scripts/lib/container_lifecycle.sh"
+. "$project_dir/scripts/dependencies/image_pins.sh"
 
 invalid_configuration_keys() {
   awk -F= '
@@ -28,7 +29,7 @@ invalid_configuration_keys() {
       if (value == "") return 1
       normalized = value
       gsub(/\\/, "/", normalized)
-      if (normalized == "/" || normalized ~ /(^|\/)\.\.(\/|$)/) return 0
+      if (normalized == "/" || normalized ~ /(^|\/)\.\.(\/|$)/ || index(normalized, ",") > 0) return 0
       if (substr(normalized, 1, 1) == "/" && length(normalized) > 1) return 1
       if (length(normalized) > 3 && substr(normalized, 2, 1) == ":" && substr(normalized, 3, 1) == "/") return 1
       return 0
@@ -69,12 +70,14 @@ validate_start_configuration() {
 
 env_file="$(resolve_env_file)"
 validate_start_configuration
+load_dependency_image_pin mongodb
 container_runtime_init "$(read_config_value CONTAINER_FRONTEND auto)"
 network_name="$(resolve_network_name)"
 container_name="$(read_config_value MONGO_CONTAINER_NAME cashlenx-mongodb)"
 compose_args=(--env-file "$env_file" -f "$compose_file")
 compose_preflight "${compose_args[@]}"
+preflight_mongodb_storage
 ensure_network "$network_name"
 compose_up_quiet "${compose_args[@]}" up -d --no-build --pull never --remove-orphans mongodb
 wait_for_container_command "$container_name" sh -ec \
-  'mongosh --quiet --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval "db.runCommand({ ping: 1 }).ok" "127.0.0.1:${MONGO_CONTAINER_PORT:-27017}/${MONGO_INITDB_DATABASE}" >/dev/null'
+  'test "$(cat /proc/1/comm)" = mongod && mongosh --quiet --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval "db.runCommand({ ping: 1 }).ok" "127.0.0.1:${MONGO_CONTAINER_PORT:-27017}/${MONGO_INITDB_DATABASE}" >/dev/null'

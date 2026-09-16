@@ -38,6 +38,18 @@ to `/data/db`. Changing the source does not copy existing records; the previous
 volume or directory remains untouched and must be migrated explicitly when its
 data should follow the new source.
 
+Before starting MongoDB, the lifecycle runs the pinned image with the selected
+storage mounted read-only and asks the container which filesystem backs
+`/data/db`. Native ext4, XFS, ext2/ext3, Btrfs, and ZFS are accepted. Shared or
+remote filesystems including 9p/v9fs, DrvFS, CIFS/SMB, NFS, FUSE, and virtiofs
+are rejected before MongoDB initialization with the failing source and a named
+volume/native-storage remediation. Unknown filesystem types fail closed. The
+probe never rewrites or deletes the selected data.
+
+Readiness requires PID 1 to be the final `mongod` process as well as a
+successful authenticated ping. This prevents initialization's temporary server
+from being mistaken for a ready database and preserves graceful shutdown.
+
 Changing `init-mongo.js` does not update an existing data directory. Recreate
 only disposable development data, or apply a reviewed migration to persistent
 data.

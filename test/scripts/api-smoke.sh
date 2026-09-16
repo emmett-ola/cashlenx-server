@@ -1,11 +1,21 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
+pinned_mongo_image="$(sed -n 's/^MONGO_IMAGE=//p' "$project_dir/docker/dependencies/images.env" | sed -n '1p')"
+[[ "$pinned_mongo_image" =~ ^mongo:[A-Za-z0-9_.-]+@sha256:[0-9a-f]{64}$ ]] || {
+  echo "MONGO_IMAGE must be digest-pinned in docker/dependencies/images.env." >&2
+  exit 1
+}
 RUN_ID="$(date +%s)-${RANDOM}"
 MANAGE_MONGODB="${SMOKE_MANAGE_MONGODB:-false}"
 MANAGE_SERVER="${SMOKE_MANAGE_SERVER:-false}"
 MONGO_CONTAINER_NAME="${SMOKE_MONGO_CONTAINER_NAME:-cashlenx-smoke-mongodb-${RUN_ID}}"
-MONGO_IMAGE="${SMOKE_MONGO_IMAGE:-mongo:7.0}"
+MONGO_IMAGE="${SMOKE_MONGO_IMAGE:-$pinned_mongo_image}"
+[[ "$MONGO_IMAGE" =~ ^mongo:[A-Za-z0-9_.-]+@sha256:[0-9a-f]{64}$ ]] || {
+  echo "SMOKE_MONGO_IMAGE must be digest-pinned." >&2
+  exit 1
+}
 MONGO_ROOT_USERNAME="${SMOKE_MONGO_ROOT_USERNAME:-cashlenx}"
 MONGO_ROOT_PASSWORD="${SMOKE_MONGO_ROOT_PASSWORD:-cashlenx123}"
 SMOKE_DB_NAME="${SMOKE_DB_NAME:-cashlenx_smoke_${RUN_ID//-/_}}"

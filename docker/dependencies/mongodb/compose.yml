@@ -2,7 +2,7 @@ name: ${MONGO_PROJECT_NAME:-cashlenx-mongodb}
 
 services:
   mongodb:
-    image: ${MONGO_IMAGE:-mongo:7.0}
+    image: ${MONGO_IMAGE:?MONGO_IMAGE is required from docker/dependencies/images.env}
     container_name: ${MONGO_CONTAINER_NAME:-cashlenx-mongodb}
     restart: unless-stopped
     cpus: ${MONGO_CPU_LIMIT:-1.0}
@@ -26,7 +26,7 @@ services:
         target: /docker-entrypoint-initdb.d/init-mongo.js
         read_only: true
     healthcheck:
-      test: ["CMD-SHELL", "mongosh --quiet --username \"$${MONGO_INITDB_ROOT_USERNAME}\" --password \"$${MONGO_INITDB_ROOT_PASSWORD}\" --authenticationDatabase admin --eval 'db.runCommand({ ping: 1 }).ok' 127.0.0.1:$${MONGO_CONTAINER_PORT:-27017}/$${MONGO_INITDB_DATABASE} >/dev/null"]
+      test: ["CMD-SHELL", "test \"$$(cat /proc/1/comm)\" = mongod && mongosh --quiet --username \"$${MONGO_INITDB_ROOT_USERNAME}\" --password \"$${MONGO_INITDB_ROOT_PASSWORD}\" --authenticationDatabase admin --eval 'db.runCommand({ ping: 1 }).ok' 127.0.0.1:$${MONGO_CONTAINER_PORT:-27017}/$${MONGO_INITDB_DATABASE} >/dev/null"]
       interval: ${MONGO_HEALTHCHECK_INTERVAL:-5s}
       timeout: ${MONGO_HEALTHCHECK_TIMEOUT:-5s}
       retries: ${MONGO_HEALTHCHECK_RETRIES:-20}

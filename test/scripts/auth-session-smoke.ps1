@@ -3,13 +3,18 @@ param(
     [string]$Database = "mongodb",
     [int]$ServerPort = 18084,
     [string]$ServerImage = "cashlenx-server:auth-session-smoke",
-    [string]$MongoImage = "mongo:7.0",
-    [string]$MySqlImage = "mysql:8.0",
+    [string]$MongoImage = "",
+    [string]$MySqlImage = "",
     [switch]$SkipBuild
 )
 
 $ErrorActionPreference = "Stop"
 $serverRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
+. (Join-Path $PSScriptRoot "dependency-image-pins.ps1")
+if (-not $MongoImage) { $MongoImage = $PinnedMongoImage }
+if (-not $MySqlImage) { $MySqlImage = $PinnedMySqlImage }
+Assert-DependencyImageReference -Image $MongoImage -Repository mongo
+Assert-DependencyImageReference -Image $MySqlImage -Repository mysql
 $runId = "$(Get-Date -Format yyyyMMddHHmmss)-$PID"
 $network = "cashlenx-auth-smoke-$runId"
 $databaseContainer = "cashlenx-auth-db-$runId"

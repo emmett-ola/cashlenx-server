@@ -24,6 +24,10 @@ scripts/dependencies/mysql/build.sh
 scripts/dependencies/mysql/start.sh
 ```
 
+The lifecycle uses the immutable MySQL 8 digest and exact patch version owned
+by `../images.env`; owner environment files cannot replace it with a mutable
+tag. Build and start both verify the image-reported version before use.
+
 Stop its container while retaining `cashlenx-mysql-data` with
 `scripts/dependencies/mysql/stop.sh`. These scripts never start or stop the API
 container. Start attaches MySQL to `DOCKER_NETWORK_NAME`; stop removes it only

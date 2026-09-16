@@ -439,6 +439,14 @@ Important nuance:
   `*_DATA_VOLUME_NAME`; non-empty values must be absolute host bind paths.
   Changing a storage source never migrates or deletes existing data, and
   dependency stop must preserve both storage forms.
+- `docker/dependencies/images.env` exclusively owns the MongoDB and MySQL
+  readable tags, exact patch versions, and immutable digests. Dependency
+  lifecycle scripts override owner-file image values with these tracked pins.
+  MongoDB start must inspect `/data/db` from a read-only container mount before
+  initialization, allow approved native filesystems, and fail closed on 9p,
+  DrvFS, CIFS/SMB, NFS, FUSE, virtiofs, or an unknown type without changing
+  data. Readiness requires the final PID 1 `mongod`, not the temporary init
+  server.
 - Dockerfile and Compose definitions live under `docker/` or the owning
   `docker/dependencies/<name>/` subtree. All application and dependency services
   use explicit project and container name keys and one shared absolute

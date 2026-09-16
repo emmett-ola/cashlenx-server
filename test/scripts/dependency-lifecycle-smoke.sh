@@ -13,12 +13,13 @@ invalid_timezone_env="$(mktemp "$project_dir/.env.lifecycle-timezone.XXXXXX")"
 invalid_storage_env="$(mktemp "$project_dir/.env.lifecycle-storage.XXXXXX")"
 prod_env="$(mktemp "$project_dir/.env.lifecycle-prod.XXXXXX")"
 outside_env="$(mktemp)"
+invalid_images="$(mktemp "$project_dir/docker/dependencies/images.invalid.XXXXXX")"
 inside_symlink="$project_dir/.env.lifecycle-link"
 outside_symlink="$project_dir/.env.lifecycle-outside-link"
 
 cleanup() {
   rm -f "$api_env" "$mysql_env" "$smtp_env" "$invalid_boolean_env" \
-    "$invalid_timezone_env" "$outside_env"
+    "$invalid_timezone_env" "$outside_env" "$invalid_images"
   rm -f "$invalid_storage_env" "$inside_symlink" "$outside_symlink"
   rm -f "$prod_env"
   rm -rf "$fake_dir"
@@ -82,6 +83,18 @@ if [[ "${1:-}" == "image" && "${2:-}" == "inspect" ]]; then
   fi
   exit 0
 fi
+if [[ "${1:-}" == "run" && "$*" == *"mongo:7.0@sha256:"* ]]; then
+  if [[ "$*" == *"--mount"* ]]; then
+    printf 'version=7.0.43\nfilesystem=%s\n' "${FAKE_STORAGE_FILESYSTEM:-ext2/ext3}"
+  else
+    printf '%s\n' '7.0.43'
+  fi
+  exit 0
+fi
+if [[ "${1:-}" == "run" && "$*" == *"mysql:8.0@sha256:"* ]]; then
+  printf '%s\n' '8.0.46'
+  exit 0
+fi
 if [[ "${1:-}" == "inspect" ]]; then
   [[ "${FAKE_CONTAINER_EXISTS:-true}" == "true" ]] || exit 1
   case "$*" in
@@ -89,8 +102,8 @@ if [[ "${1:-}" == "inspect" ]]; then
     *State.ExitCode*) printf '%s\n' "${FAKE_EXIT_CODE:-0}" ;;
     *Config.Image*)
       case "$*" in
-        *cashlenx-mongodb*) printf '%s\n' 'mongo:7.0' ;;
-        *cashlenx-mysql*) printf '%s\n' 'mysql:8.0' ;;
+        *cashlenx-mongodb*) printf '%s\n' 'mongo:7.0@sha256:9854f7139445d766a9523571d6f047530c45547460ffcf8259eb2bf4264632ca' ;;
+        *cashlenx-mysql*) printf '%s\n' 'mysql:8.0@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b' ;;
         *) printf '%s\n' 'cashlenx-server:latest' ;;
       esac ;;
     *'{{.Image}}'*) printf '%s\n' 'sha256:fake' ;;
@@ -162,6 +175,7 @@ run_script() {
     FAKE_EXIT_CODE="${FAKE_EXIT_CODE:-0}" \
     FAKE_HEALTHY="${FAKE_HEALTHY:-true}" \
     FAKE_IMAGE_EXISTS="${FAKE_IMAGE_EXISTS:-true}" \
+    FAKE_STORAGE_FILESYSTEM="${FAKE_STORAGE_FILESYSTEM:-ext2/ext3}" \
     FAKE_STOP_MARKER="$fake_stop_marker" \
     FAKE_IMAGE_VERSION="$fake_image_version" \
     FAKE_IMAGE_REVISION="$fake_image_revision" \
@@ -232,7 +246,8 @@ if grep -F -- 'lifecycle-sensitive-value' <<< "$output" >/dev/null; then
   echo "Dependency start output exposed a configured value" >&2
   exit 1
 fi
-assert_log_contains "exec cashlenx-mongodb sh -ec mongosh"
+assert_log_contains "exec cashlenx-mongodb sh -ec test"
+assert_log_contains "mongosh --quiet"
 assert_log_not_contains "--wait"
 
 reset_log
@@ -441,8 +456,35 @@ sed 's|^MONGO_DATA_PATH=$|MONGO_DATA_PATH=/srv/cashlenx/mongodb|' \
 reset_log
 run_script scripts/dependencies/mongodb/start.sh "$invalid_storage_env_name"
 assert_log_contains "--remove-orphans mongodb"
-assert_log_contains "exec cashlenx-mongodb sh -ec mongosh"
+assert_log_contains "exec cashlenx-mongodb sh -ec test"
+assert_log_contains "mongosh --quiet"
 assert_log_not_contains "--wait"
+
+for native_filesystem in ext4 xfs; do
+  reset_log
+  FAKE_STORAGE_FILESYSTEM="$native_filesystem" run_script scripts/dependencies/mongodb/start.sh "$invalid_storage_env_name"
+  assert_log_contains "--remove-orphans mongodb"
+done
+
+reset_log
+if output="$(FAKE_STORAGE_FILESYSTEM=v9fs run_script scripts/dependencies/mongodb/start.sh "$invalid_storage_env_name" 2>&1)"; then
+  echo "Expected MongoDB to reject a shared filesystem before initialization" >&2
+  exit 1
+fi
+grep -F -- '/srv/cashlenx/mongodb' <<< "$output" >/dev/null
+grep -F -- "unsupported shared or remote filesystem 'v9fs'" <<< "$output" >/dev/null
+grep -F -- 'Leave MONGO_DATA_PATH empty' <<< "$output" >/dev/null
+grep -F -- 'No data was changed' <<< "$output" >/dev/null
+assert_log_not_contains " up "
+assert_log_not_contains "network create"
+
+reset_log
+if output="$(FAKE_STORAGE_FILESYSTEM=overlay run_script scripts/dependencies/mongodb/start.sh "$invalid_storage_env_name" 2>&1)"; then
+  echo "Expected MongoDB to fail closed on an unapproved filesystem" >&2
+  exit 1
+fi
+grep -F -- "unapproved filesystem 'overlay'" <<< "$output" >/dev/null
+assert_log_not_contains " up "
 
 sed 's|^MYSQL_DATA_PATH=$|MYSQL_DATA_PATH=C:/cashlenx/mysql|' \
   "$mysql_env" > "$invalid_storage_env"
@@ -489,5 +531,19 @@ assert_rejected "$outside_env" scripts/dependencies/mongodb/build.sh "ENV_FILE m
 if [[ -L "$outside_symlink" ]]; then
   assert_rejected "$outside_symlink_name" scripts/dependencies/mongodb/build.sh "ENV_FILE must stay inside"
 fi
+
+sed 's|^MONGO_IMAGE=.*$|MONGO_IMAGE=mongo:7.0|' \
+  docker/dependencies/images.env > "$invalid_images"
+if output="$({
+  project_dir="$project_dir"
+  . "$project_dir/scripts/lib/container_lifecycle.sh"
+  . "$project_dir/scripts/dependencies/image_pins.sh"
+  export dependency_images_file="$invalid_images"
+  load_dependency_image_pin mongodb
+} 2>&1)"; then
+  echo "Expected a mutable MongoDB image pin to be rejected" >&2
+  exit 1
+fi
+grep -F -- 'MONGO_IMAGE must be a digest-pinned' <<< "$output" >/dev/null
 
 echo "Dependency lifecycle smoke checks passed."

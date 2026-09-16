@@ -6,6 +6,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $repoPath = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
+. (Join-Path $PSScriptRoot "dependency-image-pins.ps1")
 $backupBase = Join-Path $repoPath "backups"
 $runId = ([Guid]::NewGuid().ToString("N").Substring(0, 12))
 $runRoot = Join-Path $backupBase "smoke-$runId"
@@ -55,7 +56,7 @@ function Invoke-ProfileSmoke {
 
     $password = "smoke-$runId-$Engine"
     $script:sourceContainer = "cashlenx-backup-source-$Engine-$runId"
-    $image = if ($Engine -eq "mongodb") { "mongo:7.0" } else { "mysql:8.0" }
+    $image = if ($Engine -eq "mongodb") { $PinnedMongoImage } else { $PinnedMySqlImage }
 
     & docker image inspect $image *> $null
     Assert-CommandSucceeded "Inspect $image"
@@ -91,8 +92,6 @@ function Invoke-ProfileSmoke {
         "DB_NAME=cashlenx"
         "MONGO_CONTAINER_NAME=$script:sourceContainer"
         "MYSQL_CONTAINER_NAME=$script:sourceContainer"
-        "MONGO_IMAGE=mongo:7.0"
-        "MYSQL_IMAGE=mysql:8.0"
         "BACKUP_ROOT=./backups/smoke-$runId/$Engine"
         "BACKUP_ENCRYPTION_KEY_FILE=./$keyFileName"
         "BACKUP_MIN_FREE_MIB=1"
