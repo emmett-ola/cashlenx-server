@@ -15,7 +15,8 @@ CashLenX Server is a Go backend that exposes:
 
 ## Current Tech Stack
 
-- Go `1.23.0` in `go.mod`
+- Go `1.27.0` in `go.mod`, with the exact `1.27.1` patch toolchain pinned for
+  CI and container builds
 - Cobra for CLI
 - Gorilla Mux for HTTP routing
 - Gin is still a direct dependency, but current HTTP routing is Gorilla Mux; Gin only appears in legacy response helpers under `util/http_util.go`

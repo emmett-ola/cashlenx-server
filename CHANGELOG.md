@@ -7,6 +7,9 @@ released contracts and operational behavior separately from deployment state.
 
 ### Changed
 
+- Upgraded CI and the Server toolchain to Go 1.27.1, refreshed the locked
+  module graph within the existing public module APIs, and advanced the
+  minimal runtime to digest-pinned Alpine 3.23.
 - Added exact candidate image references to package metadata and made API
   container start fail instead of pulling a missing configured image.
 - Unified the API, MongoDB, and MySQL lifecycle entry points behind a
@@ -16,8 +19,6 @@ released contracts and operational behavior separately from deployment state.
 - Added API, MongoDB, and MySQL status/doctor/log entry points, selected-database
   state reporting, effective image verification, and bounded observable stop
   outcomes including forced and repeated stops.
-- Aligned CI and the digest-pinned builder on Go 1.23.12, enforced a read-only
-  verified module graph, and retained the canonical image validation path.
 - Pinned MongoDB 7.0.43 and MySQL 8.0.46 by immutable digest, added exact image
   verification, rejected unsafe MongoDB shared filesystems before
   initialization, and made MongoDB readiness wait for the final daemon.

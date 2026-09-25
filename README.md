@@ -310,7 +310,8 @@ generation for Codecov. DeepSource handles code analysis.
 
 ## Technology
 
-- Go `1.23.0`
+- Go `1.27.0` language/module baseline with Go `1.27.1` pinned in CI and
+  container builds
 - Cobra CLI
 - Gorilla Mux HTTP routing
 - Zap logging
