@@ -643,6 +643,9 @@ func convertBsonM2CategoryEntity(bsonM bson.M) model.CategoryEntity {
 		util.Logger.Errorln(err)
 		panic(err)
 	}
+	if newEntity.IsEmpty() {
+		return newEntity
+	}
 	if newEntity.Emoji == "" {
 		newEntity.Emoji = model.DefaultCategoryEmoji
 	}
