@@ -37,9 +37,19 @@ func UpdateById(w http.ResponseWriter, r *http.Request) {
 	categoryName, _ := requestBody["name"].(string)
 	categoryType, _ := requestBody["type"].(string)
 	remark, _ := requestBody["remark"].(string)
+	emoji, err := optionalString(requestBody, "emoji")
+	if err != nil {
+		util.ComposeJSONResponse(w, http.StatusBadRequest, errors.NewInvalidInputError(err.Error()))
+		return
+	}
+	bgColor, err := optionalString(requestBody, "bg_color")
+	if err != nil {
+		util.ComposeJSONResponse(w, http.StatusBadRequest, errors.NewInvalidInputError(err.Error()))
+		return
+	}
 
 	// Call user-specific service to update
-	updatedCategory, err := updateCategoryForUser(plainId, categoryName, categoryType, remark, parentPlainId, userId)
+	updatedCategory, err := updateCategoryForUser(plainId, categoryName, categoryType, remark, parentPlainId, userId, emoji, bgColor)
 	if err != nil {
 		if err.Error() == "category not found or access denied" {
 			util.ComposeJSONResponse(w, http.StatusNotFound, errors.NewNotFoundError(err.Error()))
@@ -50,4 +60,16 @@ func UpdateById(w http.ResponseWriter, r *http.Request) {
 	}
 
 	util.ComposeJSONResponse(w, http.StatusOK, updatedCategory)
+}
+
+func optionalString(values map[string]interface{}, key string) (*string, error) {
+	value, exists := values[key]
+	if !exists {
+		return nil, nil
+	}
+	text, ok := value.(string)
+	if !ok {
+		return nil, errors.NewInvalidInputError(key + " must be a string")
+	}
+	return &text, nil
 }

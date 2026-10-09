@@ -78,10 +78,11 @@ applied migration history. Changing them does not update an existing database.
 
 ## Available Assets
 
-### MongoDB: `001`, `010`, and `016`
+### MongoDB: `001`, `010`, `016`, and `017`
 
 The ordered assets reconcile legacy cash-flow/category indexes, verification
-code indexes, user-configuration uniqueness, and budget indexes. Handlers are
+code indexes, user-configuration uniqueness, budget indexes, and category
+presentation defaults. Handlers are
 idempotent so they can safely baseline an existing compatible installation.
 
 ## Migration Guidelines
@@ -92,10 +93,12 @@ idempotent so they can safely baseline an existing compatible installation.
 4. **Monitor performance** after migration
 5. **Have a rollback plan** ready
 
-### MySQL: `002` through `012`
+### MySQL: `002` through `017`
 
 SQL migrations `002` through `011` create the base development schema, and
-`012` reconciles active category uniqueness with type, parent, and soft-delete behavior.
+`012` reconciles active category uniqueness with type, parent, and soft-delete
+behavior; later migrations add budgets, decimal cash-flow storage, extended
+profile fields, and category presentation fields.
 Always apply them in filename order. Migrations `008` through `010` are retained
 as compatibility markers from the earlier development sequence; the canonical
 table definitions already contain their final fields.

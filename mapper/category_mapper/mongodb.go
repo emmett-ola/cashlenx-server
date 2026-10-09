@@ -620,6 +620,8 @@ func convertCategoryEntity2BsonD(entity model.CategoryEntity) bson.D {
 		primitive.E{Key: "type", Value: entity.Type},
 		primitive.E{Key: "belongs_user_id", Value: entity.BelongsUserId},
 		primitive.E{Key: "remark", Value: entity.Remark},
+		primitive.E{Key: "emoji", Value: entity.Emoji},
+		primitive.E{Key: "bg_color", Value: entity.BgColor},
 		primitive.E{Key: "create_user_id", Value: entity.CreateUserId},
 		primitive.E{Key: "create_time", Value: entity.CreateTime},
 		primitive.E{Key: "update_user_id", Value: entity.UpdateUserId},
@@ -640,6 +642,12 @@ func convertBsonM2CategoryEntity(bsonM bson.M) model.CategoryEntity {
 	if err = bson.Unmarshal(bsonBytes, &newEntity); err != nil {
 		util.Logger.Errorln(err)
 		panic(err)
+	}
+	if newEntity.Emoji == "" {
+		newEntity.Emoji = model.DefaultCategoryEmoji
+	}
+	if newEntity.BgColor == "" {
+		newEntity.BgColor = model.DefaultCategoryBackgroundColor
 	}
 
 	// Manually map fields that might not be automatically mapped due to struct embedding differences or bson tags

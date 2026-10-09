@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/macar-x/cashlenx-server/migrations"
+	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/util"
 	"github.com/macar-x/cashlenx-server/util/database"
 	"go.mongodb.org/mongo-driver/bson"
@@ -69,9 +70,28 @@ func ApplyMongoMigration(ctx context.Context, db *mongo.Database, migration migr
 		return applyMongoVerificationIndexes(ctx, db)
 	case 16:
 		return applyMongoBudgetIndexes(ctx, db)
+	case 17:
+		return applyMongoCategoryPresentation(ctx, db)
 	default:
 		return fmt.Errorf("no MongoDB migration handler for version %03d", migration.Version)
 	}
+}
+
+func applyMongoCategoryPresentation(ctx context.Context, db *mongo.Database) error {
+	categories := db.Collection(database.CategoryTableName)
+	if _, err := categories.UpdateMany(ctx,
+		bson.M{"$or": bson.A{bson.M{"emoji": bson.M{"$exists": false}}, bson.M{"emoji": ""}}},
+		bson.M{"$set": bson.M{"emoji": model.DefaultCategoryEmoji}},
+	); err != nil {
+		return fmt.Errorf("backfill category emoji: %w", err)
+	}
+	if _, err := categories.UpdateMany(ctx,
+		bson.M{"$or": bson.A{bson.M{"bg_color": bson.M{"$exists": false}}, bson.M{"bg_color": ""}}},
+		bson.M{"$set": bson.M{"bg_color": model.DefaultCategoryBackgroundColor}},
+	); err != nil {
+		return fmt.Errorf("backfill category background color: %w", err)
+	}
+	return nil
 }
 
 func applyMongoCoreIndexes(ctx context.Context, db *mongo.Database) error {

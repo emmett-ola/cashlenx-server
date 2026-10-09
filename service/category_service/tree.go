@@ -60,6 +60,8 @@ func (s *CategoryService) buildUserCategoryTree(parent model.CategoryEntity, use
 		ParentId: parent.ParentId.Hex(),
 		Name:     parent.Name,
 		Type:     parent.Type,
+		Emoji:    parent.Emoji,
+		BgColor:  parent.BgColor,
 		Children: []model.CategoryTree{},
 	}
 

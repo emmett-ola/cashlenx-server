@@ -5,6 +5,8 @@ type CategoryDTO struct {
 	Name     string `json:"name"`
 	Type     string `json:"type"`
 	Remark   string `json:"remark"`
+	Emoji    string `json:"emoji"`
+	BgColor  string `json:"bg_color"`
 }
 
 // CreateCategoryRequest defines the request structure for creating a new category
@@ -13,4 +15,6 @@ type CreateCategoryRequest struct {
 	Name     string `json:"name"`
 	Type     string `json:"type"`
 	Remark   string `json:"remark"`
+	Emoji    string `json:"emoji"`
+	BgColor  string `json:"bg_color"`
 }

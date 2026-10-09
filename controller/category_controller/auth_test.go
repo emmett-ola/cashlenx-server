@@ -109,19 +109,23 @@ func TestCategoryCreatePassesRequestAndUserToService(t *testing.T) {
 		remark   string
 		parentID string
 		userID   string
+		emoji    string
+		bgColor  string
 	}
 	original := createCategoryForUser
-	createCategoryForUser = func(name, categoryType, remark, serviceParentID, serviceUserID string) (model.CategoryEntity, error) {
+	createCategoryForUser = func(name, categoryType, remark, serviceParentID, serviceUserID, emoji, bgColor string) (model.CategoryEntity, error) {
 		got.name = name
 		got.typ = categoryType
 		got.remark = remark
 		got.parentID = serviceParentID
 		got.userID = serviceUserID
-		return model.CategoryEntity{Id: primitive.NewObjectID(), Name: name, Type: categoryType, Remark: remark}, nil
+		got.emoji = emoji
+		got.bgColor = bgColor
+		return model.CategoryEntity{Id: primitive.NewObjectID(), Name: name, Type: categoryType, Remark: remark, Emoji: emoji, BgColor: bgColor}, nil
 	}
 	t.Cleanup(func() { createCategoryForUser = original })
 
-	req := httptest.NewRequest(http.MethodPost, "/category", strings.NewReader(`{"name":"Food","type":"expense","remark":"daily","parent_id":"`+parentID+`"}`))
+	req := httptest.NewRequest(http.MethodPost, "/category", strings.NewReader(`{"name":"Food","type":"expense","remark":"daily","parent_id":"`+parentID+`","emoji":"🍜","bg_color":"#FF8A65"}`))
 	req = req.WithContext(contextWithUserID(req.Context(), userID))
 	rec := httptest.NewRecorder()
 
@@ -130,7 +134,7 @@ func TestCategoryCreatePassesRequestAndUserToService(t *testing.T) {
 	if rec.Code != http.StatusCreated {
 		t.Fatalf("status = %d, want %d; body=%s", rec.Code, http.StatusCreated, rec.Body.String())
 	}
-	if got.name != "Food" || got.typ != "expense" || got.remark != "daily" || got.parentID != parentID || got.userID != userID {
+	if got.name != "Food" || got.typ != "expense" || got.remark != "daily" || got.parentID != parentID || got.userID != userID || got.emoji != "🍜" || got.bgColor != "#FF8A65" {
 		t.Fatalf("service args = %+v", got)
 	}
 }
@@ -240,9 +244,12 @@ func TestCategoryUpdateAndDeletePassRouteBodyQueryAndUserToService(t *testing.T)
 	parentID := primitive.NewObjectID().Hex()
 
 	originalUpdate := updateCategoryForUser
-	updateCategoryForUser = func(serviceCategoryID, name, categoryType, remark, serviceParentID, serviceUserID string) (model.CategoryEntity, error) {
+	updateCategoryForUser = func(serviceCategoryID, name, categoryType, remark, serviceParentID, serviceUserID string, emoji, bgColor *string) (model.CategoryEntity, error) {
 		if serviceCategoryID != categoryID || name != "Meals" || categoryType != "expense" || remark != "updated" || serviceParentID != parentID || serviceUserID != userID {
 			t.Fatalf("update args = %q, %q, %q, %q, %q, %q", serviceCategoryID, name, categoryType, remark, serviceParentID, serviceUserID)
+		}
+		if emoji == nil || *emoji != "🥗" || bgColor == nil || *bgColor != "#66BB6A" {
+			t.Fatalf("presentation args = %v, %v", emoji, bgColor)
 		}
 		return model.CategoryEntity{Id: primitive.NewObjectID(), Name: name, Type: categoryType, Remark: remark}, nil
 	}
@@ -258,7 +265,7 @@ func TestCategoryUpdateAndDeletePassRouteBodyQueryAndUserToService(t *testing.T)
 		deleteCategoryForUser = originalDelete
 	})
 
-	updateReq := httptest.NewRequest(http.MethodPut, "/category/"+categoryID, strings.NewReader(`{"name":"Meals","type":"expense","remark":"updated","parent_id":"`+parentID+`"}`))
+	updateReq := httptest.NewRequest(http.MethodPut, "/category/"+categoryID, strings.NewReader(`{"name":"Meals","type":"expense","remark":"updated","parent_id":"`+parentID+`","emoji":"🥗","bg_color":"#66BB6A"}`))
 	updateReq = updateReq.WithContext(contextWithUserID(updateReq.Context(), userID))
 	updateReq = mux.SetURLVars(updateReq, map[string]string{"id": categoryID})
 	updateRec := httptest.NewRecorder()

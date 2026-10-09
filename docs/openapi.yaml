@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: CashLenX API
   description: Personal finance management API
-  version: 1.0.3
+  version: 1.0.4
   contact:
     name: CashLenX Team
     email: support@cashlenx.com
@@ -1052,6 +1052,7 @@ paths:
   /statistic/chart/monthly-comparison/{year}:
     get:
       summary: Get monthly comparison chart data
+      description: Returns January through December in chronological order. Income, expense, and balance arrays always contain 12 values; months without transactions are zero.
       operationId: getMonthlyComparisonChart
       tags: [Statistic]
       parameters:
@@ -1513,6 +1514,17 @@ components:
           enum: [income, expense]
         remark:
           type: string
+        emoji:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: Short visible Unicode emoji sequence. Existing values are preserved when omitted from an update.
+          example: '🍜'
+        bg_color:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          description: Opaque category background color. Existing values are preserved when omitted from an update.
+          example: '#FF8A65'
       required: [name, type]
 
     BudgetRequest:

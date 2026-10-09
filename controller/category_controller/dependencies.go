@@ -6,13 +6,13 @@ import (
 )
 
 var (
-	createCategoryForUser       = category_service.CreateForUser
+	createCategoryForUser       = category_service.CreateForUserWithPresentation
 	queryCategoriesForUser      = category_service.QueryAllForUser
 	queryCategoryByIDForUser    = category_service.QueryByIdForUser
 	queryCategoryByNameForUser  = category_service.QueryByNameForUser
 	queryChildCategoriesForUser = category_service.GetChildCategoriesForUser
 	queryCategoryTreeForUser    = category_service.GetCategoryTreeByUser
-	updateCategoryForUser       = category_service.UpdateByIdForUser
+	updateCategoryForUser       = category_service.UpdateByIdForUserWithPresentation
 	deleteCategoryForUser       = category_service.DeleteByIdForUser
 )
 

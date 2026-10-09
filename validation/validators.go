@@ -3,6 +3,8 @@ package validation
 import (
 	"regexp"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/macar-x/cashlenx-server/errors"
 	"github.com/macar-x/cashlenx-server/model"
@@ -152,6 +154,31 @@ func ValidateCategoryName(name string) error {
 		return NewValidationError("category", "contains invalid characters")
 	}
 
+	return nil
+}
+
+// ValidateCategoryEmoji accepts a short visible Unicode grapheme sequence.
+// The App sends emoji-picker selections, including joined and skin-tone forms.
+func ValidateCategoryEmoji(value string) error {
+	if value == "" {
+		return NewValidationError("emoji", "cannot be empty")
+	}
+	if !utf8.ValidString(value) || utf8.RuneCountInString(value) > 16 {
+		return NewValidationError("emoji", "must be a valid emoji up to 16 characters")
+	}
+	for _, r := range value {
+		if unicode.IsControl(r) || unicode.IsSpace(r) {
+			return NewValidationError("emoji", "must not contain whitespace or control characters")
+		}
+	}
+	return nil
+}
+
+// ValidateCategoryBackgroundColor accepts the App's opaque hexadecimal color.
+func ValidateCategoryBackgroundColor(value string) error {
+	if matched, _ := regexp.MatchString(`^#[0-9A-Fa-f]{6}$`, value); !matched {
+		return NewValidationError("bg_color", "must use #RRGGBB hexadecimal format")
+	}
 	return nil
 }
 

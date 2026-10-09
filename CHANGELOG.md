@@ -5,6 +5,18 @@ released contracts and operational behavior separately from deployment state.
 
 ## [Unreleased]
 
+## [1.0.4] - 2026-10-09
+
+### Fixed
+
+- Persisted category `emoji` and `bg_color` values through the API, service,
+  MongoDB, MySQL, backup, restore, list, detail, and tree paths while preserving
+  omitted values on update.
+- Added ordered, idempotent MongoDB and MySQL category-presentation migrations
+  with safe defaults for existing records.
+- Documented and tested the monthly-comparison contract as twelve ordered
+  January-to-December values with zero-filled empty months.
+
 ## [1.0.3] - 2026-10-09
 
 ### Changed

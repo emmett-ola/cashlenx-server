@@ -40,6 +40,30 @@ func TestMySQLMigrationRunnerIntegration(t *testing.T) {
 		if applied != len(items) || dirty != 0 {
 			t.Fatalf("applied=%d dirty=%d, want applied=%d dirty=0", applied, dirty, len(items))
 		}
+
+		const categoryID = "507f1f77bcf86cd799439011"
+		const userID = "507f1f77bcf86cd799439012"
+		if _, err := db.Exec(`INSERT INTO categories
+            (id, belongs_user_id, name, type, create_user_id, update_user_id)
+            VALUES (?, ?, 'Dining', 'expense', ?, ?)`, categoryID, userID, userID, userID); err != nil {
+			t.Fatal(err)
+		}
+		var emoji, bgColor string
+		if err := db.QueryRow("SELECT emoji, bg_color FROM categories WHERE id = ?", categoryID).Scan(&emoji, &bgColor); err != nil {
+			t.Fatal(err)
+		}
+		if emoji != "🙂" || bgColor != "#E5E7EB" {
+			t.Fatalf("category defaults = %q/%q", emoji, bgColor)
+		}
+		if _, err := db.Exec("UPDATE categories SET emoji = '🍜', bg_color = '#FF8A65' WHERE id = ?", categoryID); err != nil {
+			t.Fatal(err)
+		}
+		if err := db.QueryRow("SELECT emoji, bg_color FROM categories WHERE id = ?", categoryID).Scan(&emoji, &bgColor); err != nil {
+			t.Fatal(err)
+		}
+		if emoji != "🍜" || bgColor != "#FF8A65" {
+			t.Fatalf("category presentation = %q/%q", emoji, bgColor)
+		}
 	})
 
 	t.Run("compensates failed migration", func(t *testing.T) {

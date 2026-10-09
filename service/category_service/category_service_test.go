@@ -33,6 +33,55 @@ func TestCreateForUserCreatesRootCategory(t *testing.T) {
 	}
 }
 
+func TestCreateForUserPersistsPresentation(t *testing.T) {
+	service, _ := newCategoryServiceStub()
+	userID := primitive.NewObjectID()
+
+	created, err := service.CreateForUserWithPresentation("Dining", "expense", "", "", userID.Hex(), "🍜", "#ff8a65")
+	if err != nil {
+		t.Fatalf("CreateForUserWithPresentation returned error: %v", err)
+	}
+	if created.Emoji != "🍜" || created.BgColor != "#FF8A65" {
+		t.Fatalf("presentation = %q/%q", created.Emoji, created.BgColor)
+	}
+}
+
+func TestUpdateForUserPreservesOmittedPresentation(t *testing.T) {
+	service, stub := newCategoryServiceStub()
+	userID := primitive.NewObjectID()
+	categoryID := primitive.NewObjectID()
+	stub.categories[categoryID] = model.CategoryEntity{
+		Id: categoryID, BelongsUserId: userID, Name: "Dining", Type: "expense",
+		Emoji: "🍜", BgColor: "#FF8A65",
+	}
+
+	updated, err := service.UpdateByIdForUserWithPresentation(categoryID.Hex(), "Restaurants", "", "", "", userID.Hex(), nil, nil)
+	if err != nil {
+		t.Fatalf("UpdateByIdForUserWithPresentation returned error: %v", err)
+	}
+	if updated.Emoji != "🍜" || updated.BgColor != "#FF8A65" {
+		t.Fatalf("presentation = %q/%q", updated.Emoji, updated.BgColor)
+	}
+}
+
+func TestUpdateForUserRejectsInvalidPresentation(t *testing.T) {
+	service, stub := newCategoryServiceStub()
+	userID := primitive.NewObjectID()
+	categoryID := primitive.NewObjectID()
+	stub.categories[categoryID] = model.CategoryEntity{
+		Id: categoryID, BelongsUserId: userID, Name: "Dining", Type: "expense",
+		Emoji: "🍜", BgColor: "#FF8A65",
+	}
+	invalid := "orange"
+
+	if _, err := service.UpdateByIdForUserWithPresentation(categoryID.Hex(), "", "", "", "", userID.Hex(), nil, &invalid); err == nil {
+		t.Fatal("expected invalid background color error")
+	}
+	if got := stub.categories[categoryID].BgColor; got != "#FF8A65" {
+		t.Fatalf("stored background color = %q", got)
+	}
+}
+
 func TestCreateForUserRejectsDuplicateUnderSameParent(t *testing.T) {
 	service, stub := newCategoryServiceStub()
 	userID := primitive.NewObjectID()

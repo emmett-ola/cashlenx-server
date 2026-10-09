@@ -212,6 +212,13 @@ func initializeBaseline(db *sql.DB, items []Migration) error {
 	if phoneNumberColumn == 1 {
 		baselineVersion = 15
 	}
+	var categoryPresentationColumns int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'categories' AND column_name IN ('emoji', 'bg_color')`).Scan(&categoryPresentationColumns); err != nil {
+		return err
+	}
+	if categoryPresentationColumns == 2 && phoneNumberColumn == 1 && budgetsTable == 1 && activeScopeColumn == 1 {
+		baselineVersion = 17
+	}
 	for _, item := range items {
 		if item.Version > baselineVersion {
 			continue

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/macar-x/cashlenx-server/migrations"
+	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/service/manage_service"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -38,6 +39,9 @@ func TestMongoMigrationHandlersIntegration(t *testing.T) {
 	if _, err := db.Collection("cash_flows").InsertOne(ctx, bson.M{"belongs_user_id": "existing", "is_delete": false}); err != nil {
 		t.Fatal(err)
 	}
+	if _, err := db.Collection("categories").InsertOne(ctx, bson.M{"name": "Food"}); err != nil {
+		t.Fatal(err)
+	}
 	if _, err := db.Collection("cash_flows").Indexes().CreateOne(ctx, mongo.IndexModel{
 		Keys: bson.D{{Key: "flow_type", Value: 1}}, Options: options.Index().SetName("flow_type_1"),
 	}); err != nil {
@@ -60,8 +64,8 @@ func TestMongoMigrationHandlersIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if applied != 3 || dirty != 0 {
-		t.Fatalf("applied=%d dirty=%d, want applied=3 dirty=0", applied, dirty)
+	if applied != 4 || dirty != 0 {
+		t.Fatalf("applied=%d dirty=%d, want applied=4 dirty=0", applied, dirty)
 	}
 
 	assertMongoIndex(t, ctx, db.Collection("cash_flows"), "cash_flows_user_date_index", true)
@@ -69,6 +73,26 @@ func TestMongoMigrationHandlersIntegration(t *testing.T) {
 	assertMongoIndex(t, ctx, db.Collection("categories"), "categories_active_scope_unique_index", true)
 	assertMongoIndex(t, ctx, db.Collection("operation_confirm_codes"), "verification_token_1", true)
 	assertMongoIndex(t, ctx, db.Collection("budgets"), "budgets_active_scope_unique_index", true)
+
+	var category struct {
+		Emoji   string `bson:"emoji"`
+		BgColor string `bson:"bg_color"`
+	}
+	if err := db.Collection("categories").FindOne(ctx, bson.M{"name": "Food"}).Decode(&category); err != nil {
+		t.Fatal(err)
+	}
+	if category.Emoji != model.DefaultCategoryEmoji || category.BgColor != model.DefaultCategoryBackgroundColor {
+		t.Fatalf("category presentation = %q/%q", category.Emoji, category.BgColor)
+	}
+	if _, err := db.Collection("categories").UpdateOne(ctx, bson.M{"name": "Food"}, bson.M{"$set": bson.M{"emoji": "🍜", "bg_color": "#FF8A65"}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Collection("categories").FindOne(ctx, bson.M{"name": "Food"}).Decode(&category); err != nil {
+		t.Fatal(err)
+	}
+	if category.Emoji != "🍜" || category.BgColor != "#FF8A65" {
+		t.Fatalf("updated category presentation = %q/%q", category.Emoji, category.BgColor)
+	}
 }
 
 func assertMongoIndex(t *testing.T, ctx context.Context, collection *mongo.Collection, name string, want bool) {

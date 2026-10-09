@@ -1,0 +1,5 @@
+SET NAMES utf8mb4;
+
+ALTER TABLE categories
+    ADD COLUMN emoji VARCHAR(64) NOT NULL DEFAULT '🙂' AFTER remark,
+    ADD COLUMN bg_color CHAR(7) NOT NULL DEFAULT '#E5E7EB' AFTER emoji;

@@ -9,6 +9,11 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+const (
+	DefaultCategoryEmoji           = "🙂"
+	DefaultCategoryBackgroundColor = "#E5E7EB"
+)
+
 type CategoryEntity struct {
 	Id            primitive.ObjectID `bson:"_id,omitempty"`
 	BelongsUserId primitive.ObjectID `json:"belongs_user_id" bson:"belongs_user_id"`
@@ -16,6 +21,8 @@ type CategoryEntity struct {
 	Name          string             `json:"name" bson:"name"`
 	Type          string             `json:"type" bson:"type"`
 	Remark        string             `json:"remark" bson:"remark"`
+	Emoji         string             `json:"emoji" bson:"emoji"`
+	BgColor       string             `json:"bg_color" bson:"bg_color"`
 	BaseEntity    `bson:",inline"`
 }
 
@@ -56,11 +63,13 @@ func (entity CategoryEntity) MarshalJSON() ([]byte, error) {
 // CategoryTree represents a category in a tree structure with string IDs
 // Used for API responses where ObjectID needs to be converted to string
 type CategoryTree struct {
-	Id       string          `json:"id"`
-	ParentId string          `json:"parent_id"`
-	Name     string          `json:"name"`
-	Type     string          `json:"type"`
-	Children []CategoryTree  `json:"children"`
+	Id       string         `json:"id"`
+	ParentId string         `json:"parent_id"`
+	Name     string         `json:"name"`
+	Type     string         `json:"type"`
+	Emoji    string         `json:"emoji"`
+	BgColor  string         `json:"bg_color"`
+	Children []CategoryTree `json:"children"`
 }
 
 // CategoryTreeNode represents a category in a tree structure with its children

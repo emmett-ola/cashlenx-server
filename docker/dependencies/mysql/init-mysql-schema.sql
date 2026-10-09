@@ -1,5 +1,7 @@
 -- Legacy MySQL initialization script for CashLenX - SCHEMA ONLY
 -- This script creates tables with basic default categories
+
+SET NAMES utf8mb4;
 -- Demo/test data is available in init-mysql-demo.sql (import manually via CLI: cashlenx manage import)
 
 USE cashlenx;
@@ -129,6 +131,8 @@ CREATE TABLE `categories`
     `name`            VARCHAR(200) NOT NULL,
     `type`            VARCHAR(10)   NOT NULL,
     `remark`          VARCHAR(200)          DEFAULT NULL,
+    `emoji`           VARCHAR(64)   NOT NULL DEFAULT '🙂',
+    `bg_color`        CHAR(7)       NOT NULL DEFAULT '#E5E7EB',
     `create_user_id`  VARCHAR(24)  NOT NULL,
     `create_time`     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP(),
     `update_user_id`  VARCHAR(24)  NOT NULL,

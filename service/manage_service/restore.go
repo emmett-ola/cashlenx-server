@@ -256,6 +256,7 @@ func adminRestoreDatabaseOnce(filePath string, progress ProgressFunc) (Operation
 		}
 
 		isDelete, _ := catMap["is_delete"].(bool)
+		emoji, bgColor := categoryPresentationFromMap(catMap)
 
 		// Create category entity from backup data, preserving all original fields
 		catEntity := model.CategoryEntity{
@@ -265,6 +266,8 @@ func adminRestoreDatabaseOnce(filePath string, progress ProgressFunc) (Operation
 			Name:          catMap["name"].(string),
 			Type:          categoryType,
 			Remark:        catMap["remark"].(string),
+			Emoji:         emoji,
+			BgColor:       bgColor,
 			BaseEntity: model.BaseEntity{
 				CreateTime:   createTime,
 				UpdateTime:   updateTime,
@@ -518,6 +521,7 @@ func UserImportDataWithProgress(userId string, filePath string, progress Progres
 
 		// Get Type with fallback for old backups
 		categoryType, _ := catMap["type"].(string)
+		emoji, bgColor := categoryPresentationFromMap(catMap)
 
 		// Parse BaseEntity fields
 		var createUserId primitive.ObjectID
@@ -542,6 +546,8 @@ func UserImportDataWithProgress(userId string, filePath string, progress Progres
 			Name:          catMap["name"].(string),
 			Type:          categoryType,
 			Remark:        catMap["remark"].(string),
+			Emoji:         emoji,
+			BgColor:       bgColor,
 			BaseEntity: model.BaseEntity{
 				CreateTime:   createTime,
 				UpdateTime:   updateTime,
@@ -738,4 +744,16 @@ func parseOptionalTimeFromMap(data map[string]interface{}, key string) *time.Tim
 		return &parsed
 	}
 	return nil
+}
+
+func categoryPresentationFromMap(data map[string]interface{}) (string, string) {
+	emoji, _ := data["emoji"].(string)
+	if emoji == "" {
+		emoji = model.DefaultCategoryEmoji
+	}
+	bgColor, _ := data["bg_color"].(string)
+	if bgColor == "" {
+		bgColor = model.DefaultCategoryBackgroundColor
+	}
+	return emoji, bgColor
 }

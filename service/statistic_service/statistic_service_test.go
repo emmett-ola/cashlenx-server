@@ -207,6 +207,39 @@ func TestStatisticServiceGetSummaryForUserAggregatesByCategoryType(t *testing.T)
 	}
 }
 
+func TestStatisticServiceGetMonthlyComparisonReturnsTwelveOrderedMonths(t *testing.T) {
+	userID := primitive.NewObjectID()
+	incomeCategoryID := primitive.NewObjectID()
+	expenseCategoryID := primitive.NewObjectID()
+	service := NewStatisticService(
+		&statisticCashFlowMapperFake{flows: []model.CashFlowEntity{
+			{Id: primitive.NewObjectID(), BelongsUserId: userID, CategoryId: incomeCategoryID, BelongsDate: time.Date(2026, time.October, 1, 0, 0, 0, 0, time.UTC), Amount: 1200},
+			{Id: primitive.NewObjectID(), BelongsUserId: userID, CategoryId: expenseCategoryID, BelongsDate: time.Date(2026, time.October, 2, 0, 0, 0, 0, time.UTC), Amount: 300},
+		}},
+		&statisticCategoryMapperFake{categories: map[primitive.ObjectID]model.CategoryEntity{
+			incomeCategoryID:  {Id: incomeCategoryID, BelongsUserId: userID, Type: model.FlowTypeIncome},
+			expenseCategoryID: {Id: expenseCategoryID, BelongsUserId: userID, Type: model.FlowTypeExpense},
+		}},
+	)
+
+	comparison, err := service.GetMonthlyComparisonForUser("2026", userID.Hex())
+	if err != nil {
+		t.Fatalf("GetMonthlyComparisonForUser returned error: %v", err)
+	}
+	if len(comparison.Months) != 12 || len(comparison.Income) != 12 || len(comparison.Expense) != 12 || len(comparison.Balance) != 12 {
+		t.Fatalf("comparison lengths = %d/%d/%d/%d", len(comparison.Months), len(comparison.Income), len(comparison.Expense), len(comparison.Balance))
+	}
+	if comparison.Months[0] != "Jan" || comparison.Months[9] != "Oct" || comparison.Months[11] != "Dec" {
+		t.Fatalf("months = %v", comparison.Months)
+	}
+	if comparison.Income[0] != 0 || comparison.Expense[0] != 0 {
+		t.Fatalf("January should be zero: %.2f/%.2f", comparison.Income[0], comparison.Expense[0])
+	}
+	if comparison.Income[9] != 1200 || comparison.Expense[9] != 300 || comparison.Balance[9] != 900 {
+		t.Fatalf("October = %.2f/%.2f/%.2f", comparison.Income[9], comparison.Expense[9], comparison.Balance[9])
+	}
+}
+
 type statisticCashFlowMapperFake struct {
 	flows []model.CashFlowEntity
 }

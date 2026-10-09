@@ -10,7 +10,7 @@ func TestLoadMongoMigrationsInVersionOrder(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(items) != 3 || items[0].Version != 1 || items[1].Version != 10 || items[2].Version != 16 {
+	if len(items) != 4 || items[0].Version != 1 || items[1].Version != 10 || items[2].Version != 16 || items[3].Version != 17 {
 		t.Fatalf("unexpected MongoDB migration sequence: %#v", items)
 	}
 	for _, item := range items {

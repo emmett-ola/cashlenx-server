@@ -17,10 +17,32 @@ func CreateForUser(name, categoryType, remark string, parentId string, userId st
 }
 
 func (s *CategoryService) CreateForUser(name, categoryType, remark string, parentId string, userId string) (model.CategoryEntity, error) {
+	return s.CreateForUserWithPresentation(name, categoryType, remark, parentId, userId, "", "")
+}
+
+// CreateForUserWithPresentation creates a category with persisted visual fields.
+func CreateForUserWithPresentation(name, categoryType, remark, parentId, userId, emoji, bgColor string) (model.CategoryEntity, error) {
+	return defaultCategoryService().CreateForUserWithPresentation(name, categoryType, remark, parentId, userId, emoji, bgColor)
+}
+
+func (s *CategoryService) CreateForUserWithPresentation(name, categoryType, remark, parentId, userId, emoji, bgColor string) (model.CategoryEntity, error) {
 	// Validate required fields
 	if err := validation.ValidateCategoryName(name); err != nil {
 		return model.CategoryEntity{}, err
 	}
+	if emoji == "" {
+		emoji = model.DefaultCategoryEmoji
+	}
+	if err := validation.ValidateCategoryEmoji(emoji); err != nil {
+		return model.CategoryEntity{}, err
+	}
+	if bgColor == "" {
+		bgColor = model.DefaultCategoryBackgroundColor
+	}
+	if err := validation.ValidateCategoryBackgroundColor(bgColor); err != nil {
+		return model.CategoryEntity{}, err
+	}
+	bgColor = strings.ToUpper(bgColor)
 
 	// Normalize and validate category type
 	categoryType = strings.ToLower(categoryType)
@@ -57,6 +79,8 @@ func (s *CategoryService) CreateForUser(name, categoryType, remark string, paren
 		Name:          name,
 		Type:          categoryType,
 		Remark:        remark,
+		Emoji:         emoji,
+		BgColor:       bgColor,
 		BaseEntity: model.BaseEntity{
 			CreateUserId: userObjectId,
 			CreateTime:   time.Now().UTC(),

@@ -1,6 +1,6 @@
 # CashLenX API Notes
 
-**Version**: 1.0.3
+**Version**: 1.0.4
 **Last Updated**: 2026-10-09
 
 This document is a human-readable companion to `docs/openapi.yaml`. The OpenAPI file is the detailed API contract and is used by schema validation when enabled.
@@ -130,6 +130,11 @@ Category:
 - `PUT /category/{id}`
 - `DELETE /category/{id}`
 
+Category create and update requests accept additive `emoji` and `bg_color`
+presentation fields. Both values persist per user in MongoDB and MySQL. Updates
+that omit either field preserve its stored value; existing records use `🙂` and
+`#E5E7EB` defaults.
+
 Budget:
 
 - `POST /budget`
@@ -163,6 +168,10 @@ Statistic, dashboard, chart, and import/export:
 - `GET /statistic/chart/category-distribution/{period}/{date}`
 - `GET /statistic/chart/monthly-comparison/{year}`
 - `GET /statistic/chart/spending-heatmap/{year}`
+
+Monthly comparison returns January through December in order with 12 income,
+expense, and balance values. Months without transactions remain present as
+zeroes.
 
 ## Request Examples
 

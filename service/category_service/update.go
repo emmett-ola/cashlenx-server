@@ -17,6 +17,15 @@ func UpdateByIdForUser(plainId, name, categoryType, remark string, parentId stri
 }
 
 func (s *CategoryService) UpdateByIdForUser(plainId, name, categoryType, remark string, parentId string, userId string) (model.CategoryEntity, error) {
+	return s.UpdateByIdForUserWithPresentation(plainId, name, categoryType, remark, parentId, userId, nil, nil)
+}
+
+// UpdateByIdForUserWithPresentation preserves omitted presentation fields.
+func UpdateByIdForUserWithPresentation(plainId, name, categoryType, remark, parentId, userId string, emoji, bgColor *string) (model.CategoryEntity, error) {
+	return defaultCategoryService().UpdateByIdForUserWithPresentation(plainId, name, categoryType, remark, parentId, userId, emoji, bgColor)
+}
+
+func (s *CategoryService) UpdateByIdForUserWithPresentation(plainId, name, categoryType, remark, parentId, userId string, emoji, bgColor *string) (model.CategoryEntity, error) {
 	// Validate ID
 	if err := validation.ValidateID(plainId); err != nil {
 		return model.CategoryEntity{}, err
@@ -38,6 +47,16 @@ func (s *CategoryService) UpdateByIdForUser(plainId, name, categoryType, remark 
 	if categoryType != "" {
 		categoryType = strings.ToLower(categoryType)
 		if err := validation.ValidateFlowType(categoryType); err != nil {
+			return model.CategoryEntity{}, err
+		}
+	}
+	if emoji != nil {
+		if err := validation.ValidateCategoryEmoji(*emoji); err != nil {
+			return model.CategoryEntity{}, err
+		}
+	}
+	if bgColor != nil {
+		if err := validation.ValidateCategoryBackgroundColor(*bgColor); err != nil {
 			return model.CategoryEntity{}, err
 		}
 	}
@@ -76,6 +95,12 @@ func (s *CategoryService) UpdateByIdForUser(plainId, name, categoryType, remark 
 
 	if remark != "" {
 		existingEntity.Remark = remark
+	}
+	if emoji != nil {
+		existingEntity.Emoji = *emoji
+	}
+	if bgColor != nil {
+		existingEntity.BgColor = strings.ToUpper(*bgColor)
 	}
 
 	if parentId != "" {
