@@ -1,4 +1,4 @@
 package model
 
 const ProjectName = "CashLenX"
-const Version = "1.0.0-rc.1"
+const Version = "1.0.3"

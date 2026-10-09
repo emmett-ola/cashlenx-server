@@ -1,7 +1,7 @@
 # CashLenX CLI Reference
 
-**Version**: 1.0.0-rc.1
-**Last Updated**: 2026-09-16
+**Version**: 1.0.3
+**Last Updated**: 2026-10-09
 
 The CashLenX CLI is implemented with Cobra and starts from `main.go -> cmd.Execute()`. The current executable name is `cashlenx` when built, or `go run main.go` during local development.
 
@@ -245,7 +245,7 @@ Build with explicit version metadata:
 
 ```bash
 go build -ldflags "\
-  -X github.com/macar-x/cashlenx-server/cmd/open_cmd.Version=1.0.0-rc.1 \
+  -X github.com/macar-x/cashlenx-server/cmd/open_cmd.Version=1.0.3 \
   -X github.com/macar-x/cashlenx-server/cmd/open_cmd.BuildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
   -X github.com/macar-x/cashlenx-server/cmd/open_cmd.GitCommit=$(git rev-parse --short HEAD)" \
   -o cashlenx main.go

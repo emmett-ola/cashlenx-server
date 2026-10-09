@@ -1,7 +1,7 @@
 # CashLenX API Notes
 
-**Version**: 1.0.0-rc.1
-**Last Updated**: 2026-09-16
+**Version**: 1.0.3
+**Last Updated**: 2026-10-09
 
 This document is a human-readable companion to `docs/openapi.yaml`. The OpenAPI file is the detailed API contract and is used by schema validation when enabled.
 

@@ -5,7 +5,13 @@ released contracts and operational behavior separately from deployment state.
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-10-09
+
 ### Changed
+
+- Aligned the Server runtime and OpenAPI version with the coordinated CashLenX
+  1.0.3 brand release. This release introduces no Server behavior, API, schema,
+  migration, or database change.
 
 - Upgraded CI and the Server toolchain to Go 1.27.1, refreshed the locked
   module graph within the existing public module APIs, and advanced the
