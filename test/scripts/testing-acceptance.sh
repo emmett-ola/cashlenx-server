@@ -219,7 +219,7 @@ write_json \
   "emoji=${CATEGORY_EMOJI}" \
   "bg_color=${CATEGORY_BG_COLOR}"
 request POST "/category" 201 true "$REQUEST_FILE"
-CATEGORY_ID="$(json_value data.id)"
+CATEGORY_ID="$(json_value data.id 2>/dev/null || json_value data.Id)"
 [[ -n "$CATEGORY_ID" ]] || {
   echo "category response did not include an id" >&2
   exit 1
