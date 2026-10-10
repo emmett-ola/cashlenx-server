@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: CashLenX API
   description: Personal finance management API
-  version: 1.0.6
+  version: 1.0.7
   contact:
     name: CashLenX Team
     email: support@cashlenx.com
@@ -214,11 +214,21 @@ paths:
   /user/configuration:
     get:
       summary: Get current user configuration profile
+      description: Returns account-backed preferences and an additive setup_completed signal. The signal is false when no configuration record exists, even though default preference values are returned.
       operationId: getUserConfiguration
       tags: [User]
       responses:
         '200':
-          $ref: '#/components/responses/WrappedResponse'
+          description: Wrapped user configuration response
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResponseWrapper'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserConfigurationResponse'
         '401':
           $ref: '#/components/responses/WrappedResponse'
     post:
@@ -1473,6 +1483,16 @@ components:
           minLength: 1
           maxLength: 50
           example: '#2563eb'
+
+    UserConfigurationResponse:
+      allOf:
+        - $ref: '#/components/schemas/UserConfigurationRequest'
+        - type: object
+          properties:
+            setup_completed:
+              type: boolean
+              description: True when an account-backed configuration record exists. This distinguishes an explicit USD/default-looking choice from an unconfigured account.
+          required: [display_language, currency_code, active_theme_color, setup_completed]
 
     UserChangePasswordRequest:
       type: object

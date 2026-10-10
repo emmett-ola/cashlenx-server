@@ -287,6 +287,9 @@ func TestUserControllerServiceDelegationPaths(t *testing.T) {
 	if configGetRec.Code != http.StatusOK {
 		t.Fatalf("config get status = %d, want %d; body=%s", configGetRec.Code, http.StatusOK, configGetRec.Body.String())
 	}
+	if !strings.Contains(configGetRec.Body.String(), `"setup_completed":true`) {
+		t.Fatalf("config get response missing completed setup signal: %s", configGetRec.Body.String())
+	}
 
 	configUpsertReq := httptest.NewRequest(http.MethodPost, "/user/configuration", strings.NewReader(`{"display_language":"en-US","currency_code":"USD","active_theme_color":"blue"}`))
 	configUpsertReq = configUpsertReq.WithContext(context.WithValue(configUpsertReq.Context(), "user_id", userID.Hex()))
@@ -342,6 +345,7 @@ func testUserControllerConfig(userID primitive.ObjectID) model.UserConfiguration
 		DisplayLanguage:  "en-US",
 		CurrencyCode:     "USD",
 		ActiveThemeColor: "blue",
+		SetupCompleted:   true,
 	}
 }
 

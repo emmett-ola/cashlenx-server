@@ -5,6 +5,14 @@ released contracts and operational behavior separately from deployment state.
 
 ## [Unreleased]
 
+## [1.0.7] - 2026-10-10
+
+### Added
+
+- Added the compatible `setup_completed` user-configuration response field so
+  clients can distinguish an explicit default-looking preference from an
+  account with no persisted configuration record.
+
 ## [1.0.6] - 2026-10-10
 
 ### Fixed

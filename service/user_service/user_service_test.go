@@ -331,6 +331,9 @@ func TestUserConfigurationServiceReturnsDefaultAndUpserts(t *testing.T) {
 	if defaultConfig.CurrencyCode != model.DefaultCurrencyCode {
 		t.Fatalf("CurrencyCode = %q, want %q", defaultConfig.CurrencyCode, model.DefaultCurrencyCode)
 	}
+	if defaultConfig.SetupCompleted {
+		t.Fatal("default configuration must not report setup as completed")
+	}
 
 	language := "zh-CN"
 	currency := "hkd"
@@ -349,6 +352,9 @@ func TestUserConfigurationServiceReturnsDefaultAndUpserts(t *testing.T) {
 	if created.BelongsUserId != userID || created.CreateUserId != userID || created.UpdateUserId != userID {
 		t.Fatalf("expected audit/user ids to point to current user: %#v", created)
 	}
+	if !created.SetupCompleted {
+		t.Fatal("created configuration must report setup as completed")
+	}
 
 	newThemeColor := "#0f172a"
 	updated, err := UpsertConfigurationService(userID.Hex(), model.UserConfigurationRequest{
@@ -359,6 +365,17 @@ func TestUserConfigurationServiceReturnsDefaultAndUpserts(t *testing.T) {
 	}
 	if updated.DisplayLanguage != language || updated.CurrencyCode != "HKD" || updated.ActiveThemeColor != newThemeColor {
 		t.Fatalf("updated config = %#v", updated)
+	}
+	if !updated.SetupCompleted {
+		t.Fatal("persisted configuration must report setup as completed")
+	}
+
+	persisted, err := GetConfigurationService(userID.Hex())
+	if err != nil {
+		t.Fatalf("GetConfigurationService after upsert returned error: %v", err)
+	}
+	if !persisted.SetupCompleted {
+		t.Fatal("existing configuration must report setup as completed")
 	}
 }
 

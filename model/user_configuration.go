@@ -15,6 +15,7 @@ type UserConfigurationEntity struct {
 	DisplayLanguage  string             `json:"display_language" bson:"display_language"`
 	CurrencyCode     string             `json:"currency_code" bson:"currency_code"`
 	ActiveThemeColor string             `json:"active_theme_color" bson:"active_theme_color"`
+	SetupCompleted   bool               `json:"setup_completed" bson:"-"`
 	BaseEntity       `bson:",inline"`
 }
 

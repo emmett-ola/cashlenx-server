@@ -25,6 +25,7 @@ func GetConfigurationService(plainUserId string) (model.UserConfigurationEntity,
 	if config.Id.IsZero() {
 		return model.DefaultUserConfiguration(user.Id), nil
 	}
+	config.SetupCompleted = true
 
 	return config, nil
 }
@@ -56,6 +57,7 @@ func UpsertConfigurationService(plainUserId string, requestBody model.UserConfig
 		if insertedId == "" {
 			return model.UserConfigurationEntity{}, errors.NewInternalError("failed to create user configuration", nil)
 		}
+		config.SetupCompleted = true
 		return config, nil
 	}
 
@@ -63,6 +65,7 @@ func UpsertConfigurationService(plainUserId string, requestBody model.UserConfig
 	if updatedConfig.Id.IsZero() {
 		return model.UserConfigurationEntity{}, errors.NewInternalError("failed to update user configuration", nil)
 	}
+	updatedConfig.SetupCompleted = true
 
 	return updatedConfig, nil
 }
