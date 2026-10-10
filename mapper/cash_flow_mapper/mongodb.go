@@ -176,7 +176,7 @@ func (CashFlowMongoDbMapper) DeleteCashFlowByObjectId(plainId string) model.Cash
 		util.Logger.Infoln("cash_flow is not exist")
 		return model.CashFlowEntity{}
 	}
-	
+
 	// Soft delete: Update is_delete to true
 	update := bson.D{
 		primitive.E{Key: "is_delete", Value: true},
@@ -189,7 +189,7 @@ func (CashFlowMongoDbMapper) DeleteCashFlowByObjectId(plainId string) model.Cash
 		util.Logger.Errorw("delete failed", "rows_affected", rowsAffected)
 		return model.CashFlowEntity{}
 	}
-	
+
 	targetEntity.IsDelete = true
 	now := time.Now().UTC()
 	targetEntity.DeleteTime = &now
@@ -221,7 +221,7 @@ func (CashFlowMongoDbMapper) DeleteCashFlowByBelongsDate(belongsDate time.Time) 
 		// fixme: maybe we should have a rollback here.
 		util.Logger.Errorw("delete failed", "rows_affected", rowsAffected)
 	}
-	
+
 	now := time.Now().UTC()
 	for i := range cashFlowList {
 		cashFlowList[i].IsDelete = true
@@ -428,7 +428,7 @@ func (CashFlowMongoDbMapper) DeleteCashFlowByObjectIdAndUser(plainId string, use
 		util.Logger.Errorw("delete failed", "rows_affected", rowsAffected)
 		return model.CashFlowEntity{}
 	}
-	
+
 	targetEntity.IsDelete = true
 	targetEntity.DeleteTime = &now
 	targetEntity.DeleteUserId = &userId
@@ -540,8 +540,13 @@ func (CashFlowMongoDbMapper) GetCashFlowsByFilter(filter model.CashFlowFilter) (
 	if filter.Offset > 0 {
 		findOptions.SetSkip(int64(filter.Offset))
 	}
-	// Sort by belongs_date desc
-	findOptions.SetSort(bson.D{primitive.E{Key: "belongs_date", Value: -1}})
+	// Keep pagination stable by sorting on the business date first, followed by
+	// creation time and the immutable identifier for exact timestamp ties.
+	findOptions.SetSort(bson.D{
+		primitive.E{Key: "belongs_date", Value: -1},
+		primitive.E{Key: "create_time", Value: -1},
+		primitive.E{Key: "_id", Value: -1},
+	})
 
 	collection := database.GetMongoCollection(database.CashFlowTableName)
 	cursor, err := collection.Find(context.TODO(), queryFilter, findOptions)
@@ -697,8 +702,8 @@ func convertBsonM2CashFlowEntity(bsonM bson.M) model.CashFlowEntity {
 		util.Logger.Errorln(err)
 		panic(err)
 	}
-	
+
 	// Ensure BaseEntity fields are correctly mapped if not handled by bson tags
-	
+
 	return newEntity
 }

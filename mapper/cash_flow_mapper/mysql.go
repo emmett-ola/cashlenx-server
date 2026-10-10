@@ -802,8 +802,8 @@ func (CashFlowMySqlMapper) GetCashFlowsByFilter(filter model.CashFlowFilter) ([]
 		args = append(args, util.FormatDateToStringWithDash(filter.ToDate))
 	}
 
-	// Order by belongs_date desc
-	sqlString.WriteString(" ORDER BY BELONGS_DATE DESC ")
+	// Keep pagination stable by sorting on business date, creation time, and ID.
+	sqlString.WriteString(" ORDER BY BELONGS_DATE DESC, CREATE_TIME DESC, ID DESC ")
 
 	if filter.Limit > 0 {
 		sqlString.WriteString(" LIMIT ? OFFSET ? ")

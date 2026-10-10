@@ -1,6 +1,7 @@
 package cash_flow_service
 
 import (
+	"sort"
 	"testing"
 	"time"
 
@@ -97,6 +98,54 @@ func TestCashFlowServiceQueryAllForUserEnrichesAndFiltersByType(t *testing.T) {
 	}
 	if results[0].CategoryName != "Food" || results[0].CategoryType != model.FlowTypeExpense {
 		t.Fatalf("category enrichment = %q/%q", results[0].CategoryName, results[0].CategoryType)
+	}
+}
+
+func TestCashFlowServiceQueryAllForUserUsesStableBusinessDateOrder(t *testing.T) {
+	cashMapper := newCashFlowMapperFake()
+	categoryMapper := newCashFlowCategoryMapperFake()
+	userID := primitive.NewObjectID()
+	categoryID := primitive.NewObjectID()
+	categoryMapper.categories[categoryID] = model.CategoryEntity{
+		Id:            categoryID,
+		BelongsUserId: userID,
+		Name:          "Food",
+		Type:          model.FlowTypeExpense,
+	}
+	day := time.Date(2026, 10, 10, 0, 0, 0, 0, time.UTC)
+	olderID := primitive.NewObjectID()
+	newerID := primitive.NewObjectID()
+	previousDayID := primitive.NewObjectID()
+	cashMapper.flows[olderID.Hex()] = model.CashFlowEntity{
+		Id: olderID, BelongsUserId: userID, CategoryId: categoryID,
+		BelongsDate: day, BaseEntity: model.BaseEntity{CreateTime: day.Add(time.Hour)},
+	}
+	cashMapper.flows[newerID.Hex()] = model.CashFlowEntity{
+		Id: newerID, BelongsUserId: userID, CategoryId: categoryID,
+		BelongsDate: day, BaseEntity: model.BaseEntity{CreateTime: day.Add(2 * time.Hour)},
+	}
+	cashMapper.flows[previousDayID.Hex()] = model.CashFlowEntity{
+		Id: previousDayID, BelongsUserId: userID, CategoryId: categoryID,
+		BelongsDate: day.AddDate(0, 0, -1), BaseEntity: model.BaseEntity{CreateTime: day.Add(3 * time.Hour)},
+	}
+
+	service := NewCashFlowService(cashMapper, categoryMapper)
+	firstPage, total, err := service.QueryAllForUser(userID.Hex(), "", "", "", "", "", "", 2, 0)
+	if err != nil {
+		t.Fatalf("QueryAllForUser returned error: %v", err)
+	}
+	if total != 3 {
+		t.Fatalf("total = %d, want 3", total)
+	}
+	if len(firstPage) != 2 || firstPage[0].Id != newerID || firstPage[1].Id != olderID {
+		t.Fatalf("first page order = %#v, want newer same-day flow before older flow", firstPage)
+	}
+	secondPage, _, err := service.QueryAllForUser(userID.Hex(), "", "", "", "", "", "", 2, 2)
+	if err != nil {
+		t.Fatalf("second QueryAllForUser returned error: %v", err)
+	}
+	if len(secondPage) != 1 || secondPage[0].Id != previousDayID {
+		t.Fatalf("second page = %#v, want previous-day flow", secondPage)
 	}
 }
 
@@ -397,6 +446,15 @@ func (fake *cashFlowMapperFake) GetCashFlowsByFilter(filter model.CashFlowFilter
 		}
 		flows = append(flows, flow)
 	}
+	sort.Slice(flows, func(i, j int) bool {
+		if !flows[i].BelongsDate.Equal(flows[j].BelongsDate) {
+			return flows[i].BelongsDate.After(flows[j].BelongsDate)
+		}
+		if !flows[i].CreateTime.Equal(flows[j].CreateTime) {
+			return flows[i].CreateTime.After(flows[j].CreateTime)
+		}
+		return flows[i].Id.Hex() > flows[j].Id.Hex()
+	})
 	return pageCashFlows(flows, filter.Limit, filter.Offset), nil
 }
 
