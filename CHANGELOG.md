@@ -5,6 +5,17 @@ released contracts and operational behavior separately from deployment state.
 
 ## [Unreleased]
 
+## [1.0.6] - 2026-10-10
+
+### Fixed
+
+- Stabilized cash-flow ordering by business date and creation time across
+  MongoDB and MySQL.
+- Returned the current category name, emoji, color, and type for existing cash
+  flows while preserving deleted-category fallbacks.
+- Applied cash-flow type, category, date, and description filters before total
+  counts and pagination.
+
 ## [1.0.5] - 2026-10-10
 
 ### Fixed
