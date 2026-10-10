@@ -89,13 +89,7 @@ func (s *CashFlowService) UpdateById(plainId, belongsDate, categoryName string, 
 	}
 
 	// Populate category info
-	category := s.categoryMapper.GetCategoryByObjectId(updatedEntity.CategoryId.Hex())
-	if !category.IsEmpty() {
-		updatedEntity.CategoryName = category.Name
-		updatedEntity.CategoryType = category.Type
-	} else {
-		updatedEntity.CategoryName = "Unknown"
-	}
+	s.enrichCategoryInfo(&updatedEntity)
 
 	return updatedEntity, nil
 }
@@ -185,13 +179,7 @@ func (s *CashFlowService) UpdateByIdForUser(plainId, belongsDate, categoryName s
 	}
 
 	// Populate category info
-	category := s.categoryMapper.GetCategoryByObjectId(updatedEntity.CategoryId.Hex())
-	if !category.IsEmpty() {
-		updatedEntity.CategoryName = category.Name
-		updatedEntity.CategoryType = category.Type
-	} else {
-		updatedEntity.CategoryName = "Unknown"
-	}
+	s.enrichCategoryInfo(&updatedEntity)
 
 	return updatedEntity, nil
 }

@@ -63,13 +63,7 @@ func (s *CashFlowService) QueryById(plainId string) (model.CashFlowEntity, error
 	}
 
 	// Populate category info
-	category := s.categoryMapper.GetCategoryByObjectId(cashFlowEntity.CategoryId.Hex())
-	if !category.IsEmpty() {
-		cashFlowEntity.CategoryName = category.Name
-		cashFlowEntity.CategoryType = category.Type
-	} else {
-		cashFlowEntity.CategoryName = "Unknown"
-	}
+	s.enrichCategoryInfo(&cashFlowEntity)
 
 	return cashFlowEntity, nil
 }
@@ -180,13 +174,7 @@ func (s *CashFlowService) QueryByIdForUser(plainId string, userId string) (model
 	}
 
 	// Populate category info
-	category := s.categoryMapper.GetCategoryByObjectId(cashFlowEntity.CategoryId.Hex())
-	if !category.IsEmpty() {
-		cashFlowEntity.CategoryName = category.Name
-		cashFlowEntity.CategoryType = category.Type
-	} else {
-		cashFlowEntity.CategoryName = "Unknown"
-	}
+	s.enrichCategoryInfo(&cashFlowEntity)
 
 	return cashFlowEntity, nil
 }
@@ -307,12 +295,6 @@ func populateCategoryInfo(cashFlowList []model.CashFlowEntity) {
 func (s *CashFlowService) populateCategoryInfo(cashFlowList []model.CashFlowEntity) {
 	for i := range cashFlowList {
 		entity := &cashFlowList[i]
-		category := s.categoryMapper.GetCategoryByObjectId(entity.CategoryId.Hex())
-		if !category.IsEmpty() {
-			entity.CategoryName = category.Name
-			entity.CategoryType = category.Type
-		} else {
-			entity.CategoryName = "Unknown"
-		}
+		s.enrichCategoryInfo(entity)
 	}
 }

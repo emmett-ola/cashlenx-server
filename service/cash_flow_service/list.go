@@ -62,13 +62,7 @@ func (s *CashFlowService) QueryAll(
 	for i := range cashFlows {
 		entity := cashFlows[i]
 
-		category := s.categoryMapper.GetCategoryByObjectId(entity.CategoryId.Hex())
-		if !category.IsEmpty() {
-			entity.CategoryName = category.Name
-			entity.CategoryType = category.Type
-		} else {
-			entity.CategoryName = "Unknown"
-		}
+		s.enrichCategoryInfo(&entity)
 
 		match := true
 
@@ -197,13 +191,7 @@ func (s *CashFlowService) enrichAndFilterByType(cashFlows []model.CashFlowEntity
 	for i := range cashFlows {
 		entity := cashFlows[i]
 
-		category := s.categoryMapper.GetCategoryByObjectId(entity.CategoryId.Hex())
-		if !category.IsEmpty() {
-			entity.CategoryName = category.Name
-			entity.CategoryType = category.Type
-		} else {
-			entity.CategoryName = "Unknown"
-		}
+		s.enrichCategoryInfo(&entity)
 
 		if cashType != "" && !strings.EqualFold(entity.CategoryType, cashType) {
 			continue

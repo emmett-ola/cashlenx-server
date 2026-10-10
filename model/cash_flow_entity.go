@@ -18,12 +18,14 @@ type CashFlowEntity struct {
 	CategoryId    primitive.ObjectID `json:"category_id" bson:"category_id"`
 	BelongsDate   time.Time          `json:"belongs_date" bson:"belongs_date"`
 	// FlowType    string             `json:"flow_type" bson:"flow_type"` // Deprecated: Use CategoryType instead
-	CategoryName string  `json:"category_name" bson:"-"`
-	CategoryType string  `json:"category_type" bson:"-"`
-	Amount       float64 `json:"amount" bson:"amount"`
-	Description  string  `json:"description" bson:"description"`
-	Remark       string  `json:"remark" bson:"remark"`
-	BaseEntity   `bson:",inline"`
+	CategoryName    string  `json:"category_name" bson:"-"`
+	CategoryType    string  `json:"category_type" bson:"-"`
+	CategoryEmoji   string  `json:"category_emoji" bson:"-"`
+	CategoryBgColor string  `json:"category_bg_color" bson:"-"`
+	Amount          float64 `json:"amount" bson:"amount"`
+	Description     string  `json:"description" bson:"description"`
+	Remark          string  `json:"remark" bson:"remark"`
+	BaseEntity      `bson:",inline"`
 }
 
 // CashFlowFilter defines filters for querying cash flows

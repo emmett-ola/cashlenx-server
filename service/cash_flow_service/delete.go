@@ -103,13 +103,7 @@ func (s *CashFlowService) DeleteByIdForUser(plainId string, userId string) (mode
 	}
 
 	// Populate category info for return value
-	category := s.categoryMapper.GetCategoryByObjectId(deletedEntity.CategoryId.Hex())
-	if !category.IsEmpty() {
-		deletedEntity.CategoryName = category.Name
-		deletedEntity.CategoryType = category.Type
-	} else {
-		deletedEntity.CategoryName = "Unknown"
-	}
+	s.enrichCategoryInfo(&deletedEntity)
 
 	return deletedEntity, nil
 }
@@ -142,13 +136,7 @@ func (s *CashFlowService) DeleteByDateForUser(belongsDate string, userId string)
 	// Populate category info for each deleted item
 	for i := range cashFlowList {
 		entity := &cashFlowList[i]
-		category := s.categoryMapper.GetCategoryByObjectId(entity.CategoryId.Hex())
-		if !category.IsEmpty() {
-			entity.CategoryName = category.Name
-			entity.CategoryType = category.Type
-		} else {
-			entity.CategoryName = "Unknown"
-		}
+		s.enrichCategoryInfo(entity)
 	}
 
 	return cashFlowList, nil

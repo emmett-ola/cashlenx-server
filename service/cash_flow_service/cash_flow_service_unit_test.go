@@ -19,6 +19,8 @@ func TestCashFlowServiceSaveExpenseCreatesAndEnrichesFlow(t *testing.T) {
 		BelongsUserId: userID,
 		Name:          "Food",
 		Type:          model.FlowTypeExpense,
+		Emoji:         "🍜",
+		BgColor:       "#FF8A65",
 	}
 	service := NewCashFlowService(cashMapper, categoryMapper)
 
@@ -32,6 +34,9 @@ func TestCashFlowServiceSaveExpenseCreatesAndEnrichesFlow(t *testing.T) {
 	}
 	if created.CategoryName != "Food" || created.CategoryType != model.FlowTypeExpense {
 		t.Fatalf("category enrichment = %q/%q", created.CategoryName, created.CategoryType)
+	}
+	if created.CategoryEmoji != "🍜" || created.CategoryBgColor != "#FF8A65" {
+		t.Fatalf("category presentation = %q/%q", created.CategoryEmoji, created.CategoryBgColor)
 	}
 	if created.BelongsUserId != userID {
 		t.Fatalf("BelongsUserId = %s, want %s", created.BelongsUserId.Hex(), userID.Hex())
@@ -66,7 +71,7 @@ func TestCashFlowServiceQueryAllForUserEnrichesAndFiltersByType(t *testing.T) {
 	userID := primitive.NewObjectID()
 	foodID := primitive.NewObjectID()
 	salaryID := primitive.NewObjectID()
-	categoryMapper.categories[foodID] = model.CategoryEntity{Id: foodID, BelongsUserId: userID, Name: "Food", Type: model.FlowTypeExpense}
+	categoryMapper.categories[foodID] = model.CategoryEntity{Id: foodID, BelongsUserId: userID, Name: "Food", Type: model.FlowTypeExpense, Emoji: "🍜", BgColor: "#FF8A65"}
 	categoryMapper.categories[salaryID] = model.CategoryEntity{Id: salaryID, BelongsUserId: userID, Name: "Salary", Type: model.FlowTypeIncome}
 	cashMapper.flows[primitive.NewObjectID().Hex()] = model.CashFlowEntity{
 		Id:            primitive.NewObjectID(),
@@ -98,6 +103,31 @@ func TestCashFlowServiceQueryAllForUserEnrichesAndFiltersByType(t *testing.T) {
 	}
 	if results[0].CategoryName != "Food" || results[0].CategoryType != model.FlowTypeExpense {
 		t.Fatalf("category enrichment = %q/%q", results[0].CategoryName, results[0].CategoryType)
+	}
+	if results[0].CategoryEmoji != "🍜" || results[0].CategoryBgColor != "#FF8A65" {
+		t.Fatalf("category presentation = %q/%q", results[0].CategoryEmoji, results[0].CategoryBgColor)
+	}
+}
+
+func TestCashFlowServiceUsesDeletedCategoryPresentationFallback(t *testing.T) {
+	cashMapper := newCashFlowMapperFake()
+	categoryMapper := newCashFlowCategoryMapperFake()
+	userID := primitive.NewObjectID()
+	flowID := primitive.NewObjectID()
+	cashMapper.flows[flowID.Hex()] = model.CashFlowEntity{
+		Id: flowID, BelongsUserId: userID, CategoryId: primitive.NewObjectID(),
+	}
+	service := NewCashFlowService(cashMapper, categoryMapper)
+
+	result, err := service.QueryByIdForUser(flowID.Hex(), userID.Hex())
+	if err != nil {
+		t.Fatalf("QueryByIdForUser returned error: %v", err)
+	}
+	if result.CategoryName != "Unknown" || result.CategoryType != "" {
+		t.Fatalf("deleted category fallback = %q/%q", result.CategoryName, result.CategoryType)
+	}
+	if result.CategoryEmoji != model.DefaultCategoryEmoji || result.CategoryBgColor != model.DefaultCategoryBackgroundColor {
+		t.Fatalf("deleted category presentation = %q/%q", result.CategoryEmoji, result.CategoryBgColor)
 	}
 }
 

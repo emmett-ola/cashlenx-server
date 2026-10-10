@@ -98,8 +98,7 @@ func (s *CashFlowService) SaveExpense(belongsDate, categoryName string, amount f
 
 	newCashFlow := s.cashFlowMapper.GetCashFlowByObjectId(newId.Hex())
 	if !newCashFlow.IsEmpty() {
-		newCashFlow.CategoryName = categoryEntity.Name
-		newCashFlow.CategoryType = categoryEntity.Type
+		s.enrichCategoryInfo(&newCashFlow)
 	}
 	return newCashFlow, nil
 }
