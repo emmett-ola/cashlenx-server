@@ -5,6 +5,15 @@ released contracts and operational behavior separately from deployment state.
 
 ## [Unreleased]
 
+## [1.0.5] - 2026-10-10
+
+### Fixed
+
+- Added a secret-safe, repeatable Testing acceptance flow for authentication,
+  category presentation fields, category cleanup, and monthly comparison.
+- Made Docker and nerdctl status inspection use the explicit container
+  namespace so image and container names cannot be confused.
+
 ## [1.0.4] - 2026-10-09
 
 ### Fixed
