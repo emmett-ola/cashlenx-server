@@ -491,8 +491,11 @@ paths:
             pattern: '^[0-9a-fA-F]{24}$'
         - name: description
           in: query
+          description: Case-insensitive search across cash-flow description and current category name.
           schema:
             type: string
+        - $ref: '#/components/parameters/FromDate'
+        - $ref: '#/components/parameters/ToDate'
       responses:
         '200':
           $ref: '#/components/responses/WrappedResponse'

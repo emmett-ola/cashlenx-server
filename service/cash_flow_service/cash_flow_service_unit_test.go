@@ -109,6 +109,49 @@ func TestCashFlowServiceQueryAllForUserEnrichesAndFiltersByType(t *testing.T) {
 	}
 }
 
+func TestCashFlowServiceFiltersByDescriptionOrCategoryBeforePagination(t *testing.T) {
+	cashMapper := newCashFlowMapperFake()
+	categoryMapper := newCashFlowCategoryMapperFake()
+	userID := primitive.NewObjectID()
+	foodID := primitive.NewObjectID()
+	salaryID := primitive.NewObjectID()
+	categoryMapper.categories[foodID] = model.CategoryEntity{Id: foodID, BelongsUserId: userID, Name: "Food", Type: model.FlowTypeExpense}
+	categoryMapper.categories[salaryID] = model.CategoryEntity{Id: salaryID, BelongsUserId: userID, Name: "Salary", Type: model.FlowTypeIncome}
+
+	baseDate := time.Date(2026, time.May, 20, 0, 0, 0, 0, time.UTC)
+	for index, fixture := range []struct {
+		categoryID  primitive.ObjectID
+		description string
+	}{
+		{foodID, "Market groceries"},
+		{foodID, "Dinner"},
+		{salaryID, "Monthly pay"},
+	} {
+		flowID := primitive.NewObjectID()
+		cashMapper.flows[flowID.Hex()] = model.CashFlowEntity{
+			Id: flowID, BelongsUserId: userID, CategoryId: fixture.categoryID,
+			BelongsDate: baseDate.AddDate(0, 0, -index), Description: fixture.description,
+		}
+	}
+	service := NewCashFlowService(cashMapper, categoryMapper)
+
+	categoryPage, categoryTotal, err := service.QueryAllForUser(userID.Hex(), "", "", "foo", "", "", "", 1, 1)
+	if err != nil {
+		t.Fatalf("category search returned error: %v", err)
+	}
+	if categoryTotal != 2 || len(categoryPage) != 1 || categoryPage[0].CategoryName != "Food" {
+		t.Fatalf("category search page = %+v, total = %d", categoryPage, categoryTotal)
+	}
+
+	descriptionPage, descriptionTotal, err := service.QueryAllForUser(userID.Hex(), "", "", "MARKET", "", "", "", 20, 0)
+	if err != nil {
+		t.Fatalf("description search returned error: %v", err)
+	}
+	if descriptionTotal != 1 || len(descriptionPage) != 1 || descriptionPage[0].Description != "Market groceries" {
+		t.Fatalf("description search page = %+v, total = %d", descriptionPage, descriptionTotal)
+	}
+}
+
 func TestCashFlowServiceUsesDeletedCategoryPresentationFallback(t *testing.T) {
 	cashMapper := newCashFlowMapperFake()
 	categoryMapper := newCashFlowCategoryMapperFake()

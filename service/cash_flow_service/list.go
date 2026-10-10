@@ -156,44 +156,54 @@ func (s *CashFlowService) QueryAllForUser(
 		filter.ToDate = toDate
 	}
 
-	cashFlows, err := s.cashFlowMapper.GetCashFlowsByFilter(filter)
-	if err != nil {
-		return nil, 0, err
+	needsEnrichedFiltering := cashType != "" || (description != "" && exactDescription == "")
+	queryFilter := filter
+	if description != "" && exactDescription == "" {
+		// Fuzzy search also matches the current category name, which is resolved
+		// in the service layer and is not stored on the cash-flow record.
+		queryFilter.Description = ""
 	}
 
-	if cashType != "" {
-		unpagedFilter := filter
-		unpagedFilter.Limit = 0
-		unpagedFilter.Offset = 0
-
-		cashFlows, err = s.cashFlowMapper.GetCashFlowsByFilter(unpagedFilter)
+	if needsEnrichedFiltering {
+		queryFilter.Limit = 0
+		queryFilter.Offset = 0
+		cashFlows, err := s.cashFlowMapper.GetCashFlowsByFilter(queryFilter)
 		if err != nil {
 			return nil, 0, err
 		}
-	}
 
-	results := s.enrichAndFilterByType(cashFlows, cashType)
-
-	if cashType != "" {
+		results := s.enrichAndFilter(cashFlows, cashType, description)
 		totalCount := int64(len(results))
 		return pageCashFlowPointers(results, limit, offset), totalCount, nil
 	}
 
-	totalCount, err := s.cashFlowMapper.CountCashFlowsByFilter(filter)
+	cashFlows, err := s.cashFlowMapper.GetCashFlowsByFilter(queryFilter)
+	if err != nil {
+		return nil, 0, err
+	}
+	results := s.enrichAndFilter(cashFlows, "", "")
+
+	totalCount, err := s.cashFlowMapper.CountCashFlowsByFilter(queryFilter)
 	if err != nil {
 		return nil, 0, err
 	}
 	return results, totalCount, nil
 }
 
-func (s *CashFlowService) enrichAndFilterByType(cashFlows []model.CashFlowEntity, cashType string) []*model.CashFlowEntity {
+func (s *CashFlowService) enrichAndFilter(cashFlows []model.CashFlowEntity, cashType, search string) []*model.CashFlowEntity {
 	var results []*model.CashFlowEntity
+	normalizedSearch := strings.ToLower(strings.TrimSpace(search))
 	for i := range cashFlows {
 		entity := cashFlows[i]
 
 		s.enrichCategoryInfo(&entity)
 
 		if cashType != "" && !strings.EqualFold(entity.CategoryType, cashType) {
+			continue
+		}
+		if normalizedSearch != "" &&
+			!strings.Contains(strings.ToLower(entity.Description), normalizedSearch) &&
+			!strings.Contains(strings.ToLower(entity.CategoryName), normalizedSearch) {
 			continue
 		}
 
