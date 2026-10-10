@@ -95,7 +95,12 @@ if [[ "${1:-}" == "run" && "$*" == *"mysql:8.0@sha256:"* ]]; then
   printf '%s\n' '8.0.46'
   exit 0
 fi
-if [[ "${1:-}" == "inspect" ]]; then
+if [[ "${1:-}" == "inspect" && "${FAKE_SAME_NAME_IMAGE_CONTAINER:-false}" == "true" ]]; then
+  # Model nerdctl's ambiguous generic inspect when an image and container share
+  # the same name. Container-specific inspection must remain deterministic.
+  exit 1
+fi
+if [[ "${1:-}" == "container" && "${2:-}" == "inspect" ]]; then
   [[ "${FAKE_CONTAINER_EXISTS:-true}" == "true" ]] || exit 1
   case "$*" in
     *State.Status*) if [[ -e "$FAKE_STOP_MARKER" ]]; then printf '%s\n' exited; else printf '%s\n' "${FAKE_CONTAINER_STATUS:-running}"; fi ;;
@@ -347,6 +352,17 @@ if grep -F -- 'dependencies/' "$fake_log" >/dev/null; then
   echo "API start unexpectedly invoked a dependency Compose project" >&2
   exit 1
 fi
+
+for frontend in docker nerdctl; do
+  reset_log
+  status_output="$(FAKE_FRONTEND_KIND="$frontend" FAKE_SAME_NAME_IMAGE_CONTAINER=true run_script scripts/status.sh)"
+  grep -F 'dependency_state=running' <<< "$status_output" >/dev/null
+  grep -F 'container_state=running' <<< "$status_output" >/dev/null
+  grep -F 'health=healthy' <<< "$status_output" >/dev/null
+  doctor_output="$(FAKE_FRONTEND_KIND="$frontend" FAKE_SAME_NAME_IMAGE_CONTAINER=true run_script scripts/doctor.sh)"
+  grep -F 'diagnostic=doctor' <<< "$doctor_output" >/dev/null
+  assert_log_contains "container inspect --format {{.State.Status}} cashlenx-server"
+done
 
 reset_log
 FAKE_NETWORK_EXISTS=true FAKE_NETWORK_CONNECTIONS=0 run_script scripts/stop.sh

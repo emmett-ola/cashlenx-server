@@ -16,7 +16,7 @@ case "$db_type" in
   mysql) dependency_name="$(read_config_value MYSQL_CONTAINER_NAME cashlenx-mysql)" ;;
   *) lifecycle_error "DB_TYPE must be mongodb or mysql."; exit 1 ;;
 esac
-dependency_state="$(container inspect --format '{{.State.Status}}' "$dependency_name" 2>/dev/null || true)"
+dependency_state="$(container_inspect --format '{{.State.Status}}' "$dependency_name" 2>/dev/null || true)"
 printf 'dependency=%s\ndependency_state=%s\n' "$dependency_name" "${dependency_state:-missing}"
 result=0
 [[ "$dependency_state" == running ]] || result=1

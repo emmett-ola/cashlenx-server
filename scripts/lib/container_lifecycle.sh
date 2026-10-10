@@ -148,6 +148,10 @@ container() {
   "${CONTAINER_CLI:?container_runtime_init must run first}" "$@"
 }
 
+container_inspect() {
+  container container inspect "$@"
+}
+
 compose() {
   container compose "$@"
 }
@@ -217,7 +221,7 @@ wait_for_container_command() {
   local status
 
   while ((SECONDS < deadline)); do
-    status="$(container inspect --format '{{.State.Status}}' "$container_name" 2>/dev/null || true)"
+    status="$(container_inspect --format '{{.State.Status}}' "$container_name" 2>/dev/null || true)"
     case "$status" in
       exited | dead)
         lifecycle_error "Container stopped before becoming ready: $container_name"
@@ -298,12 +302,12 @@ diagnose_container() {
   printf 'requested_image_id=%s\n' "$requested_image_id"
   if ! container network inspect "$network_name" >/dev/null 2>&1; then printf 'network_state=missing\n'; return 1; fi
   printf 'network_state=available\n'
-  if ! state="$(container inspect --format '{{.State.Status}}' "$container_name" 2>/dev/null)"; then
+  if ! state="$(container_inspect --format '{{.State.Status}}' "$container_name" 2>/dev/null)"; then
     printf 'container_state=missing\n'; return 1
   fi
   printf 'container_state=%s\n' "$state"
-  effective_image_id="$(container inspect --format '{{.Image}}' "$container_name" 2>/dev/null || true)"
-  effective_image_ref="$(container inspect --format '{{.Config.Image}}' "$container_name" 2>/dev/null || true)"
+  effective_image_id="$(container_inspect --format '{{.Image}}' "$container_name" 2>/dev/null || true)"
+  effective_image_ref="$(container_inspect --format '{{.Config.Image}}' "$container_name" 2>/dev/null || true)"
   printf 'effective_image=%s\neffective_image_id=%s\n' "${effective_image_ref:-unknown}" "${effective_image_id:-unknown}"
   if [[ "$effective_image_id" != "$requested_image_id" ]]; then printf 'image_identity=mismatch\n'; return 1; fi
   printf 'image_identity=verified\n'
@@ -316,7 +320,7 @@ show_container_logs() {
   local container_name="$1" lines="${2:-100}"
   validate_container_name "$container_name"
   [[ "$lines" =~ ^[1-9][0-9]{0,4}$ ]] || { lifecycle_error "Log line count must be an integer from 1 to 99999."; return 1; }
-  container inspect "$container_name" >/dev/null 2>&1 || { lifecycle_error "Container is missing: $container_name"; return 1; }
+  container_inspect "$container_name" >/dev/null 2>&1 || { lifecycle_error "Container is missing: $container_name"; return 1; }
   container logs --tail "$lines" "$container_name"
 }
 
@@ -324,14 +328,14 @@ stop_container_bounded() {
   local container_name="$1" timeout_seconds state exit_code
   validate_container_name "$container_name"
   timeout_seconds="$(duration_to_seconds "$2")"
-  state="$(container inspect --format '{{.State.Status}}' "$container_name" 2>/dev/null || true)"
+  state="$(container_inspect --format '{{.State.Status}}' "$container_name" 2>/dev/null || true)"
   case "$state" in
     "" | created | exited | dead | removing) printf 'stop_result=already-stopped\n'; return 0 ;;
   esac
   printf 'stop_timeout_seconds=%s\n' "$timeout_seconds"
   if ! container stop --time "$timeout_seconds" "$container_name" >/dev/null; then printf 'stop_result=failed\n'; return 1; fi
-  state="$(container inspect --format '{{.State.Status}}' "$container_name" 2>/dev/null || true)"
-  exit_code="$(container inspect --format '{{.State.ExitCode}}' "$container_name" 2>/dev/null || true)"
+  state="$(container_inspect --format '{{.State.Status}}' "$container_name" 2>/dev/null || true)"
+  exit_code="$(container_inspect --format '{{.State.ExitCode}}' "$container_name" 2>/dev/null || true)"
   if [[ "$state" == "running" ]]; then printf 'stop_result=failed-running\n'; return 1; fi
   if [[ "$exit_code" == "137" ]]; then printf 'stop_result=forced\n'; return 1; fi
   printf 'stop_result=graceful\n'
