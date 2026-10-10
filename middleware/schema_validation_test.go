@@ -56,6 +56,18 @@ func TestV0CompatibilityPathValidatesAgainstV1Schema(t *testing.T) {
 	}
 }
 
+func TestCashFlowListDateFiltersAreOptional(t *testing.T) {
+	for _, target := range []string{
+		"/api/v1/cash?limit=10&offset=0",
+		"/api/v1/cash?from_date=2026-05-01&to_date=20260531",
+	} {
+		req := httptest.NewRequest(http.MethodGet, target, nil)
+		if err := validateRequest(req); err != nil {
+			t.Fatalf("cash-flow list request %q did not validate: %v", target, err)
+		}
+	}
+}
+
 func TestParseOpenAPIValidationErrors_ErrorAt(t *testing.T) {
 	err := errors.New("request body has an error: doesn't match schema #/components/schemas/UserCreateRequest: Error at \"/username\": minimum string length is 6\nError at \"/password\": minimum string length is 6\n")
 	got := parseOpenAPIValidationErrors(err)

@@ -494,8 +494,23 @@ paths:
           description: Case-insensitive search across cash-flow description and current category name.
           schema:
             type: string
-        - $ref: '#/components/parameters/FromDate'
-        - $ref: '#/components/parameters/ToDate'
+        - name: exact_description
+          in: query
+          description: Match the cash-flow description exactly.
+          schema:
+            type: string
+        - name: from_date
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: '^(\d{8}|\d{4}-\d{2}-\d{2})$'
+        - name: to_date
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: '^(\d{8}|\d{4}-\d{2}-\d{2})$'
       responses:
         '200':
           $ref: '#/components/responses/WrappedResponse'
