@@ -304,6 +304,15 @@ Run the managed MongoDB API smoke flow with
 `test/scripts/api-smoke.sh --managed`. The sibling Flutter client does not
 currently ship a maintained live API harness.
 
+For an already deployed Testing environment, run
+`test/scripts/testing-acceptance.sh`. It reads the acceptance username and
+password from an interactive prompt by default, keeping the password out of
+process arguments and environment values. Automation can supply two
+newline-delimited values through `ACCEPTANCE_CREDENTIALS_FD`; keep the backing
+file outside Git with owner-only permissions. The script authenticates, checks
+category presentation-field persistence and monthly comparison, and removes
+its temporary category before exiting.
+
 Test coverage is still uneven while the project is under development. GitHub
 Actions runs the full Go test suite with race detection and `coverage.out`
 generation for Codecov. DeepSource handles code analysis.
