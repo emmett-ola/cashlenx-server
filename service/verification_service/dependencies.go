@@ -4,7 +4,9 @@ import (
 	"crypto/rand"
 
 	"github.com/macar-x/cashlenx-server/mapper/operation_confirm_code_mapper"
+	"github.com/macar-x/cashlenx-server/mapper/user_mapper"
 	"github.com/macar-x/cashlenx-server/model"
+	"github.com/macar-x/cashlenx-server/util/email"
 )
 
 type codeRepository interface {
@@ -20,6 +22,11 @@ type codeRepository interface {
 }
 
 type mapperCodeRepository struct{}
+
+type verificationEmailService interface {
+	SendEmail(to []string, subject, body string, isHTML bool) error
+	IsConfigured() bool
+}
 
 func (mapperCodeRepository) CreateCode(code model.OperationConfirmCode) error {
 	return operation_confirm_code_mapper.INSTANCE.CreateCode(code)
@@ -58,6 +65,9 @@ func (mapperCodeRepository) DeleteCode(id string) error {
 }
 
 var (
-	codeRepo   codeRepository = mapperCodeRepository{}
-	randomRead                = rand.Read
+	codeRepo                    codeRepository = mapperCodeRepository{}
+	randomRead                                 = rand.Read
+	getVerificationEmailService                = func() verificationEmailService { return email.GetService() }
+	getUserByEmail                             = user_mapper.INSTANCE.GetUserByEmail
+	checkPurposeEmailAllowance                 = email.CheckAndRecordPurposeEmailAllowance
 )

@@ -5,6 +5,18 @@ released contracts and operational behavior separately from deployment state.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-12
+
+### Changed
+
+- Send purpose-scoped verification codes as a restrained, responsive CashLenX
+  HTML email with a centered selectable code and clear expiry guidance.
+
+### Security
+
+- Escape every dynamic HTML template value and keep verification messages free
+  of scripts, forms, tracking pixels, and remote dependencies.
+
 ## [1.0.7] - 2026-10-10
 
 ### Added

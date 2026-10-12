@@ -3,11 +3,63 @@ package verification_service
 import (
 	"errors"
 	"io"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/macar-x/cashlenx-server/model"
 )
+
+func TestSendVerificationCodeSendsBrandedHTML(t *testing.T) {
+	repo := installVerificationTestDeps(t)
+	mail := &emailServiceStub{configured: true}
+	getVerificationEmailService = func() verificationEmailService { return mail }
+
+	err := SendVerificationCode("signup", " Person@Example.Test ", "203.0.113.10")
+	if err != nil {
+		t.Fatalf("SendVerificationCode returned error: %v", err)
+	}
+
+	if !mail.isHTML {
+		t.Fatal("expected verification email to use text/html")
+	}
+	if len(mail.to) != 1 || mail.to[0] != "person@example.test" {
+		t.Fatalf("recipients = %v", mail.to)
+	}
+	if mail.subject != "CashLenX verification code" {
+		t.Fatalf("subject = %q", mail.subject)
+	}
+	for _, required := range []string{
+		"CashLenX",
+		"Confirm your email",
+		">123456</code>",
+		"This code expires in",
+	} {
+		if !strings.Contains(mail.body, required) {
+			t.Fatalf("message is missing %q", required)
+		}
+	}
+	if len(repo.codesByToken) != 1 {
+		t.Fatalf("stored codes = %d, want 1", len(repo.codesByToken))
+	}
+}
+
+func TestSendVerificationCodeDeletesStoredCodeWhenEmailFails(t *testing.T) {
+	repo := installVerificationTestDeps(t)
+	mail := &emailServiceStub{
+		configured: true,
+		sendErr:    errors.New("smtp unavailable"),
+	}
+	getVerificationEmailService = func() verificationEmailService { return mail }
+
+	err := SendVerificationCode("signup", "person@example.test", "203.0.113.10")
+	if err == nil {
+		t.Fatal("expected email delivery error")
+	}
+	if len(repo.deletedIDs) != 1 {
+		t.Fatalf("deleted codes = %d, want 1", len(repo.deletedIDs))
+	}
+}
 
 func TestGenerateVerificationTokenStoresCodeAndInvalidatesPriorActiveCodes(t *testing.T) {
 	repo := installVerificationTestDeps(t)
@@ -156,6 +208,9 @@ func installVerificationTestDeps(t *testing.T) *codeRepoStub {
 
 	originalRepo := codeRepo
 	originalRandomRead := randomRead
+	originalGetEmailService := getVerificationEmailService
+	originalGetUserByEmail := getUserByEmail
+	originalCheckEmailAllowance := checkPurposeEmailAllowance
 	stub := &codeRepoStub{
 		codesByToken: map[string]model.OperationConfirmCode{},
 		usedIDs:      map[string]bool{},
@@ -168,12 +223,41 @@ func installVerificationTestDeps(t *testing.T) *codeRepoStub {
 		}
 		return len(p), nil
 	}
+	getVerificationEmailService = func() verificationEmailService {
+		return &emailServiceStub{configured: true}
+	}
+	getUserByEmail = func(string) model.UserEntity { return model.UserEntity{} }
+	checkPurposeEmailAllowance = func(string, string, []string) error { return nil }
 
 	t.Cleanup(func() {
 		codeRepo = originalRepo
 		randomRead = originalRandomRead
+		getVerificationEmailService = originalGetEmailService
+		getUserByEmail = originalGetUserByEmail
+		checkPurposeEmailAllowance = originalCheckEmailAllowance
 	})
 	return stub
+}
+
+type emailServiceStub struct {
+	configured bool
+	sendErr    error
+	to         []string
+	subject    string
+	body       string
+	isHTML     bool
+}
+
+func (stub *emailServiceStub) IsConfigured() bool {
+	return stub.configured
+}
+
+func (stub *emailServiceStub) SendEmail(to []string, subject string, body string, isHTML bool) error {
+	stub.to = append([]string(nil), to...)
+	stub.subject = subject
+	stub.body = body
+	stub.isHTML = isHTML
+	return stub.sendErr
 }
 
 type codeRepoStub struct {

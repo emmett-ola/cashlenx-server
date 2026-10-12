@@ -7,10 +7,8 @@ import (
 	"time"
 
 	"github.com/macar-x/cashlenx-server/errors"
-	"github.com/macar-x/cashlenx-server/mapper/user_mapper"
 	"github.com/macar-x/cashlenx-server/model"
 	"github.com/macar-x/cashlenx-server/util"
-	"github.com/macar-x/cashlenx-server/util/email"
 	"github.com/macar-x/cashlenx-server/validation"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -38,7 +36,7 @@ func SendVerificationCode(purpose string, recipientEmail string, ipAddress strin
 		return err
 	}
 
-	existingEmailUser := user_mapper.INSTANCE.GetUserByEmail(recipientEmail)
+	existingEmailUser := getUserByEmail(recipientEmail)
 	switch operation {
 	case OperationPasswordReset:
 		if existingEmailUser.Id.IsZero() {
@@ -50,11 +48,12 @@ func SendVerificationCode(purpose string, recipientEmail string, ipAddress strin
 		}
 	}
 
-	if !email.GetService().IsConfigured() {
+	mailService := getVerificationEmailService()
+	if !mailService.IsConfigured() {
 		return errors.NewInternalError("SMTP service is not configured", nil)
 	}
 
-	if err := email.CheckAndRecordPurposeEmailAllowance(string(operation), ipAddress, []string{recipientEmail}); err != nil {
+	if err := checkPurposeEmailAllowance(string(operation), ipAddress, []string{recipientEmail}); err != nil {
 		return err
 	}
 
@@ -91,8 +90,12 @@ func SendVerificationCode(purpose string, recipientEmail string, ipAddress strin
 	}
 
 	subject := "CashLenX verification code"
-	body := fmt.Sprintf("Your CashLenX verification code is: %s\n\nThis code will expire in %s.", code, verificationExpiryText())
-	if err := email.GetService().SendEmail([]string{recipientEmail}, subject, body, false); err != nil {
+	body, err := renderVerificationEmail(code, verificationExpiryText())
+	if err != nil {
+		codeRepo.DeleteCode(entity.Id)
+		return errors.NewInternalError("failed to render verification email", err)
+	}
+	if err := mailService.SendEmail([]string{recipientEmail}, subject, body, true); err != nil {
 		codeRepo.DeleteCode(entity.Id)
 		return errors.NewInternalError("failed to send verification email", err)
 	}

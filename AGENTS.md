@@ -38,8 +38,9 @@ These are collaboration defaults provided by the project owner and should be tre
 - Active development uses `develop`; `testing` and `main` are fast-forward
   promotion branches controlled by the coordinated release gate
 - The canonical stable API is `/api/v1`; `/api/v0` is a frozen compatibility alias for previously shipped clients
-- The coordinated v1 line is currently an untagged `1.0.0-rc.1` candidate;
-  stable `1.0.0` requires the complete Jira release gate
+- The current Server implementation version on `develop` is `1.1.0`; branch
+  promotion, tags, publication, and deployment remain controlled by the
+  coordinated Jira release gate.
 - User-facing feature/function completion takes priority over enhancement work such as observability, performance, migration tooling, cloud hardening, and release automation
 - Enhancement work should move earlier only when it directly unblocks user-facing functionality or safe delivery
 - Unless the user explicitly says not to, make a commit after each completed request/change set
@@ -101,7 +102,10 @@ The repository is farther along than some older docs imply. These features are p
 - Admin bootstrap user initialization on server startup
 - User profile query/update with nickname, gender, active status, user configuration profile query/create/update, password change, email change request/confirm, and account deletion
 - Password reset request/confirm using verification codes
-- Purpose-scoped email verification code send/verify flow for sign-up, password reset, and email change
+- Purpose-scoped email verification code send/verify flow for sign-up, password
+  reset, and email change. Delivery uses an email-client-compatible CashLenX
+  HTML template with escaped dynamic values and a selectable text code; it has
+  no scripts, forms, tracking pixels, remote images, or external dependencies.
 - Login can also refresh tokens by passing `refresh_token` to `POST /open/auth/login`
 - Cash flow CRUD, date/range queries, summaries, pagination/filtering
 - Category CRUD plus tree/children/name lookup
@@ -348,8 +352,13 @@ Admin role lifecycle:
 
 `service/verification_service/verification_service.go` supports:
 
+- `signup`
 - `email_change`
 - `password_reset`
+
+Verification delivery uses `text/html`; the pure renderer and reviewed local
+fixture live beside the service. Automated tests replace SMTP delivery and must
+never contact a real provider.
 
 It revokes prior active codes per user/operation, stores expiry, and marks codes used after completion.
 
