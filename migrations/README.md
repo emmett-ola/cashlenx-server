@@ -78,11 +78,12 @@ applied migration history. Changing them does not update an existing database.
 
 ## Available Assets
 
-### MongoDB: `001`, `010`, `016`, and `017`
+### MongoDB: `001`, `010`, `016`, `017`, and `018`
 
 The ordered assets reconcile legacy cash-flow/category indexes, verification
 code indexes, user-configuration uniqueness, budget indexes, and category
-presentation defaults. Handlers are
+presentation defaults. They also remove legacy empty verification-token fields
+so the sparse unique index can admit multiple pending codes. Handlers are
 idempotent so they can safely baseline an existing compatible installation.
 
 ## Migration Guidelines

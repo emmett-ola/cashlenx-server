@@ -72,9 +72,21 @@ func ApplyMongoMigration(ctx context.Context, db *mongo.Database, migration migr
 		return applyMongoBudgetIndexes(ctx, db)
 	case 17:
 		return applyMongoCategoryPresentation(ctx, db)
+	case 18:
+		return applyMongoVerificationTokenCleanup(ctx, db)
 	default:
 		return fmt.Errorf("no MongoDB migration handler for version %03d", migration.Version)
 	}
+}
+
+func applyMongoVerificationTokenCleanup(ctx context.Context, db *mongo.Database) error {
+	if _, err := db.Collection(database.OperationConfirmCodeTableName).UpdateMany(ctx,
+		bson.M{"verification_token": ""},
+		bson.M{"$unset": bson.M{"verification_token": ""}},
+	); err != nil {
+		return fmt.Errorf("remove empty verification tokens: %w", err)
+	}
+	return nil
 }
 
 func applyMongoCategoryPresentation(ctx context.Context, db *mongo.Database) error {

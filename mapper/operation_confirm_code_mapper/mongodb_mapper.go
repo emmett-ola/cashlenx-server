@@ -28,27 +28,38 @@ func (mapper *OperationConfirmCodeMongoMapper) CreateCode(code model.OperationCo
 		id = primitive.NewObjectID()
 	}
 
-	// Prepare document
-	doc := bson.M{
-		"_id":                id,
-		"user_id":            code.UserId,
-		"code":               code.Code,
-		"verification_token": code.VerificationToken,
-		"operation_type":     code.OperationType,
-		"payload":            code.Payload,
-		"expires_time":       code.ExpiresTime,
-		"used_time":          code.UsedTime,
-		"create_user_id":     code.CreateUserId,
-		"create_time":        code.CreateTime,
-		"update_user_id":     code.UpdateUserId,
-		"update_time":        code.UpdateTime,
-		"delete_user_id":     code.DeleteUserId,
-		"delete_time":        code.DeleteTime,
-		"is_delete":          code.IsDelete,
-	}
+	doc := operationConfirmCodeDocument(code, id)
 
 	_, err = collection.InsertOne(context.TODO(), doc)
 	return err
+}
+
+func operationConfirmCodeDocument(code model.OperationConfirmCode, id primitive.ObjectID) bson.M {
+	doc := bson.M{
+		"_id":            id,
+		"user_id":        code.UserId,
+		"code":           code.Code,
+		"operation_type": code.OperationType,
+		"payload":        code.Payload,
+		"expires_time":   code.ExpiresTime,
+		"used_time":      code.UsedTime,
+		"create_user_id": code.CreateUserId,
+		"create_time":    code.CreateTime,
+		"update_user_id": code.UpdateUserId,
+		"update_time":    code.UpdateTime,
+		"delete_user_id": code.DeleteUserId,
+		"delete_time":    code.DeleteTime,
+		"is_delete":      code.IsDelete,
+	}
+
+	// The verification token is assigned only after the code is consumed. Keep
+	// the field absent until then so MongoDB's sparse unique index does not treat
+	// every pending code as the same empty-string value.
+	if code.VerificationToken != "" {
+		doc["verification_token"] = code.VerificationToken
+	}
+
+	return doc
 }
 
 func (mapper *OperationConfirmCodeMongoMapper) GetCodeByToken(token string) model.OperationConfirmCode {

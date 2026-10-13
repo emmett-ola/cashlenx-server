@@ -42,6 +42,9 @@ func TestMongoMigrationHandlersIntegration(t *testing.T) {
 	if _, err := db.Collection("categories").InsertOne(ctx, bson.M{"name": "Food"}); err != nil {
 		t.Fatal(err)
 	}
+	if _, err := db.Collection("operation_confirm_codes").InsertOne(ctx, bson.M{"code": "123456", "verification_token": ""}); err != nil {
+		t.Fatal(err)
+	}
 	if _, err := db.Collection("cash_flows").Indexes().CreateOne(ctx, mongo.IndexModel{
 		Keys: bson.D{{Key: "flow_type", Value: 1}}, Options: options.Index().SetName("flow_type_1"),
 	}); err != nil {
@@ -64,8 +67,8 @@ func TestMongoMigrationHandlersIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if applied != 4 || dirty != 0 {
-		t.Fatalf("applied=%d dirty=%d, want applied=4 dirty=0", applied, dirty)
+	if applied != 5 || dirty != 0 {
+		t.Fatalf("applied=%d dirty=%d, want applied=5 dirty=0", applied, dirty)
 	}
 
 	assertMongoIndex(t, ctx, db.Collection("cash_flows"), "cash_flows_user_date_index", true)
@@ -73,6 +76,13 @@ func TestMongoMigrationHandlersIntegration(t *testing.T) {
 	assertMongoIndex(t, ctx, db.Collection("categories"), "categories_active_scope_unique_index", true)
 	assertMongoIndex(t, ctx, db.Collection("operation_confirm_codes"), "verification_token_1", true)
 	assertMongoIndex(t, ctx, db.Collection("budgets"), "budgets_active_scope_unique_index", true)
+	emptyTokens, err := db.Collection("operation_confirm_codes").CountDocuments(ctx, bson.M{"verification_token": ""})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if emptyTokens != 0 {
+		t.Fatalf("empty verification tokens=%d, want 0", emptyTokens)
+	}
 
 	var category struct {
 		Emoji   string `bson:"emoji"`

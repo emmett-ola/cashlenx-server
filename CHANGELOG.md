@@ -5,6 +5,12 @@ released contracts and operational behavior separately from deployment state.
 
 ## [Unreleased]
 
+### Fixed
+
+- Omit unset verification tokens from MongoDB documents and clean up legacy
+  empty-token fields so the sparse unique index no longer rejects a second
+  pending verification code.
+
 ## [1.1.0] - 2026-10-12
 
 ### Changed
