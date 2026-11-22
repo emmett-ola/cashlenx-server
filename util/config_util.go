@@ -22,6 +22,14 @@ func init() {
 	initDefaultValues()
 }
 
+// envOrDefault reads an environment value and falls back when it is empty.
+func envOrDefault(key, fallback string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return fallback
+}
+
 func initDefaultValues() {
 	// Environment: dev/test/prod
 	env := os.Getenv("ENV")
@@ -30,12 +38,22 @@ func initDefaultValues() {
 	}
 	configurationMap["env"] = env
 
-	// Logger configuration
-	logFolder := os.Getenv("LOG_FOLDER")
+	// Logger configuration. LOG_DIR is the current name; LOG_FOLDER is still
+	// accepted so existing environment files keep working.
+	logFolder := os.Getenv("LOG_DIR")
 	if logFolder == "" {
-		logFolder = "./logs"
+		logFolder = os.Getenv("LOG_FOLDER")
+	}
+	if logFolder == "" {
+		logFolder = defaultLogDir
 	}
 	configurationMap["logger.file"] = logFolder
+	configurationMap["logger.dir"] = logFolder
+	configurationMap["logger.pattern"] = envOrDefault("LOG_FILE_PATTERN", defaultLogPattern)
+	configurationMap["logger.rotation"] = envOrDefault("LOG_ROTATION", defaultLogRotation)
+	configurationMap["logger.max_size_mb"] = envOrDefault("LOG_MAX_SIZE_MB", "0")
+	configurationMap["logger.retention_days"] = envOrDefault("LOG_RETENTION_DAYS", "0")
+	configurationMap["logger.console_format"] = envOrDefault("LOG_CONSOLE_FORMAT", defaultLogConsoleForm)
 
 	// Database name
 	dbName := os.Getenv("DB_NAME")

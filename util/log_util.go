@@ -1,11 +1,10 @@
 package util
 
 import (
-	"fmt"
 	"log"
 	"os"
-	"sync"
-	"time"
+	"path/filepath"
+	"strings"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -39,28 +38,18 @@ func getLogger() *zap.SugaredLogger {
 }
 
 func initConsoleLogger() *zap.Logger {
-	// Get log level from config, default to info
-	logLevelStr := GetConfigByKey("logger.level")
-	if logLevelStr == "" {
-		logLevelStr = "info"
-	}
+	logLevel := configuredLogLevel()
+	settings := loadLogSettings()
 
-	// Convert string to zapcore.Level
-	var logLevel zapcore.Level
-	err := logLevel.Set(logLevelStr)
-	if err != nil {
-		// Fallback to info level if invalid
-		log.Printf("Invalid log level '%s', falling back to info", logLevelStr)
-		logLevel = zapcore.InfoLevel
-	}
-
-	// Set up console output
+	// Set up console output. Container collectors read stdout, so the default is
+	// the same structured JSON the file receives.
 	consoleOutput := zapcore.Lock(os.Stdout)
-	// Set up date-rolling file output
-	fileOutput := zapcore.Lock(createDailyLogWriter())
+	fileOutput, err := openLogFileOutput(settings)
+	if err != nil {
+		log.Fatal("failed to create log file: ", err)
+	}
 
-	// Set up log encoders
-	consoleEncoder := zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig())
+	consoleEncoder := consoleLogEncoder(settings.ConsoleFormat)
 	fileEncoder := zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig())
 
 	// Create cores for different outputs
@@ -76,111 +65,58 @@ func initConsoleLogger() *zap.Logger {
 	return logger
 }
 
-type dailyLogWriter struct {
-	mu          sync.Mutex
-	folder      string
-	currentDate string
-	file        *os.File
+func configuredLogLevel() zapcore.Level {
+	logLevelStr := firstNonEmpty(GetConfigByKey("logger.level"), os.Getenv("LOG_LEVEL"), "info")
+
+	var logLevel zapcore.Level
+	if err := logLevel.Set(logLevelStr); err != nil {
+		// Fallback to info level if invalid
+		log.Printf("Invalid log level '%s', falling back to info", logLevelStr)
+		return zapcore.InfoLevel
+	}
+	return logLevel
 }
 
-func createDailyLogWriter() zapcore.WriteSyncer {
-	// Get the log folder from config, default to ./logs
-	logFolder := configuredLogFolder()
-
-	// Extract folder path if a full filename was provided
-	if logFolder != "" {
-		// If the path has a file extension, extract just the directory
-		if len(logFolder) > 4 && logFolder[len(logFolder)-4:] == ".log" {
-			// Check if it's just a filename without directory
-			if logFolder == "./cashlenx.log" || logFolder == "cashlenx.log" {
-				logFolder = "./logs"
-			} else {
-				// Extract directory part
-				lastSlash := -1
-				for i := len(logFolder) - 1; i >= 0; i-- {
-					if logFolder[i] == '/' || logFolder[i] == '\\' {
-						lastSlash = i
-						break
-					}
-				}
-				if lastSlash >= 0 {
-					logFolder = logFolder[:lastSlash]
-				} else {
-					logFolder = "."
-				}
-			}
-		}
-	} else {
-		logFolder = "./logs"
+func consoleLogEncoder(format string) zapcore.Encoder {
+	if format == "text" {
+		return zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig())
 	}
+	return zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig())
+}
 
-	// Create the log folder if it doesn't exist, with fallback to default
-	if err := os.MkdirAll(logFolder, 0755); err != nil {
-		// Fallback to default logs folder if configured one fails
-		log.Printf("Failed to create configured log folder '%s': %v, falling back to default './logs/'", logFolder, err)
-		defaultFolder := "./logs"
-		if err := os.MkdirAll(defaultFolder, 0755); err != nil {
-			log.Fatalf("Failed to create both configured and default log folders: %v", err)
-		}
-		logFolder = defaultFolder
+// openLogFileOutput builds the rolling file sink, falling back to the default
+// directory when the configured one cannot be created.
+func openLogFileOutput(settings logSettings) (zapcore.WriteSyncer, error) {
+	writer, err := newRollingWriter(settings)
+	if err != nil && settings.Dir != defaultLogDir {
+		log.Printf("Failed to create configured log directory '%s': %v, falling back to '%s'", settings.Dir, err, defaultLogDir)
+		settings.Dir = defaultLogDir
+		writer, err = newRollingWriter(settings)
 	}
-
-	writer := &dailyLogWriter{folder: logFolder}
-	if err := writer.rotateIfNeeded(time.Now()); err != nil {
-		log.Fatal("failed to create log file: ", err)
+	if err != nil {
+		return nil, err
 	}
-	return writer
+	return zapcore.Lock(writer), nil
 }
 
 func configuredLogFolder() string {
-	logFolder := GetConfigByKey("logger.file")
-	// Logger is initialized before config_util.init populates configurationMap.
-	// Read the environment directly during that startup window so LOG_FOLDER is
-	// honored instead of creating package-local ./logs directories.
-	if logFolder == "" {
-		logFolder = os.Getenv("LOG_FOLDER")
+	if value := GetConfigByKey("logger.file"); value != "" {
+		return trimLogFileToDirectory(value)
 	}
-	return logFolder
+	if value := os.Getenv("LOG_DIR"); value != "" {
+		return trimLogFileToDirectory(value)
+	}
+	return trimLogFileToDirectory(os.Getenv("LOG_FOLDER"))
 }
 
-func (writer *dailyLogWriter) Write(p []byte) (int, error) {
-	writer.mu.Lock()
-	defer writer.mu.Unlock()
-
-	if err := writer.rotateIfNeeded(time.Now()); err != nil {
-		return 0, err
+// trimLogFileToDirectory keeps the older LOG_FOLDER=<dir>/<name>.log spelling
+// working now that the directory and the file-name template are separate keys.
+func trimLogFileToDirectory(value string) string {
+	if value == "" || !strings.HasSuffix(strings.ToLower(value), ".log") {
+		return value
 	}
-	return writer.file.Write(p)
-}
-
-func (writer *dailyLogWriter) Sync() error {
-	writer.mu.Lock()
-	defer writer.mu.Unlock()
-
-	if writer.file == nil {
-		return nil
+	if directory := filepath.Dir(value); directory != "." {
+		return directory
 	}
-	return writer.file.Sync()
-}
-
-func (writer *dailyLogWriter) rotateIfNeeded(now time.Time) error {
-	currentDate := now.Format("20060102")
-	if writer.file != nil && writer.currentDate == currentDate {
-		return nil
-	}
-
-	if writer.file != nil {
-		_ = writer.file.Close()
-	}
-
-	logFilePath := fmt.Sprintf("%s/cashlenx_%s.log", writer.folder, currentDate)
-
-	// Open file with append mode if it exists, create if it doesn't
-	file, err := os.OpenFile(logFilePath, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0644)
-	if err != nil {
-		return err
-	}
-	writer.file = file
-	writer.currentDate = currentDate
-	return nil
+	return defaultLogDir
 }
