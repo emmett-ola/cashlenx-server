@@ -38,7 +38,7 @@ These are collaboration defaults provided by the project owner and should be tre
 - Active development uses `develop`; `testing` and `main` are fast-forward
   promotion branches controlled by the coordinated release gate
 - The canonical stable API is `/api/v1`; `/api/v0` is a frozen compatibility alias for previously shipped clients
-- The current Server implementation version on `develop` is `1.1.0`; branch
+- The current Server implementation version on `develop` is `1.1.9`; branch
   promotion, tags, publication, and deployment remain controlled by the
   coordinated Jira release gate.
 - User-facing feature/function completion takes priority over enhancement work such as observability, performance, migration tooling, cloud hardening, and release automation
@@ -390,6 +390,12 @@ Important keys currently loaded there:
 
 - `env`
 - `logger.file`
+- `logger.dir`
+- `logger.pattern`
+- `logger.rotation`
+- `logger.max_size_mb`
+- `logger.retention_days`
+- `logger.console_format`
 - `logger.level`
 - `db.name`
 - `db.type`

@@ -8,11 +8,12 @@ This file tracks active and future work. Completed milestone history lives in
 
 - Active branch line: `develop`
 - Canonical API path: `/api/v1` (`/api/v0` is a frozen compatibility alias)
-- Current implementation version: `1.1.0`
+- Current implementation version: `1.1.9`
 - Earlier `v0.x` implementation milestones: complete
 - Remaining release work is controlled by the `CLX` Jira v1 delivery plan and
   the coordinated release-candidate gate.
-- Active milestone: `v1.1.0` polished email-verification journey
+- Active line: `v1.1` — current increment: configuration-owned logging for the
+  observation platform
 
 The Go suite, MongoDB API smoke flow, MySQL migration runner, and independent
 numbered SQL sequence have passed against disposable Docker environments.
